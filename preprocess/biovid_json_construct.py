@@ -11,15 +11,14 @@ def parse_video_file(file_name):
     parts = file_name_no_ext.split('_')
     subject_id = parts[0]
     sex = 'female' if parts[1] == 'w' else 'male'
-    age = int(parts[2])
 
     # Further split the class label and video number
-    class_label, video_serial_number = parts[3].split('-')
+    age, class_label, video_serial_number = parts[2].split('-')
 
     # Determine binary class based on multiclass label
-    if class_label in ['BL1', 'PL1', 'PL2']:
+    if class_label in ['BL1', 'PA1', 'PA2']:
         binary = 0
-    elif class_label in ['PL3', 'PL4']:
+    elif class_label in ['PA3', 'PA4']:
         binary = 1
     else:
         raise ValueError(f"Unexpected class label: {class_label}")
@@ -62,13 +61,13 @@ def process_videos(directory):
 # Main function to run the script
 def main():
     # Specify directory containing the video files
-    video_directory = "path/to/video/files"
+    video_directory = r"C:\pain\BioVid_224_video"
 
     # Process the videos and construct the JSON
     json_data = process_videos(video_directory)
 
     # Write the JSON data to a file
-    output_file = "output.json"
+    output_file = r"C:\pain\BioVid_224_video\output.json"
     with open(output_file, "w") as f:
         json.dump(json_data, f, indent=4)
 

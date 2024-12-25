@@ -150,7 +150,7 @@ def train_biovid(args, config):
         dm.setup()
         return resume_ckpt, dm
 
-    strategy = None if n_gpus <= 1 else "ddp"
+    strategy = 'auto' if n_gpus <= 1 else "ddp"
     accelerator = "cpu" if n_gpus == 0 else "gpu"
 
     ckpt_filename = config["model_name"] + "-{epoch}-{val_auc:.3f}"
@@ -165,12 +165,30 @@ def train_biovid(args, config):
         filename=ckpt_filename,
         monitor=ckpt_monitor,
         mode="max")
+## the way to resume training from a checkpoint has changed. The resume_from_checkpoint argument was removed in favor of a different approach.
+    # trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=accelerator, benchmark=True,
+    #     logger=True, precision=precision, max_epochs=max_epochs,
+    #     strategy=strategy, resume_from_checkpoint=resume_ckpt,
+    #     callbacks=[ckpt_callback, LrLogger(), EarlyStoppingLR(1e-6), SystemStatsLogger()])
+    # trainer.fit(model, dm)
+    # Initialize the Trainer
+    trainer = Trainer(
+        log_every_n_steps=1,  # Log every n steps
+        devices=n_gpus,  # Number of GPUs to use
+        accelerator=accelerator,  # Accelerator type (e.g., 'gpu', 'cpu')
+        benchmark=True,  # Enable benchmark mode
+        logger=True,  # Whether to log
+        precision=precision,  # Precision (e.g., 16 or 32)
+        max_epochs=max_epochs,  # Maximum number of epochs
+        strategy=strategy,  # Distributed strategy
+        callbacks=[ckpt_callback, LrLogger(), EarlyStoppingLR(1e-6), SystemStatsLogger()]  # List of callbacks
+    )
 
-    trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=accelerator, benchmark=True,
-        logger=True, precision=precision, max_epochs=max_epochs,
-        strategy=strategy, resume_from_checkpoint=resume_ckpt,
-        callbacks=[ckpt_callback, LrLogger(), EarlyStoppingLR(1e-6), SystemStatsLogger()])
-    trainer.fit(model, dm)
+    # Fit the model, passing the checkpoint path if resuming training
+    if resume_ckpt:  # Check if a checkpoint path is provided
+        trainer.fit(model, dm, ckpt_path=resume_ckpt)  # Resume training from the checkpoint
+    else:
+        trainer.fit(model, dm)  # Start training from scratch
     return ckpt_callback.best_model_path, dm
 
 def evaluate_celebvhq(args, ckpt, dm):
