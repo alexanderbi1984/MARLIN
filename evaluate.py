@@ -103,7 +103,8 @@ def train_biovid(args, config):
     task = config["task"]
 
     if task == "binary":
-        num_classes = 2
+        # num_classes = 2
+        num_classes = 1
     elif task == "multiclass":
         num_classes = 5
     else:

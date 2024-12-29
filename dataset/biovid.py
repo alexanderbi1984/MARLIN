@@ -63,18 +63,41 @@ class BioVidFT(BioVidBase):
         self.temporal_sample_rate = temporal_sample_rate
 
     def __getitem__(self, index: int):
+
         y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
         # how to fetch the video and its label may be different from the CelebV-HQ dataset.
-        video_path = os.path.join(self.data_root, "cropped", self.name_list[index] + ".mp4")
+        video_path = os.path.join(self.data_root,  self.name_list[index])
         #todo: implement the __getitem__ method, which should return the video and its label.
         #how to fetch the video and its label?
+        # print(f"Probing video file: {video_path}")  # Add this line before the probe call
 
-        probe = ffmpeg.probe(video_path)["streams"][0]
+        # probe = ffmpeg.probe(video_path)["streams"][0]
+        try:
+            probe = ffmpeg.probe(video_path)["streams"][0]
+        except ffmpeg._run.Error as e:
+            print(f"Error probing video: {video_path}")
+            print(f"FFmpeg error: {e.stderr.decode()}")
         n_frames = int(probe["nb_frames"])
 
         if n_frames <= self.clip_frames:
-            video = read_video(video_path, channel_first=True).video / 255
+            try:
+                print(f"Reading video: {video_path}")
+                print(f"Number of frames: {n_frames}")
+                video = read_video(video_path, channel_first=True).video / 255
+            except Exception as e:
+                print(f"Error reading video: {video_path}")
+                print(f"FFmpeg error: {e.stderr.decode()}")
+
+            # video, audio = read_video(video_path, channel_first=True)
+            # video = video / 255.0  # Normalize to [0, 1]
+            # video = read_video(video_path, channel_first=True).video / 255
             # pad frames to 16
+            # Check the shape of the video tensor
+            # if video.ndim == 3:  # Shape: (C, H, W)
+            #     video = video.unsqueeze(0)  # Add a dimension for T: (1, C, H, W)
+            #
+            # elif video.ndim != 4:
+            #     raise ValueError(f"Unexpected video shape: {video.shape}")
             video = padding_video(video, self.clip_frames, "same")  # (T, C, H, W)
             video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
             return video, torch.tensor(y, dtype=torch.long)
@@ -113,8 +136,11 @@ class BioVidLP(BioVidBase):
         self.temporal_reduction = temporal_reduction
 
     def __getitem__(self, index: int):
-        feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
-
+        try:
+            feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
+        except FileNotFoundError:
+            print(f"File not found: {self.name_list[index]}")
+            # feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
         x = torch.from_numpy(np.load(feat_path)).float()
 
         if x.size(0) == 0:
@@ -208,7 +234,8 @@ class BioVidDataModule(LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            pin_memory=True
+            pin_memory=True,
+            drop_last=True
         )
 
     def test_dataloader(self):
@@ -217,5 +244,6 @@ class BioVidDataModule(LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            pin_memory=True
+            pin_memory=True,
+            drop_last=True
         )

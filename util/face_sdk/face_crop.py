@@ -33,10 +33,11 @@ model_name = model_conf[scene][model_category]
 logger.info('Start to load the face detection model...')
 # load model
 sys.path.append(os.path.join("util", "face_sdk"))
+print("path of face_sdk is appended.")
 faceDetModelLoader = FaceDetModelLoader(model_path, model_category, model_name)
 model, cfg = faceDetModelLoader.load_model()
 faceDetModelHandler = FaceDetModelHandler(model, 'cuda:0', cfg)
-
+print("Face detection model loaded")
 
 def crop_face(frame, margin=1, x=0, y=0) -> Tuple[ndarray, int, int, int]:
     assert frame.ndim == 3 and frame.shape[2] == 3, "frame should be 3-dim"
@@ -92,6 +93,7 @@ def process_videos(video_path, output_path, ext="mp4", max_workers=8):
 
         for f_name in tqdm(files):
             if f_name.endswith('.' + ext):
+                print(f"Processing {f_name} in face cropping")
                 source_path = os.path.join(video_path, f_name)
                 target_path = os.path.join(output_path, f_name)
                 fps = eval(ffmpeg.probe(source_path)["streams"][0]["avg_frame_rate"])

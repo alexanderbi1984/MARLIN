@@ -1,7 +1,7 @@
 from typing import Optional, Union, Sequence, Dict, Literal, Any
 
 from pytorch_lightning import LightningModule
-from torch import Tensor
+from torch import Tensor, softmax
 from torch.nn import CrossEntropyLoss, Linear, Identity, BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -62,17 +62,51 @@ class Classifier(LightningModule):
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
         x, y = batch
         y_hat = self(x)
-        if self.task == "multilabel":
+        # # Ensure y is of type Long for CrossEntropyLoss
+        # y = y.long()  # Convert y to Long type
+        # if self.task == "multilabel":
+        #     y_hat = y_hat.flatten()
+        #     y = y.flatten()
+        # # loss = self.loss_fn(y_hat, y.float())
+        # loss = self.loss_fn(y_hat, y)
+        # Ensure y is of type Long for CrossEntropyLoss
+        # y = y.long()  # Convert y to Long type for multi-class classification
+        # if self.task == "binary":
+        #     prob= y_hat.sigmoid()  # Apply sigmoid for binary
+        # if self.task == "multilabel" :
+        #     y_hat = y_hat.flatten()
+        #     y = y.flatten()
+        #     prob = y_hat.sigmoid() # Apply sigmoid for multilabel
+        # if self.task == "multiclass":
+        #     prob = softmax(y_hat, dim=1)  # Apply softmax for multiclass
+        # loss = self.loss_fn(y_hat, y)
+        # if self.task == "binary":
+        #     # Use BCEWithLogitsLoss or BCE
+        #     # In this case, we can use BCEWithLogitsLoss and pass y_hat directly
+        #     loss = self.loss_fn(y_hat, y.float())  # If using BCEWithLogitsLoss
+        #     prob = y_hat.sigmoid()  # Apply sigmoid to get probabilities
+
+        if self.task == "binary":
+            # Ensure y is of type Long for CrossEntropyLoss or float for BCE
+            y = y.float()  # Ensure y is float for BCEWithLogitsLoss
+            loss = self.loss_fn(y_hat.squeeze(), y)  # Squeeze to remove the second dimension
+            prob = y_hat.sigmoid().squeeze()  # Apply sigmoid to get probabilities
+
+        elif self.task == "multilabel":
             y_hat = y_hat.flatten()
             y = y.flatten()
-        loss = self.loss_fn(y_hat, y.float())
-        prob = y_hat.sigmoid()
+            loss = self.loss_fn(y_hat, y.float())  # Ensure loss function is appropriate
+            prob = y_hat.sigmoid()  # Apply sigmoid for multilabel
+
+        elif self.task == "multiclass":
+            loss = self.loss_fn(y_hat, y)  # Use appropriate loss for multiclass (CrossEntropyLoss)
+            prob = softmax(y_hat, dim=1)  # Apply softmax for multiclass
         acc = self.acc_fn(prob, y)
         auc = self.auc_fn(prob, y)
         return {"loss": loss, "acc": acc, "auc": auc}
 
     def training_step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]] = None, batch_idx: Optional[int] = None,
-        optimizer_idx: Optional[int] = None, hiddens: Optional[Tensor] = None
+        hiddens: Optional[Tensor] = None
     ) -> Dict[str, Tensor]:
         loss_dict = self.step(batch)
         self.log_dict({f"train_{k}": v for k, v in loss_dict.items()}, on_step=True, on_epoch=True,
