@@ -65,6 +65,8 @@ class BioVidFT(BioVidBase):
     def __getitem__(self, index: int):
 
         y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+        # print(f"the task is {self.task}")
+        # print(f"the y in dataloarder is {y}")
         # how to fetch the video and its label may be different from the CelebV-HQ dataset.
         video_path = os.path.join(self.data_root,  self.name_list[index])
         #todo: implement the __getitem__ method, which should return the video and its label.
@@ -117,7 +119,9 @@ class BioVidFT(BioVidBase):
         video = torch.stack(frames) / 255  # (T, C, H, W)
         video = video.permute(1, 0, 2, 3)  # (C, T, H, W)
         assert video.shape[1] == self.clip_frames, video_path
-        return video, torch.tensor(y, dtype=torch.long).bool()
+        # print(f"y value before returning is {y}")
+        # return video, torch.tensor(y, dtype=torch.long).bool()
+        return video, torch.tensor(y, dtype=torch.long)
 
 
 # For linear probing

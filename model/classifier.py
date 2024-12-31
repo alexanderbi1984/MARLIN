@@ -61,6 +61,9 @@ class Classifier(LightningModule):
 
     def step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]]) -> Dict[str, Tensor]:
         x, y = batch
+        # print(f"the shape of x is {x.shape}")
+        # print(f"the shape of y is {y.shape}")
+        # print(f"y in forward step is {y}")
         y_hat = self(x)
         # # Ensure y is of type Long for CrossEntropyLoss
         # y = y.long()  # Convert y to Long type
@@ -99,8 +102,13 @@ class Classifier(LightningModule):
             prob = y_hat.sigmoid()  # Apply sigmoid for multilabel
 
         elif self.task == "multiclass":
+            # print(f"the shape of y_hat is {y_hat.shape}")
+            # print(f"the shape of y is {y.shape}")
+            # print(f"y_hat is {y_hat}")
+            # print(f"y is {y}")
             loss = self.loss_fn(y_hat, y)  # Use appropriate loss for multiclass (CrossEntropyLoss)
             prob = softmax(y_hat, dim=1)  # Apply softmax for multiclass
+
         acc = self.acc_fn(prob, y)
         auc = self.auc_fn(prob, y)
         return {"loss": loss, "acc": acc, "auc": auc}

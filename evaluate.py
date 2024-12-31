@@ -182,7 +182,7 @@ def train_biovid(args, config):
         precision=precision,  # Precision (e.g., 16 or 32)
         max_epochs=max_epochs,  # Maximum number of epochs
         strategy=strategy,  # Distributed strategy
-        callbacks=[ckpt_callback, LrLogger(), EarlyStoppingLR(1e-6), SystemStatsLogger()]  # List of callbacks
+        callbacks=[ckpt_callback, LrLogger(), EarlyStoppingLR(1e-8), SystemStatsLogger()]  # List of callbacks
     )
 
     # Fit the model, passing the checkpoint path if resuming training
