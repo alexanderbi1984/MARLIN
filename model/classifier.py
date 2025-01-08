@@ -65,6 +65,8 @@ class Classifier(LightningModule):
         # print(f"the shape of y is {y.shape}")
         # print(f"y in forward step is {y}")
         y_hat = self(x)
+        # print(f"y_hat in forward step is {y_hat}")
+        # print(f"y in forward step is {y}")
         # # Ensure y is of type Long for CrossEntropyLoss
         # y = y.long()  # Convert y to Long type
         # if self.task == "multilabel":

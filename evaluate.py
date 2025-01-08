@@ -4,6 +4,7 @@ import torch
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from tqdm.auto import tqdm
+from torch.nn.functional import softmax
 
 from dataset.celebv_hq import CelebvHqDataModule
 from dataset.biovid import BioVidDataModule
@@ -227,24 +228,34 @@ def evaluate_biovid(args, ckpt, dm):
         logger=False, enable_checkpointing=False)
     Seed.set(42)
     model.eval()
-
-    # collect predictions
+    # Collect predictions
     preds = trainer.predict(model, dm.test_dataloader())
-    preds = torch.cat(preds)
+    preds = torch.cat(preds)  # Concatenate predictions from all batches
+    # Apply softmax for multiclass probabilities
+    prob = softmax(preds, dim=1)  # Apply softmax along the class dimension
+    # print("Predictions (softmax probabilities):", prob)
 
-    # collect ground truth
-    ys = torch.zeros_like(preds, dtype=torch.bool)
+    # Collect ground truth
+    ys = torch.zeros(len(preds), dtype=torch.long)  # Assuming labels are class indices
     for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
-        ys[i * args.batch_size: (i + 1) * args.batch_size] = y
+        ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
 
-    preds = preds.sigmoid()
-    acc = ((preds > 0.5) == ys).float().mean()
-    auc = model.auc_fn(preds, ys)
+    # Calculate accuracy
+    # Get the predicted class by taking the argmax
+    preds_classes = torch.argmax(prob, dim=1)  # Get predicted classes
+    acc = (preds_classes == ys).float().mean()  # Calculate accuracy
+    acc_alt = model.acc_fn(prob, ys)  # Calculate AUC (assuming you are using a multiclass AUC calculation)
+    # Calculate AUC (assuming you are using a multiclass AUC calculation)
+    auc = model.auc_fn(prob, ys)  # This needs to be compatible with multiclass AUC calculation
+
+    # Store results
     results = {
-        "acc": acc,
-        "auc": auc
+        "acc": acc.item(),  # Convert to Python float for easier printing
+        "acc_alt": acc_alt.item(),  # Convert to Python float for easier printing
+        "auc": auc.item()  # Convert to Python float for easier printing
     }
-    print(results)
+
+    print("Evaluation Results:", results)
 
 
 def evaluate(args):
