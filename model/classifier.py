@@ -2,10 +2,10 @@ from typing import Optional, Union, Sequence, Dict, Literal, Any
 
 from pytorch_lightning import LightningModule
 from torch import Tensor, softmax
-from torch.nn import CrossEntropyLoss, Linear, Identity, BCEWithLogitsLoss
+from torch.nn import CrossEntropyLoss, Linear, Identity, BCEWithLogitsLoss, MSELoss
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torchmetrics import Accuracy, AUROC
+from torchmetrics import Accuracy, AUROC, MeanSquaredError, MeanAbsoluteError, R2Score
 
 from marlin_pytorch import Marlin
 from marlin_pytorch.config import resolve_config
@@ -15,7 +15,7 @@ class Classifier(LightningModule):
 
     def __init__(self, num_classes: int, backbone: str, finetune: bool,
         marlin_ckpt: Optional[str] = None,
-        task: Literal["binary", "multiclass", "multilabel"] = "binary",
+        task: Literal["binary", "multiclass", "multilabel", "regression"] = "binary",
         learning_rate: float = 1e-4, distributed: bool = False
     ):
         super().__init__()
@@ -47,6 +47,11 @@ class Classifier(LightningModule):
             self.loss_fn = BCEWithLogitsLoss()
             self.acc_fn = Accuracy(task="binary", num_classes=1)
             self.auc_fn = AUROC(task="binary", num_classes=1)
+        elif task == "regression":
+            self.loss_fn = MSELoss()  # You can also use L1Loss for MAE
+            self.mse_fn = MeanSquaredError()
+            self.mae_fn = MeanAbsoluteError()
+            self.r2_fn = R2Score()
 
     @classmethod
     def from_module(cls, model, learning_rate: float = 1e-4, distributed=False):
@@ -96,12 +101,18 @@ class Classifier(LightningModule):
             y = y.float()  # Ensure y is float for BCEWithLogitsLoss
             loss = self.loss_fn(y_hat.squeeze(), y)  # Squeeze to remove the second dimension
             prob = y_hat.sigmoid().squeeze()  # Apply sigmoid to get probabilities
+            acc = self.acc_fn(prob, y)
+            auc = self.auc_fn(prob, y)
+            return {"loss": loss, "acc": acc, "auc": auc}
 
         elif self.task == "multilabel":
             y_hat = y_hat.flatten()
             y = y.flatten()
             loss = self.loss_fn(y_hat, y.float())  # Ensure loss function is appropriate
             prob = y_hat.sigmoid()  # Apply sigmoid for multilabel
+            acc = self.acc_fn(prob, y)
+            auc = self.auc_fn(prob, y)
+            return {"loss": loss, "acc": acc, "auc": auc}
 
         elif self.task == "multiclass":
             # print(f"the shape of y_hat is {y_hat.shape}")
@@ -110,10 +121,17 @@ class Classifier(LightningModule):
             # print(f"y is {y}")
             loss = self.loss_fn(y_hat, y)  # Use appropriate loss for multiclass (CrossEntropyLoss)
             prob = softmax(y_hat, dim=1)  # Apply softmax for multiclass
+            acc = self.acc_fn(prob, y)
+            auc = self.auc_fn(prob, y)
+            return {"loss": loss, "acc": acc, "auc": auc}
+        elif self.task == "regression":
+            loss = self.loss_fn(y_hat, y)
+            mse = self.mse_fn(y_hat, y)
+            mae = self.mae_fn(y_hat, y)
+            r2 = self.r2_fn(y_hat, y)
+            return {"loss": loss, "mse": mse, "mae": mae, "r2": r2}
 
-        acc = self.acc_fn(prob, y)
-        auc = self.auc_fn(prob, y)
-        return {"loss": loss, "acc": acc, "auc": auc}
+
 
     def training_step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]] = None, batch_idx: Optional[int] = None,
         hiddens: Optional[Tensor] = None

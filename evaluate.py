@@ -73,6 +73,8 @@ def train_celebvhq(args, config):
 
     ckpt_filename = config["model_name"] + "-{epoch}-{val_auc:.3f}"
     ckpt_monitor = "val_auc"
+    if args.task == "regression":
+        ckpt_monitor = "val_mse"
 
     try:
         precision = int(args.precision)

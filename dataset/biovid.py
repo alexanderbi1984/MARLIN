@@ -63,8 +63,10 @@ class BioVidFT(BioVidBase):
         self.temporal_sample_rate = temporal_sample_rate
 
     def __getitem__(self, index: int):
-
-        y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+        if self.task == "regression":
+            y = self.metadata["clips"][self.name_list[index]]["attributes"]['multiclass']
+        else:
+            y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
         # print(f"the task is {self.task}")
         # print(f"the y in dataloarder is {y}")
         # how to fetch the video and its label may be different from the CelebV-HQ dataset.
