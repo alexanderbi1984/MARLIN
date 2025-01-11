@@ -105,7 +105,7 @@ def train_biovid(args, config):
     learning_rate = config["learning_rate"]
     task = config["task"]
 
-    if task == "binary":
+    if task == "binary" or task == "regression":
         # num_classes = 2
         num_classes = 1
     elif task == "multiclass":
@@ -160,6 +160,8 @@ def train_biovid(args, config):
     ckpt_filename = config["model_name"] + "-{epoch}-{val_auc:.3f}"
     # ckpt_monitor = "val_auc"
     ckpt_monitor = "val_acc"
+    if args.task == "regression":
+        ckpt_monitor = "val_mse"
 
     try:
         precision = int(args.precision)

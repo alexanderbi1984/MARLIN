@@ -20,7 +20,7 @@ class BioVidBase(LightningDataModule, ABC):
         super().__init__()
         self.data_root = data_root
         self.split = split
-        assert task in ("binary", "multiclass")
+        assert task in ("binary", "multiclass", "regression")
         self.task = task
         self.take_num = take_num
         #The name_list is populated using the read_text function to read a text file located in data_root (e.g., train.txt, val.txt, or test.txt).

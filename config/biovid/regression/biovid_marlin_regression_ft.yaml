@@ -1,0 +1,8 @@
+model_name: "biovid_marlin_regression_ft"
+backbone: "marlin_vit_base_ytf"
+dataset: "biovid"
+task: "regression"
+temporal_reduction: "mean"
+learning_rate: 1.0e-5
+seq_mean_pool: true
+finetune: true
