@@ -111,13 +111,13 @@ def process_videos(directory):
 # Main function to run the script
 def main():
     # Specify directory containing the video files
-    video_directory = r"C:\pain\BioVid_224_video"
+    video_directory = r"C:\pain\fake_videos"
 
     # Process the videos and construct the JSON
     json_data = process_videos(video_directory)
 
     # Write the JSON data to a file
-    output_file = r"C:\pain\BioVid_224_video\biovid_info.json"
+    output_file = r"C:\pain\fake_videos\fake_vid_info.json"
     with open(output_file, "w") as f:
         json.dump(json_data, f, indent=4)
 
