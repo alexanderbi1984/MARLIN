@@ -17,7 +17,7 @@ from util.seed import Seed
 from util.system_stats_logger import SystemStatsLogger
 import torch
 from torch.nn.functional import softmax
-from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report
+from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report, mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
 from tqdm import tqdm
 
@@ -268,7 +268,7 @@ def evaluate_celebvhq(args, ckpt, dm):
 #
 #     print("Evaluation Results:", results)
 
-def evaluate_biovid(args, ckpt, dm):
+def evaluate_biovid(args, ckpt, dm, config):
     """
     Evaluate a trained model on the BIOVID dataset.
 
@@ -297,59 +297,94 @@ def evaluate_biovid(args, ckpt, dm):
     )
     Seed.set(42)
     model.eval()
+    task = config["task"]
+    if task == "binary" or task == "multiclass":
+        # Collect predictions
+        preds = trainer.predict(model, dm.test_dataloader())
+        preds = torch.cat(preds)  # Concatenate predictions from all batches
+        prob = softmax(preds, dim=1)  # Apply softmax to get probabilities
 
-    # Collect predictions
-    preds = trainer.predict(model, dm.test_dataloader())
-    preds = torch.cat(preds)  # Concatenate predictions from all batches
-    prob = softmax(preds, dim=1)  # Apply softmax to get probabilities
+        # Collect ground truth
+        ys = torch.zeros(len(preds), dtype=torch.long)  # Assuming labels are class indices
+        for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
+            ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
 
-    # Collect ground truth
-    ys = torch.zeros(len(preds), dtype=torch.long)  # Assuming labels are class indices
-    for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
-        ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
+        # Calculate overall accuracy
+        preds_classes = torch.argmax(prob, dim=1)  # Get predicted classes
+        acc = (preds_classes == ys).float().mean()  # Calculate accuracy
 
-    # Calculate overall accuracy
-    preds_classes = torch.argmax(prob, dim=1)  # Get predicted classes
-    acc = (preds_classes == ys).float().mean()  # Calculate accuracy
+        # Calculate AUC (one-vs-rest for multiclass)
+        auc_scores = {}
+        for class_idx in range(prob.shape[1]):  # Iterate over each class
+            auc_scores[f"auc_class_{class_idx}"] = roc_auc_score(
+                (ys == class_idx).int().numpy(), prob[:, class_idx].numpy()
+            )
 
-    # Calculate AUC (one-vs-rest for multiclass)
-    auc_scores = {}
-    for class_idx in range(prob.shape[1]):  # Iterate over each class
-        auc_scores[f"auc_class_{class_idx}"] = roc_auc_score(
-            (ys == class_idx).int().numpy(), prob[:, class_idx].numpy()
+        # Calculate per-class accuracy
+        class_acc = {}
+        for class_idx in range(prob.shape[1]):
+            class_mask = ys == class_idx
+            class_acc[f"acc_class_{class_idx}"] = (preds_classes[class_mask] == ys[class_mask]).float().mean().item()
+
+        # Generate confusion matrix
+        cm = confusion_matrix(ys.numpy(), preds_classes.numpy())
+
+        # Generate classification report
+        report = classification_report(
+            ys.numpy(), preds_classes.numpy(), target_names=[f"Class_{i}" for i in range(prob.shape[1])], output_dict=True
         )
 
-    # Calculate per-class accuracy
-    class_acc = {}
-    for class_idx in range(prob.shape[1]):
-        class_mask = ys == class_idx
-        class_acc[f"acc_class_{class_idx}"] = (preds_classes[class_mask] == ys[class_mask]).float().mean().item()
+        # Store results
+        results = {
+            "overall_accuracy": acc.item(),  # Overall accuracy
+            "auc_scores": auc_scores,  # AUC for each class
+            "class_accuracy": class_acc,  # Accuracy for each class
+            "confusion_matrix": cm.tolist(),  # Confusion matrix as a list
+            "classification_report": report,  # Classification report
+        }
 
-    # Generate confusion matrix
-    cm = confusion_matrix(ys.numpy(), preds_classes.numpy())
+        print("Evaluation Results:")
+        print(f"Overall Accuracy: {results['overall_accuracy']:.4f}")
+        print("AUC Scores (One-vs-Rest):", results["auc_scores"])
+        print("Per-Class Accuracy:", results["class_accuracy"])
+        print("Confusion Matrix:")
+        print(np.array2string(np.array(results["confusion_matrix"]), precision=4))
+        print("Classification Report:")
+        print(classification_report(ys.numpy(), preds_classes.numpy(), target_names=[f"Class_{i}" for i in range(prob.shape[1])]))
+    elif task == "regression":
+        # Collect predictions
+        preds = trainer.predict(model, dm.test_dataloader())
+        preds = torch.cat(preds)  # Concatenate predictions from all batches
 
-    # Generate classification report
-    report = classification_report(
-        ys.numpy(), preds_classes.numpy(), target_names=[f"Class_{i}" for i in range(prob.shape[1])], output_dict=True
-    )
+        # Collect ground truth
+        ys = torch.zeros(len(preds), dtype=torch.float32)  # Assuming labels are continuous values
+        for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
+            ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
 
-    # Store results
-    results = {
-        "overall_accuracy": acc.item(),  # Overall accuracy
-        "auc_scores": auc_scores,  # AUC for each class
-        "class_accuracy": class_acc,  # Accuracy for each class
-        "confusion_matrix": cm.tolist(),  # Confusion matrix as a list
-        "classification_report": report,  # Classification report
-    }
+        # Calculate regression metrics
+        mae = mean_absolute_error(ys.numpy(), preds.numpy())
+        mse = mean_squared_error(ys.numpy(), preds.numpy())
+        rmse = np.sqrt(mse)
+        r2 = r2_score(ys.numpy(), preds.numpy())
 
-    print("Evaluation Results:")
-    print(f"Overall Accuracy: {results['overall_accuracy']:.4f}")
-    print("AUC Scores (One-vs-Rest):", results["auc_scores"])
-    print("Per-Class Accuracy:", results["class_accuracy"])
-    print("Confusion Matrix:")
-    print(np.array2string(np.array(results["confusion_matrix"]), precision=4))
-    print("Classification Report:")
-    print(classification_report(ys.numpy(), preds_classes.numpy(), target_names=[f"Class_{i}" for i in range(prob.shape[1])]))
+        # Store results
+        results = {
+            "mae": mae,  # Mean Absolute Error
+            "mse": mse,  # Mean Squared Error
+            "rmse": rmse,  # Root Mean Squared Error
+            "r2": r2,  # R-squared
+        }
+
+        print("Evaluation Results for Regression:")
+        print(f"Mean Absolute Error (MAE): {results['mae']:.4f}")
+        print(f"Mean Squared Error (MSE): {results['mse']:.4f}")
+        print(f"Root Mean Squared Error (RMSE): {results['rmse']:.4f}")
+        print(f"R-squared (R²): {results['r2']:.4f}")
+
+    else:
+        raise ValueError(
+            f"Unsupported task type: {task}. Supported tasks are 'binary', 'multiclass', and 'regression'.")
+
 
     return results
 
@@ -364,7 +399,7 @@ def evaluate(args):
     elif dataset_name == "biovid":
         # implement biovid evaluation here
         ckpt, dm = train_biovid(args, config)
-        evaluate_biovid(args, ckpt, dm)
+        evaluate_biovid(args, ckpt, dm, config)
         # pass
 
     else:
