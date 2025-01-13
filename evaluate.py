@@ -160,7 +160,7 @@ def train_biovid(args, config):
     ckpt_filename = config["model_name"] + "-{epoch}-{val_auc:.3f}"
     # ckpt_monitor = "val_auc"
     ckpt_monitor = "val_acc"
-    if args.task == "regression":
+    if task == "regression":
         ckpt_monitor = "val_mse"
 
     try:

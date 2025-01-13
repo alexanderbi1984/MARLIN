@@ -125,6 +125,8 @@ class Classifier(LightningModule):
             auc = self.auc_fn(prob, y)
             return {"loss": loss, "acc": acc, "auc": auc}
         elif self.task == "regression":
+            y = y.float()
+            y_hat = y_hat.squeeze()
             loss = self.loss_fn(y_hat, y)
             mse = self.mse_fn(y_hat, y)
             mae = self.mae_fn(y_hat, y)
