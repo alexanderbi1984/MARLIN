@@ -15,6 +15,12 @@ from util.earlystop_lr import EarlyStoppingLR
 from util.lr_logger import LrLogger
 from util.seed import Seed
 from util.system_stats_logger import SystemStatsLogger
+import torch
+from torch.nn.functional import softmax
+from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report
+import numpy as np
+from tqdm import tqdm
+
 
 
 def train_celebvhq(args, config):
@@ -225,42 +231,127 @@ def evaluate_celebvhq(args, ckpt, dm):
     }
     print(results)
 
+# def evaluate_biovid(args, ckpt, dm):
+#     print("Load checkpoint", ckpt)
+#     model = Classifier.load_from_checkpoint(ckpt)
+#     accelerator = "cpu" if args.n_gpus == 0 else "gpu"
+#     trainer = Trainer(log_every_n_steps=1, devices=1 if args.n_gpus > 0 else 0, accelerator=accelerator, benchmark=True,
+#         logger=False, enable_checkpointing=False)
+#     Seed.set(42)
+#     model.eval()
+#     # Collect predictions
+#     preds = trainer.predict(model, dm.test_dataloader())
+#     preds = torch.cat(preds)  # Concatenate predictions from all batches
+#     # Apply softmax for multiclass probabilities
+#     prob = softmax(preds, dim=1)  # Apply softmax along the class dimension
+#     # print("Predictions (softmax probabilities):", prob)
+#
+#     # Collect ground truth
+#     ys = torch.zeros(len(preds), dtype=torch.long)  # Assuming labels are class indices
+#     for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
+#         ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
+#
+#     # Calculate accuracy
+#     # Get the predicted class by taking the argmax
+#     preds_classes = torch.argmax(prob, dim=1)  # Get predicted classes
+#     acc = (preds_classes == ys).float().mean()  # Calculate accuracy
+#     acc_alt = model.acc_fn(prob, ys)  # Calculate AUC (assuming you are using a multiclass AUC calculation)
+#     # Calculate AUC (assuming you are using a multiclass AUC calculation)
+#     auc = model.auc_fn(prob, ys)  # This needs to be compatible with multiclass AUC calculation
+#
+#     # Store results
+#     results = {
+#         "acc": acc.item(),  # Convert to Python float for easier printing
+#         "acc_alt": acc_alt.item(),  # Convert to Python float for easier printing
+#         "auc": auc.item()  # Convert to Python float for easier printing
+#     }
+#
+#     print("Evaluation Results:", results)
+
 def evaluate_biovid(args, ckpt, dm):
-    print("Load checkpoint", ckpt)
+    """
+    Evaluate a trained model on the BIOVID dataset.
+
+    This function loads a model checkpoint, evaluates it on the test dataset, and computes
+    various metrics including accuracy, AUC, per-class accuracy, per-class AUC, confusion matrix,
+    and classification report.
+
+    Args:
+        args (argparse.Namespace): Command-line arguments containing `n_gpus` and `batch_size`.
+        ckpt (str): Path to the model checkpoint file.
+        dm (DataModule): DataModule containing the test dataset.
+
+    Returns:
+        dict: A dictionary containing evaluation results.
+    """
+    print("Loading checkpoint", ckpt)
     model = Classifier.load_from_checkpoint(ckpt)
     accelerator = "cpu" if args.n_gpus == 0 else "gpu"
-    trainer = Trainer(log_every_n_steps=1, devices=1 if args.n_gpus > 0 else 0, accelerator=accelerator, benchmark=True,
-        logger=False, enable_checkpointing=False)
+    trainer = Trainer(
+        log_every_n_steps=1,
+        devices=1 if args.n_gpus > 0 else 0,
+        accelerator=accelerator,
+        benchmark=True,
+        logger=False,
+        enable_checkpointing=False,
+    )
     Seed.set(42)
     model.eval()
+
     # Collect predictions
     preds = trainer.predict(model, dm.test_dataloader())
     preds = torch.cat(preds)  # Concatenate predictions from all batches
-    # Apply softmax for multiclass probabilities
-    prob = softmax(preds, dim=1)  # Apply softmax along the class dimension
-    # print("Predictions (softmax probabilities):", prob)
+    prob = softmax(preds, dim=1)  # Apply softmax to get probabilities
 
     # Collect ground truth
     ys = torch.zeros(len(preds), dtype=torch.long)  # Assuming labels are class indices
     for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
         ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
 
-    # Calculate accuracy
-    # Get the predicted class by taking the argmax
+    # Calculate overall accuracy
     preds_classes = torch.argmax(prob, dim=1)  # Get predicted classes
     acc = (preds_classes == ys).float().mean()  # Calculate accuracy
-    acc_alt = model.acc_fn(prob, ys)  # Calculate AUC (assuming you are using a multiclass AUC calculation)
-    # Calculate AUC (assuming you are using a multiclass AUC calculation)
-    auc = model.auc_fn(prob, ys)  # This needs to be compatible with multiclass AUC calculation
+
+    # Calculate AUC (one-vs-rest for multiclass)
+    auc_scores = {}
+    for class_idx in range(prob.shape[1]):  # Iterate over each class
+        auc_scores[f"auc_class_{class_idx}"] = roc_auc_score(
+            (ys == class_idx).int().numpy(), prob[:, class_idx].numpy()
+        )
+
+    # Calculate per-class accuracy
+    class_acc = {}
+    for class_idx in range(prob.shape[1]):
+        class_mask = ys == class_idx
+        class_acc[f"acc_class_{class_idx}"] = (preds_classes[class_mask] == ys[class_mask]).float().mean().item()
+
+    # Generate confusion matrix
+    cm = confusion_matrix(ys.numpy(), preds_classes.numpy())
+
+    # Generate classification report
+    report = classification_report(
+        ys.numpy(), preds_classes.numpy(), target_names=[f"Class_{i}" for i in range(prob.shape[1])], output_dict=True
+    )
 
     # Store results
     results = {
-        "acc": acc.item(),  # Convert to Python float for easier printing
-        "acc_alt": acc_alt.item(),  # Convert to Python float for easier printing
-        "auc": auc.item()  # Convert to Python float for easier printing
+        "overall_accuracy": acc.item(),  # Overall accuracy
+        "auc_scores": auc_scores,  # AUC for each class
+        "class_accuracy": class_acc,  # Accuracy for each class
+        "confusion_matrix": cm.tolist(),  # Confusion matrix as a list
+        "classification_report": report,  # Classification report
     }
 
-    print("Evaluation Results:", results)
+    print("Evaluation Results:")
+    print(f"Overall Accuracy: {results['overall_accuracy']:.4f}")
+    print("AUC Scores (One-vs-Rest):", results["auc_scores"])
+    print("Per-Class Accuracy:", results["class_accuracy"])
+    print("Confusion Matrix:")
+    print(np.array2string(np.array(results["confusion_matrix"]), precision=4))
+    print("Classification Report:")
+    print(classification_report(ys.numpy(), preds_classes.numpy(), target_names=[f"Class_{i}" for i in range(prob.shape[1])]))
+
+    return results
 
 
 def evaluate(args):
@@ -294,6 +385,8 @@ if __name__ == '__main__':
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume training.")
     parser.add_argument("--skip_train", action="store_true", default=False,
         help="Skip training and evaluate only.")
+    parser.add_argument("--no_eval", action="store_true", default=False,
+                        help="Skip evaluation. Save prediction results.")
 
     args = parser.parse_args()
     if args.skip_train:
