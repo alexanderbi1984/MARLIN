@@ -25,7 +25,8 @@ if __name__ == '__main__':
     model.cuda()
     model.eval()
 
-    raw_video_path = os.path.join(args.data_dir, "cropped")
+    # raw_video_path = os.path.join(args.data_dir, "cropped")
+    raw_video_path = args.data_dir
     all_videos = sorted(list(filter(lambda x: x.endswith(".mp4"), os.listdir(raw_video_path))))
     Path(os.path.join(args.data_dir, feat_dir)).mkdir(parents=True, exist_ok=True)
     for video_name in tqdm(all_videos):
