@@ -81,6 +81,7 @@ def train_celebvhq(args, config):
     ckpt_monitor = "val_auc"
     if args.task == "regression":
         ckpt_monitor = "val_mse"
+    # ckpt_filename = config["model_name"] + "-{epoch}"+f"-{ckpt_monitor:.3f}"
 
     try:
         precision = int(args.precision)
@@ -265,7 +266,7 @@ def evaluate_celebvhq(args, ckpt, dm):
 #         "acc_alt": acc_alt.item(),  # Convert to Python float for easier printing
 #         "auc": auc.item()  # Convert to Python float for easier printing
 #     }
-#
+#"
 #     print("Evaluation Results:", results)
 
 def evaluate_biovid(args, ckpt, dm, config):
