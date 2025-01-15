@@ -24,7 +24,7 @@ def cut_video(input_video, segment_length, overlap, output_dir="output"):
             ```
             cut_video("input.mp4", 5.5, 1.0, "my_output")
             ```
-        """
+    """
     # Create output directory if it doesn't exist
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -42,10 +42,14 @@ def cut_video(input_video, segment_length, overlap, output_dir="output"):
     step = segment_length - overlap
     num_segments = int((total_duration - overlap) // step)
 
+    # Extract base filename and extension
+    base_name = os.path.splitext(os.path.basename(input_video))[0]
+    extension = os.path.splitext(input_video)[1]
+
     # Cut the video into segments
     for i in range(num_segments):
         start_time = i * step
-        output_file = os.path.join(output_dir, f"segment_{i+1}.mp4")
+        output_file = os.path.join(output_dir, f"{base_name}_segment_{i+1}{extension}")
         cmd = f"ffmpeg -ss {start_time} -i {input_video} -t {segment_length} -c copy {output_file}"
         subprocess.run(cmd, shell=True)
 

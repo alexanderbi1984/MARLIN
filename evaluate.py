@@ -5,7 +5,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from tqdm.auto import tqdm
 from torch.nn.functional import softmax
-
+import pandas as pd
 from dataset.celebv_hq import CelebvHqDataModule
 from dataset.biovid import BioVidDataModule
 from marlin_pytorch.config import resolve_config
@@ -298,6 +298,28 @@ def evaluate_biovid(args, ckpt, dm, config):
     Seed.set(42)
     model.eval()
     task = config["task"]
+    if args.predict_only:
+        # Collect predictions
+        preds = trainer.predict(model, dm.test_dataloader())
+        preds = torch.cat(preds)  # Concatenate predictions from all batches
+
+        # Collect ground truth and filenames
+        filenames = []  # Assuming you have a way to collect filenames from your DataModule
+        ys = torch.zeros(len(preds), dtype=torch.long)  # Assuming labels are class indices
+        for i, (x, y, filename) in enumerate(tqdm(dm.test_dataloader())):
+            ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
+            filenames.extend(filename)  # Collecting filenames
+
+        # Create a DataFrame to save results
+        results_df = pd.DataFrame({
+            'filename': filenames,
+            'predictions': preds.numpy().tolist(),
+        })
+
+        # Save to CSV
+        results_df.to_csv('predictions.csv', index=False)
+        print("Predictions saved to predictions.csv")
+        return results_df  # Return the DataFrame if needed
     if task == "binary" or task == "multiclass":
         # Collect predictions
         preds = trainer.predict(model, dm.test_dataloader())
@@ -420,8 +442,8 @@ if __name__ == '__main__':
     parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume training.")
     parser.add_argument("--skip_train", action="store_true", default=False,
         help="Skip training and evaluate only.")
-    parser.add_argument("--no_eval", action="store_true", default=False,
-                        help="Skip evaluation. Save prediction results.")
+    parser.add_argument("--predict_only", action="store_true", default=False,
+                        help="Skip evaluation. Save prediction results only.")
 
     args = parser.parse_args()
     if args.skip_train:
