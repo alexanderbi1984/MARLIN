@@ -143,7 +143,9 @@ class BioVidLP(BioVidBase):
 
     def __getitem__(self, index: int):
         try:
-            feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
+            # Get the name without the extension
+            name_without_extension = os.path.splitext(self.name_list[index])[0]
+            feat_path = os.path.join(self.data_root, self.feature_dir, name_without_extension + ".npy")
         except FileNotFoundError:
             print(f"File not found: {self.name_list[index]}")
             # feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
