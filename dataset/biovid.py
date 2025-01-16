@@ -163,9 +163,12 @@ class BioVidLP(BioVidBase):
         else:
             raise ValueError(self.temporal_reduction)
 
-        y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+        if self.task == "regression":
+            y = self.metadata["clips"][self.name_list[index]]["attributes"]['multiclass']
+        else:
+            y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
 
-        return x, torch.tensor(y, dtype=torch.long).bool()
+        return x, torch.tensor(y, dtype=torch.long)
 
 
 class BioVidDataModule(LightningDataModule):
