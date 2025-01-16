@@ -186,9 +186,9 @@ class BioVidDataModule(LightningDataModule):
     def __init__(self, root_dir: str,
         load_raw: bool,
         task: str,
+        num_classes: int,
         batch_size: int,
         num_workers: int = 0,
-        num_classes: int = 5,
         clip_frames: int = None,
         temporal_sample_rate: int = None,
         feature_dir: str = None,
@@ -201,9 +201,9 @@ class BioVidDataModule(LightningDataModule):
         super().__init__()
         self.root_dir = root_dir
         self.task = task
+        self.num_classes = num_classes
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.num_classes = num_classes
         self.clip_frames = clip_frames
         self.temporal_sample_rate = temporal_sample_rate
         self.feature_dir = feature_dir
