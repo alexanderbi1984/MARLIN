@@ -127,14 +127,6 @@ def train_biovid(args, config):
             num_classes, config["backbone"], finetune, args.marlin_ckpt, task, config["learning_rate"],
             args.n_gpus > 1,
         )
-
-        # dm = CelebvHqDataModule(
-        #     data_path, finetune, task,
-        #     batch_size=args.batch_size,
-        #     num_workers=args.num_workers,
-        #     clip_frames=backbone_config.n_frames,
-        #     temporal_sample_rate=2
-        # )
         dm = BioVidDataModule(
             data_path, finetune, task,
             batch_size=args.batch_size,
@@ -146,7 +138,7 @@ def train_biovid(args, config):
     else:
         model = Classifier(
             num_classes, config["backbone"], False,
-            None, "multilabel", config["learning_rate"], args.n_gpus > 1,
+            args.marlin_ckpt, task, config["learning_rate"], args.n_gpus > 1,
         )
 
         dm = BioVidDataModule(
