@@ -24,7 +24,8 @@ if __name__ == '__main__':
 
     model.cuda()
     model.eval()
-
+    if args.data_dir is None:
+        args.data_dir = r"C:\pain\BioVid_224_video"
     # raw_video_path = os.path.join(args.data_dir, "cropped")
     raw_video_path = args.data_dir
     all_videos = sorted(list(filter(lambda x: x.endswith(".mp4"), os.listdir(raw_video_path))))
