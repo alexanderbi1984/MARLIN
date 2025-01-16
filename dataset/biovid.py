@@ -16,12 +16,13 @@ from util.misc import sample_indexes, read_text, read_json
 
 class BioVidBase(LightningDataModule, ABC):
 
-    def __init__(self, data_root: str, split: str, task: str, data_ratio: float = 1.0, take_num: int = None):
+    def __init__(self, data_root: str, split: str, task: str, num_classes: int, data_ratio: float = 1.0, take_num: int = None):
         super().__init__()
         self.data_root = data_root
         self.split = split
         assert task in ("binary", "multiclass", "regression")
         self.task = task
+        self.num_classes = num_classes
         self.take_num = take_num
         #The name_list is populated using the read_text function to read a text file located in data_root (e.g., train.txt, val.txt, or test.txt).
         #The file is expected to contain names of videos, separated by newlines. Empty lines are filtered out.
@@ -51,12 +52,13 @@ class BioVidFT(BioVidBase):
         root_dir: str,
         split: str,
         task: str,
+        num_classes: int,
         clip_frames: int,
         temporal_sample_rate: int,
         data_ratio: float = 1.0,
         take_num: Optional[int] = None
     ):
-        super().__init__(root_dir, split, task, data_ratio, take_num)
+        super().__init__(root_dir, split, task, num_classes, data_ratio, take_num)
         #clip_frames: The number of frames to sample from the video.
         self.clip_frames = clip_frames
         #temporal_sample_rate: The rate at which to sample frames from the video.(e.g., 2 means take every 2nd frame)
@@ -67,6 +69,10 @@ class BioVidFT(BioVidBase):
             y = self.metadata["clips"][self.name_list[index]]["attributes"]['multiclass']
         else:
             y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+            if self.task == "multiclass":
+                if self.num_classes == 3:
+                    y = 0 if (y == 0 or y == 1) else 1 if (y == 2 or y == 3) else 2
+
         # print(f"the task is {self.task}")
         # print(f"the y in dataloarder is {y}")
         # how to fetch the video and its label may be different from the CelebV-HQ dataset.
@@ -133,11 +139,12 @@ class BioVidLP(BioVidBase):
         feature_dir: str,
         split: str,
         task: str,
+        num_classes: int,
         temporal_reduction: str,
         data_ratio: float = 1.0,
         take_num: Optional[int] = None
     ):
-        super().__init__(root_dir, split, task, data_ratio, take_num)
+        super().__init__(root_dir, split, task, num_classes,data_ratio, take_num)
         self.feature_dir = feature_dir
         self.temporal_reduction = temporal_reduction
 
@@ -167,6 +174,9 @@ class BioVidLP(BioVidBase):
             y = self.metadata["clips"][self.name_list[index]]["attributes"]['multiclass']
         else:
             y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+            if self.task == "multiclass":
+                if self.num_classes == 3:
+                    y = 0 if (y == 0 or y == 1) else 1 if (y == 2 or y == 3) else 2
 
         return x, torch.tensor(y, dtype=torch.long)
 
@@ -178,6 +188,7 @@ class BioVidDataModule(LightningDataModule):
         task: str,
         batch_size: int,
         num_workers: int = 0,
+        num_classes: int = 5,
         clip_frames: int = None,
         temporal_sample_rate: int = None,
         feature_dir: str = None,
@@ -192,6 +203,7 @@ class BioVidDataModule(LightningDataModule):
         self.task = task
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.num_classes = num_classes
         self.clip_frames = clip_frames
         self.temporal_sample_rate = temporal_sample_rate
         self.feature_dir = feature_dir
@@ -215,18 +227,18 @@ class BioVidDataModule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         if self.load_raw:
-            self.train_dataset = BioVidFT(self.root_dir, "train", self.task, self.clip_frames,
+            self.train_dataset = BioVidFT(self.root_dir, "train", self.task, self.num_classes, self.clip_frames,
                 self.temporal_sample_rate, self.data_ratio, self.take_train)
-            self.val_dataset = BioVidFT(self.root_dir, "val", self.task, self.clip_frames,
+            self.val_dataset = BioVidFT(self.root_dir, "val", self.task, self.num_classes, self.clip_frames,
                 self.temporal_sample_rate, self.data_ratio, self.take_val)
-            self.test_dataset = BioVidFT(self.root_dir, "test", self.task, self.clip_frames,
+            self.test_dataset = BioVidFT(self.root_dir, "test", self.task, self.num_classes, self.clip_frames,
                 self.temporal_sample_rate, 1.0, self.take_test)
         else:
-            self.train_dataset = BioVidLP(self.root_dir, self.feature_dir, "train", self.task,
+            self.train_dataset = BioVidLP(self.root_dir, self.feature_dir, "train", self.task, self.num_classes,
                 self.temporal_reduction, self.data_ratio, self.take_train)
-            self.val_dataset = BioVidLP(self.root_dir, self.feature_dir, "val", self.task,
+            self.val_dataset = BioVidLP(self.root_dir, self.feature_dir, "val", self.task, self.num_classes,
                 self.temporal_reduction, self.data_ratio, self.take_val)
-            self.test_dataset = BioVidLP(self.root_dir, self.feature_dir, "test", self.task,
+            self.test_dataset = BioVidLP(self.root_dir, self.feature_dir, "test", self.task, self.num_classes,
                 self.temporal_reduction, 1.0, self.take_test)
 
     def train_dataloader(self):

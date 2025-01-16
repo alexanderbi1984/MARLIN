@@ -116,7 +116,7 @@ def train_biovid(args, config):
         # num_classes = 2
         num_classes = 1
     elif task == "multiclass":
-        num_classes = 5
+        num_classes = config["num_classes"]
     else:
         raise ValueError(f"Unknown task {task}")
 
@@ -128,7 +128,7 @@ def train_biovid(args, config):
             args.n_gpus > 1,
         )
         dm = BioVidDataModule(
-            data_path, finetune, task,
+            data_path, finetune, task, num_classes,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
             clip_frames=backbone_config.n_frames,
@@ -142,7 +142,7 @@ def train_biovid(args, config):
         )
 
         dm = BioVidDataModule(
-            data_path, finetune, task,
+            data_path, finetune, task, num_classes,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
             feature_dir=config["backbone"],
