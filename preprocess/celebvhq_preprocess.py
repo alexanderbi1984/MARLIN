@@ -38,7 +38,7 @@ if __name__ == '__main__':
     data_root = args.data_dir
     crop_face(data_root)
 
-    if not os.path.exists(os.path.join(data_root, "train.txt")) or \
-        not os.path.exists(os.path.join(data_root, "val.txt")) or \
-        not os.path.exists(os.path.join(data_root, "test.txt")):
-        gen_split(data_root)
+    # if not os.path.exists(os.path.join(data_root, "train.txt")) or \
+    #     not os.path.exists(os.path.join(data_root, "val.txt")) or \
+    #     not os.path.exists(os.path.join(data_root, "test.txt")):
+    #     gen_split(data_root)
