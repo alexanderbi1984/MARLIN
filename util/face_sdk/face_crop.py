@@ -78,7 +78,7 @@ def crop_face_img(img_path: str, save_path: str):
 
 
 def process_videos(video_path, output_path, ext="mp4", max_workers=8):
-    if ext == "mp4":
+    if ext == "mp4" or ext == "MP4":
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     elif ext == "avi":
         fourcc = cv2.VideoWriter_fourcc(*"XVID")
@@ -92,14 +92,15 @@ def process_videos(video_path, output_path, ext="mp4", max_workers=8):
         futures = []
 
         for f_name in tqdm(files):
-            if f_name.endswith('.' + ext):
+            if f_name.endswith('.' + ext) or f_name.endswith('.' + ext.upper()):
                 print(f"Processing {f_name} in face cropping")
                 source_path = os.path.join(video_path, f_name)
                 target_path = os.path.join(output_path, f_name)
                 fps = eval(ffmpeg.probe(source_path)["streams"][0]["avg_frame_rate"])
                 futures.append(executor.submit(crop_face_video, source_path, target_path, fourcc,
                     fps))
-
+            else:
+                print(f"the extention of the file {f_name} is not {ext}")
         for future in tqdm(futures):
             future.result()
 
