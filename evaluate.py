@@ -157,8 +157,8 @@ def train_biovid(args, config):
     accelerator = "cpu" if n_gpus == 0 else "gpu"
 
     ckpt_filename = config["model_name"] + "-{epoch}-{val_auc:.3f}"
-    # ckpt_monitor = "val_auc"
-    ckpt_monitor = "val_acc"
+    ckpt_monitor = "val_auc"
+    # ckpt_monitor = "val_acc"
     if task == "regression":
         ckpt_monitor = "val_mse"
 
