@@ -65,6 +65,9 @@ def parse_video_file(file_name):
         raise ValueError(f"Unexpected class label: {class_label}")
 
     multiclass = class_mapping[class_label]
+    multiclass_dict = {
+        "5": multiclass,
+    }
 
     # You can also determine the binary class if needed
     binary = 0 if class_label in ['BL1', 'PA1', 'PA2'] else 1
@@ -74,7 +77,7 @@ def parse_video_file(file_name):
         file_name: {
             "attributes": {
                 "binary": binary,
-                "multiclass": multiclass,  # Now storing the numeric multiclass
+                "multiclass": multiclass_dict,  # Now storing the numeric multiclass
                 "subject_id": subject_id,
                 "sex": sex,
                 "age": age,
@@ -111,13 +114,13 @@ def process_videos(directory):
 # Main function to run the script
 def main():
     # Specify directory containing the video files
-    video_directory = r"C:\pain\fake_videos"
+    video_directory = r"C:\pain\BioVid_224_video"
 
     # Process the videos and construct the JSON
     json_data = process_videos(video_directory)
 
     # Write the JSON data to a file
-    output_file = r"C:\pain\fake_videos\fake_vid_info.json"
+    output_file = r"C:\pain\BioVid_224_video\biovid_info_new.json"
     with open(output_file, "w") as f:
         json.dump(json_data, f, indent=4)
 

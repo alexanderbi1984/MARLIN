@@ -68,10 +68,20 @@ class BioVidFT(BioVidBase):
         if self.task == "regression":
             y = self.metadata["clips"][self.name_list[index]]["attributes"]['multiclass']
         else:
-            y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
             if self.task == "multiclass":
-                if self.num_classes == 3:
-                    y = 0 if (y == 0 or y == 1) else 1 if (y == 2 or y == 3) else 2
+                num_classes = str(self.num_classes)
+                # print(self.metadata["clips"][self.name_list[index]]["attributes"][self.task])
+                y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task][num_classes]
+                # print(f"y value is {y} and data type is {type(y)}")
+            else:
+                y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+        if isinstance(y, str):
+            try:
+                # Convert to float first, then to int
+                y = int(float(y))
+            except ValueError:
+                print(f"Warning: Could not convert y to int: {y}")
+                # y = -1  # Set to a default value or handle error appropriately
 
         # print(f"the task is {self.task}")
         # print(f"the y in dataloarder is {y}")
@@ -173,10 +183,21 @@ class BioVidLP(BioVidBase):
         if self.task == "regression":
             y = self.metadata["clips"][self.name_list[index]]["attributes"]['multiclass']
         else:
-            y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
             if self.task == "multiclass":
-                if self.num_classes == 3:
-                    y = 0 if (y == 0 or y == 1) else 1 if (y == 2 or y == 3) else 2
+                num_classes = str(self.num_classes)
+                # print(self.metadata["clips"][self.name_list[index]]["attributes"][self.task])
+                y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task][num_classes]
+                # print(f"y value is {y} and data type is {type(y)}")
+            else:
+                y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+        if isinstance(y, str):
+            try:
+                # Convert to float first, then to int
+                y = int(float(y))
+            except ValueError:
+                print(f"Warning: Could not convert y to int: {y}")
+                # y = -1  # Set to a default value or handle error appropriately
+
 
         return x, torch.tensor(y, dtype=torch.long)
 
