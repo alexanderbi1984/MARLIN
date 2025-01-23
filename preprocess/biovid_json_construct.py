@@ -42,6 +42,11 @@ import os
 def parse_video_file(file_name):
     # Remove the extension
     file_name_no_ext = os.path.splitext(file_name)[0]
+    # if the file_name_no_ext starts with a number, source = 'BioVid'
+    if file_name_no_ext[0].isdigit():
+        source = 'BioVid'
+    else:
+        source = 'BioVidGan'
 
     # Split the name into parts based on your naming convention
     parts = file_name_no_ext.split('_')
@@ -65,8 +70,18 @@ def parse_video_file(file_name):
         raise ValueError(f"Unexpected class label: {class_label}")
 
     multiclass = class_mapping[class_label]
+    if multiclass < 2:
+        multiclass_3 = 0
+    elif 2 < multiclass < 4:  # Use 'and' to check the range
+        multiclass_3 = 1
+    elif multiclass == 4:
+        multiclass_3 = 2
+    else:
+        multiclass_3 = None  # Optionally handle the case for multiclass >= 5 or other values
+
     multiclass_dict = {
         "5": multiclass,
+        "3": multiclass_3
     }
 
     # You can also determine the binary class if needed
@@ -81,6 +96,8 @@ def parse_video_file(file_name):
                 "subject_id": subject_id,
                 "sex": sex,
                 "age": age,
+                "ground_truth": multiclass,
+                "source": source
             }
         }
     }
@@ -120,7 +137,7 @@ def main():
     json_data = process_videos(video_directory)
 
     # Write the JSON data to a file
-    output_file = r"C:\pain\BioVid_224_video\biovid_info_new.json"
+    output_file = r"C:\pain\BioVid_224_video\biovid_new.json"
     with open(output_file, "w") as f:
         json.dump(json_data, f, indent=4)
 

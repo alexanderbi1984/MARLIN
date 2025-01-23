@@ -42,6 +42,7 @@ def csv_to_custom_json_and_txt(csv_file_path: str, json_file_path: str, txt_file
 
         # Create the attributes dictionary, including temp, vas, and temp_cut
         attributes = {
+            "source": 'mgh',
             "binary": binary,  # Set based on vas
             "multiclass": multiclass,  # Set based on vas ranges
             "subject_id": row['id'],  # Assuming 'id' is the subject ID
@@ -49,6 +50,7 @@ def csv_to_custom_json_and_txt(csv_file_path: str, json_file_path: str, txt_file
             "age": row['age'],
             "temp": row['temp'],  # Adding temp
             "vas": row['vas'],  # Adding vas
+            "ground_truth": row['vas'],
             "temp_cut": row['temp_cut']  # Adding temp_cut
         }
 
@@ -81,7 +83,7 @@ def csv_to_custom_json_and_txt(csv_file_path: str, json_file_path: str, txt_file
 if __name__ == "__main__":
     # Define paths for input CSV, output JSON, and output TXT
     input_csv_path = r"C:\pain\mgh\cropped\pred_data1.csv"  # Change this to your actual CSV file path
-    output_json_path = r"C:\pain\mgh\cropped\biovid_info.json"  # Change this to your desired output JSON file path
+    output_json_path = r"C:\pain\mgh\cropped\mgh_info.json"  # Change this to your desired output JSON file path
     output_txt_path = r"C:\pain\mgh\cropped\test.txt"  # Change this to your desired output TXT file path
 
     # Ensure the output directory exists

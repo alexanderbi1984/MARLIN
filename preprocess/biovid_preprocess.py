@@ -1,38 +1,48 @@
-import os.path
-import sys
+# parsing labels, segment and crop raw videos.
 import argparse
-import shutil
+import os
+import sys
 
-parser = argparse.ArgumentParser("Preprocess biovid dataset")
-parser.add_argument("--data_dir", type=str)
-parser.add_argument("--max_workers", type=int, default=8)
+sys.path.append(os.getcwd())
+
+
+def crop_face(root: str, ext: str):
+    from util.face_sdk.face_crop import process_videos
+    source_dir = os.path.join(root, "downloaded")
+    target_dir = os.path.join(root, "cropped")
+    process_videos(source_dir, target_dir, ext=ext)
+
+
+def gen_split(root: str, ext: str):
+    videos = list(filter(lambda x: x.endswith(ext), os.listdir(os.path.join(root, 'cropped'))))
+    total_num = len(videos)
+
+    with open(os.path.join(root, "train.txt"), "w") as f:
+        for i in range(int(total_num * 0.8)):
+            f.write(videos[i][:-len(ext)] + "\n")
+
+    with open(os.path.join(root, "val.txt"), "w") as f:
+        for i in range(int(total_num * 0.8), int(total_num * 0.9)):
+            f.write(videos[i][:-len(ext)] + "\n")
+
+    with open(os.path.join(root, "test.txt"), "w") as f:
+        for i in range(int(total_num * 0.9), total_num):
+            f.write(videos[i][:-len(ext)] + "\n")
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--data_dir", help="Root directory of CelebV-HQ", required=True)
+parser.add_argument("--ext", help="File extension of videos", default=".mp4")  # Default to .mp4
+args = parser.parse_args()
 
 if __name__ == '__main__':
+    data_root = args.data_dir
+    extension = args.ext
 
-    args = parser.parse_args()
-    if args.data_dir is None:
-        args.data_dir = r"C:\pain\BioVid_224_video"
-    # copy the metadata (split) to the data_dir
-    # shutil.copy(os.path.join(os.path.dirname(__file__), "..", "dataset", "misc", "youtube_face", "train_set.csv"),
-    #     args.data_dir)
-    # shutil.copy(os.path.join(os.path.dirname(__file__), "..", "dataset", "misc", "youtube_face", "val_set.csv"),
-    #     args.data_dir)
+    crop_face(data_root, extension)
 
-    # Crop faces from videos
-    sys.path.append(".")
-    if not os.path.exists("logs"):
-        os.mkdir("logs")
-
-    from util.face_sdk.face_crop import process_images as face_crop_process_images
-    face_crop_process_images(
-        os.path.join(args.data_dir, "frame_images_DB"),
-        os.path.join(args.data_dir, "crop_images_DB"),
-        args.max_workers,
-    )
-
-    # Face parsing based on these cropped faces
-    from util.face_sdk.face_parse import process_images as face_parse_process_images
-    face_parse_process_images(
-        os.path.join(args.data_dir, "crop_images_DB"),
-        os.path.join(args.data_dir, "face_parsing_images_DB")
-    )
+    # Uncomment the following lines if you want to check for existing files before generating splits
+    # if not os.path.exists(os.path.join(data_root, "train.txt")) or \
+    #    not os.path.exists(os.path.join(data_root, "val.txt")) or \
+    #    not os.path.exists(os.path.join(data_root, "test.txt")):
+    #     gen_split(data_root, extension)

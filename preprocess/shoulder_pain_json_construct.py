@@ -29,7 +29,7 @@ def construct_json_from_csv(csv_file, output_json_file, multiclass_source):
             multiclass_dict = {}
             if multiclass_value is not None:
                 multiclass_value = float(multiclass_value)
-                multiclass_dict["6"] = multiclass_value # Use the value directly from the column
+                multiclass_dict["6"] = int(multiclass_value) # Use the value directly from the column
                 multiclass_value_5 = multiclass_value-1 if multiclass_value > 1 else 0
                 multiclass_dict["5"] = multiclass_value_5
                 binary_value = 0 if multiclass_value < 3 else 1
@@ -40,7 +40,10 @@ def construct_json_from_csv(csv_file, output_json_file, multiclass_source):
                 "multiclass": multiclass_dict,
                 "subject_id": subject_id,
                 "sex": sex,
-                "age": age
+                "age": age,
+                "vas": row['VAS'],
+                "opr": row['OPR'],
+                "source": 'ShoulderPain'
             }
 
             # Create the clip entry
@@ -59,4 +62,4 @@ def construct_json_from_csv(csv_file, output_json_file, multiclass_source):
 
 
 # Call the function with the appropriate paths
-construct_json_from_csv(r"C:\pain\ShoulderPain_video\label.csv", r'C:\pain\ShoulderPain_video\cropped\biovid_info.json', 'OPR')  # Change 'VAS' to 'OPR' as needed
+construct_json_from_csv(r"C:\pain\ShoulderPain_bp4d_bp4d+_video\ShoulderPain_pain_label.csv", r'C:\pain\ShoulderPain_bp4d_bp4d+_video\ShoulderPain_info.json', 'VAS')  # Change 'VAS' to 'OPR' as needed

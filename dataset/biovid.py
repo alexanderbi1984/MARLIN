@@ -184,9 +184,23 @@ class BioVidLP(BioVidBase):
             y = self.metadata["clips"][self.name_list[index]]["attributes"]['multiclass']
         else:
             if self.task == "multiclass":
+                # clip = self.metadata["clips"][self.name_list[index]]
+                # print(f"Clip: {clip}, Type: {type(clip)}")
+                #
+                # attributes = clip["attributes"]
+                # print(f"Attributes: {attributes}, Type: {type(attributes)}")
+                #
+                # task_value = attributes[self.task]
+                # print(f"Task Value: {task_value}, Type: {type(task_value)}")
+
                 num_classes = str(self.num_classes)
+                # print(f"type of num_classes is {type(num_classes)}")
                 # print(self.metadata["clips"][self.name_list[index]]["attributes"][self.task])
-                y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task][num_classes]
+                try:
+                    y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task][num_classes]
+                except Exception as e:
+                    print(f"Error: {e}")
+                    print(f"Clip: {self.metadata['clips'][self.name_list[index]]}")
                 # print(f"y value is {y} and data type is {type(y)}")
             else:
                 y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]

@@ -29,11 +29,16 @@ if __name__ == '__main__':
         args.data_dir = r"C:\pain\BioVid_224_video"
     # raw_video_path = os.path.join(args.data_dir, "cropped")
     raw_video_path = args.data_dir
-    all_videos = sorted(list(filter(lambda x: x.endswith(".mp4"), os.listdir(raw_video_path))))
+    all_videos = sorted(list(filter(lambda x: x.endswith((".mp4", ".avi")), os.listdir(raw_video_path))))
     Path(os.path.join(args.data_dir, feat_dir)).mkdir(parents=True, exist_ok=True)
     for video_name in tqdm(all_videos):
         video_path = os.path.join(raw_video_path, video_name)
-        save_path = os.path.join(args.data_dir, feat_dir, video_name.replace(".mp4", ".npy"))
+        # Get the base name without the extension
+        base_name = os.path.splitext(video_name)[0]
+
+        # Construct the save path with the new extension .npy
+        save_path = os.path.join(args.data_dir, feat_dir, f"{base_name}.npy")
+        # save_path = os.path.join(args.data_dir, feat_dir, video_name.replace(".mp4", ".npy"))
         try:
             feat = model.extract_video(
                 video_path, crop_face=False,
