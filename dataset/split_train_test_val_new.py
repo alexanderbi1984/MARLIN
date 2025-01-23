@@ -1,6 +1,7 @@
 import os
 import random
 import json
+from collections import defaultdict
 
 # Define paths
 video_directory = r"C:\pain\json4marlin"  # Change to your directory
@@ -41,7 +42,7 @@ for filename, attributes in filtered_clips.items():
     if subject_id:  # Ensure subject_id is not empty
         if subject_id not in subject_files:
             subject_files[subject_id] = []
-        subject_files[subject_id].append(filename)
+        subject_files[subject_id].append((filename, attributes))
 
 # Split the subjects into training, testing, and validation sets
 all_subjects = list(subject_files.keys())
@@ -67,6 +68,20 @@ for subject_id in test_subjects:
 for subject_id in val_subjects:
     val_files.extend(subject_files[subject_id])
 
+# Function to calculate class distribution
+def calculate_class_distribution(file_list):
+    class_distribution = defaultdict(int)
+    for filename, attributes in file_list:
+        class_id = attributes["attributes"].get("multiclass", {}).get("5")  # Assuming '5' is the class key
+        if class_id is not None:
+            class_distribution[class_id] += 1
+    return class_distribution
+
+# Calculate class distributions
+train_distribution = calculate_class_distribution(train_files)
+test_distribution = calculate_class_distribution(test_files)
+val_distribution = calculate_class_distribution(val_files)
+
 # Print debugging information
 print(f"Total number of files in JSON: {len(clips)}")
 print(f"Total number of filtered clips: {len(filtered_clips)}")
@@ -75,10 +90,15 @@ print(f"Number of training files: {len(train_files)}")
 print(f"Number of testing files: {len(test_files)}")
 print(f"Number of validation files: {len(val_files)}")
 
+# Print class distributions
+print("Class distribution in training set:", dict(train_distribution))
+print("Class distribution in testing set:", dict(test_distribution))
+print("Class distribution in validation set:", dict(val_distribution))
+
 # Check for duplicates
-train_set = set(train_files)
-test_set = set(test_files)
-val_set = set(val_files)
+train_set = set(file[0] for file in train_files)
+test_set = set(file[0] for file in test_files)
+val_set = set(file[0] for file in val_files)
 
 # Check for overlaps
 overlap_train_test = train_set.intersection(test_set)
@@ -93,7 +113,7 @@ print(f"Number of overlapping files between test and validation: {len(overlap_te
 def write_file(file_list, filename):
     with open(filename, 'w') as f:
         for file in file_list:
-            f.write(f"{file}\n")
+            f.write(f"{file[0]}\n")  # Write only the filename
 
 write_file(train_files, output_train_file)
 write_file(test_files, output_test_file)

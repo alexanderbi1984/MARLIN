@@ -181,7 +181,7 @@ class BioVidLP(BioVidBase):
             raise ValueError(self.temporal_reduction)
 
         if self.task == "regression":
-            y = self.metadata["clips"][self.name_list[index]]["attributes"]['multiclass']
+            y = self.metadata["clips"][self.name_list[index]]["attributes"]['multiclass']['5']
         else:
             if self.task == "multiclass":
                 # clip = self.metadata["clips"][self.name_list[index]]

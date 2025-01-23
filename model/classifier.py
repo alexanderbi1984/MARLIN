@@ -139,6 +139,7 @@ class Classifier(LightningModule):
         hiddens: Optional[Tensor] = None
     ) -> Dict[str, Tensor]:
         loss_dict = self.step(batch)
+        self.log("learning_rate", self.learning_rate, on_step=False, on_epoch=True, prog_bar=False, logger=True)
         self.log_dict({f"train_{k}": v for k, v in loss_dict.items()}, on_step=True, on_epoch=True,
             prog_bar=False, sync_dist=self.distributed)
         return loss_dict["loss"]

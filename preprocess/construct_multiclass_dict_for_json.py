@@ -20,7 +20,6 @@ for filename, attributes in data["clips"].items():
         # print(f"Warning: multiclass for file '{filename}' is not a dictionary. Initializing as an empty dict.")
         multiclass = {}
 
-    # TODO: Implement your update logic here based on the source
     # Example (replace this with your logic):
     if source == "BioVid" or source == "BioVidGan":
         ground_truth = attributes["attributes"].get("ground_truth", "")
@@ -51,7 +50,13 @@ for filename, attributes in data["clips"].items():
             class_label_5 = 0
         multiclass["5"] = class_label_5
     # Save the updated multiclass back into the attributes
+    multiclass["3"] = multiclass["5"]  # Update the 3-class multiclass
+    if multiclass["3"] == 2:
+        multiclass["3"] = 1
+    if multiclass["3"] == 4:
+        multiclass["3"] = 2
     attributes["attributes"]["multiclass"] = multiclass
+
 
 # Save the updated JSON data back to the file
 with open(json_file_path, 'w') as f:

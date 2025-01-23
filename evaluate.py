@@ -313,6 +313,61 @@ def evaluate_biovid(args, ckpt, dm, config):
         results_df.to_csv('predictions.csv', index=False)
         print("Predictions saved to predictions.csv")
         return results_df  # Return the DataFrame if needed
+    # if task == "binary" or task == "multiclass":
+    #     # Collect predictions
+    #     preds = trainer.predict(model, dm.test_dataloader())
+    #     preds = torch.cat(preds)  # Concatenate predictions from all batches
+    #     prob = softmax(preds, dim=1)  # Apply softmax to get probabilities
+    #
+    #     # Collect ground truth
+    #     ys = torch.zeros(len(preds), dtype=torch.long)  # Assuming labels are class indices
+    #     for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
+    #         ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
+    #
+    #     # Calculate overall accuracy
+    #     preds_classes = torch.argmax(prob, dim=1)  # Get predicted classes
+    #     acc = (preds_classes == ys).float().mean()  # Calculate accuracy
+    #
+    #     # Calculate AUC (one-vs-rest for multiclass)
+    #     auc_scores = {}
+    #     for class_idx in range(prob.shape[1]):  # Iterate over each class
+    #         auc_scores[f"auc_class_{class_idx}"] = roc_auc_score(
+    #             (ys == class_idx).int().numpy(), prob[:, class_idx].numpy()
+    #         )
+    #
+    #     # Calculate per-class accuracy
+    #     class_acc = {}
+    #     for class_idx in range(prob.shape[1]):
+    #         class_mask = ys == class_idx
+    #         class_acc[f"acc_class_{class_idx}"] = (preds_classes[class_mask] == ys[class_mask]).float().mean().item()
+    #
+    #     # Generate confusion matrix
+    #     cm = confusion_matrix(ys.numpy(), preds_classes.numpy())
+    #
+    #     # Generate classification report
+    #     report = classification_report(
+    #         ys.numpy(), preds_classes.numpy(), target_names=[f"Class_{i}" for i in range(prob.shape[1])], output_dict=True
+    #     )
+    #
+    #     # Store results
+    #     results = {
+    #         "overall_accuracy": acc.item(),  # Overall accuracy
+    #         "auc_scores": auc_scores,  # AUC for each class
+    #         "class_accuracy": class_acc,  # Accuracy for each class
+    #         "confusion_matrix": cm.tolist(),  # Confusion matrix as a list
+    #         "classification_report": report,  # Classification report
+    #     }
+    #
+    #     print("Evaluation Results:")
+    #     print(f"Overall Accuracy: {results['overall_accuracy']:.4f}")
+    #     print("AUC Scores (One-vs-Rest):", results["auc_scores"])
+    #     print("Per-Class Accuracy:", results["class_accuracy"])
+    #     print("Confusion Matrix:")
+    #     print(np.array2string(np.array(results["confusion_matrix"]), precision=4))
+    #     print("Classification Report:")
+    #     print(classification_report(ys.numpy(), preds_classes.numpy(), target_names=[f"Class_{i}" for i in range(prob.shape[1])]))
+
+    ##top 2 classes considered as predicted class
     if task == "binary" or task == "multiclass":
         # Collect predictions
         preds = trainer.predict(model, dm.test_dataloader())
@@ -324,48 +379,72 @@ def evaluate_biovid(args, ckpt, dm, config):
         for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
             ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
 
-        # Calculate overall accuracy
-        preds_classes = torch.argmax(prob, dim=1)  # Get predicted classes
-        acc = (preds_classes == ys).float().mean()  # Calculate accuracy
+        # Calculate top 2 classes with max probabilities
+        topk_probs, topk_indices = torch.topk(prob, k=2, dim=1)  # Get top 2 classes and their probabilities
 
-        # Calculate AUC (one-vs-rest for multiclass)
-        auc_scores = {}
-        for class_idx in range(prob.shape[1]):  # Iterate over each class
-            auc_scores[f"auc_class_{class_idx}"] = roc_auc_score(
-                (ys == class_idx).int().numpy(), prob[:, class_idx].numpy()
-            )
+        # Initialize lists to store differences
+        correct_top1_differences = []
+        correct_top2_differences = []
 
-        # Calculate per-class accuracy
-        class_acc = {}
-        for class_idx in range(prob.shape[1]):
-            class_mask = ys == class_idx
-            class_acc[f"acc_class_{class_idx}"] = (preds_classes[class_mask] == ys[class_mask]).float().mean().item()
+        for i in range(len(ys)):
+            if ys[i] == topk_indices[i][0]:  # Check if true class is the top 1 prediction
+                # Calculate the difference between top 1 and top 2 probabilities
+                difference = topk_probs[i][0].item() - topk_probs[i][1].item()
+                correct_top1_differences.append(difference)  # Store the difference
 
-        # Generate confusion matrix
-        cm = confusion_matrix(ys.numpy(), preds_classes.numpy())
+            if ys[i] == topk_indices[i][1]:  # Check if true class is the top 2 prediction
+                # Calculate the difference between top 1 and top 2 probabilities
+                difference = topk_probs[i][1].item() - topk_probs[i][0].item()
+                correct_top2_differences.append(difference)  # Store the difference
 
-        # Generate classification report
-        report = classification_report(
-            ys.numpy(), preds_classes.numpy(), target_names=[f"Class_{i}" for i in range(prob.shape[1])], output_dict=True
-        )
+        # Calculate statistics for differences
+        def calculate_statistics(differences):
+            if differences:
+                mean_diff = np.mean(differences)
+                std_diff = np.std(differences)
+                median_diff = np.median(differences)
+                q1_diff = np.percentile(differences, 25)
+                q3_diff = np.percentile(differences, 75)
+            else:
+                mean_diff = std_diff = median_diff = q1_diff = q3_diff = 0
+            return mean_diff, std_diff, median_diff, q1_diff, q3_diff
+
+        # Statistics for top 1 hits
+        top1_stats = calculate_statistics(correct_top1_differences)
+        # Statistics for top 2 hits
+        top2_stats = calculate_statistics(correct_top2_differences)
 
         # Store results
         results = {
-            "overall_accuracy": acc.item(),  # Overall accuracy
-            "auc_scores": auc_scores,  # AUC for each class
-            "class_accuracy": class_acc,  # Accuracy for each class
-            "confusion_matrix": cm.tolist(),  # Confusion matrix as a list
-            "classification_report": report,  # Classification report
+            "top1_diff_mean": top1_stats[0],  # Mean difference for top 1 hits
+            "top1_diff_std": top1_stats[1],  # Std deviation for top 1 hits
+            "top1_diff_median": top1_stats[2],  # Median difference for top 1 hits
+            "top1_diff_q1": top1_stats[3],  # Q1 for top 1 hits
+            "top1_diff_q3": top1_stats[4],  # Q3 for top 1 hits
+            "top2_diff_mean": top2_stats[0],  # Mean difference for top 2 hits
+            "top2_diff_std": top2_stats[1],  # Std deviation for top 2 hits
+            "top2_diff_median": top2_stats[2],  # Median difference for top 2 hits
+            "top2_diff_q1": top2_stats[3],  # Q1 for top 2 hits
+            "top2_diff_q3": top2_stats[4],  # Q3 for top 2 hits
         }
 
         print("Evaluation Results:")
-        print(f"Overall Accuracy: {results['overall_accuracy']:.4f}")
-        print("AUC Scores (One-vs-Rest):", results["auc_scores"])
-        print("Per-Class Accuracy:", results["class_accuracy"])
-        print("Confusion Matrix:")
-        print(np.array2string(np.array(results["confusion_matrix"]), precision=4))
-        print("Classification Report:")
-        print(classification_report(ys.numpy(), preds_classes.numpy(), target_names=[f"Class_{i}" for i in range(prob.shape[1])]))
+        print(f"Mean Difference for Top 1 Hits: {results['top1_diff_mean']:.4f}")
+        print(f"Std Deviation for Top 1 Hits: {results['top1_diff_std']:.4f}")
+        print(f"Median Difference for Top 1 Hits: {results['top1_diff_median']:.4f}")
+        print(f"Q1 for Top 1 Hits: {results['top1_diff_q1']:.4f}")
+        print(f"Q3 for Top 1 Hits: {results['top1_diff_q3']:.4f}")
+
+        print(f"Mean Difference for Top 2 Hits: {results['top2_diff_mean']:.4f}")
+        print(f"Std Deviation for Top 2 Hits: {results['top2_diff_std']:.4f}")
+        print(f"Median Difference for Top 2 Hits: {results['top2_diff_median']:.4f}")
+        print(f"Q1 for Top 2 Hits: {results['top2_diff_q1']:.4f}")
+        print(f"Q3 for Top 2 Hits: {results['top2_diff_q3']:.4f}")
+
+
+
+
+
     elif task == "regression":
         # Collect predictions
         preds = trainer.predict(model, dm.test_dataloader())
