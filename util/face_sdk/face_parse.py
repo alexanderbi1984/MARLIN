@@ -75,6 +75,7 @@ def parse_face_img(img_path: str, output_path: str):
             faces = faces.softmax(dim=1).argmax(dim=1).numpy()
         except UnboundLocalError:
             faces = np.zeros((0, 224, 224), dtype="int64")
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         np.save(output_path, faces)
 
 

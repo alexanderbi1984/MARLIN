@@ -12,7 +12,16 @@ def rename_key(dictionary, old_key, new_key):
 
 
 def load_official_pretrain_model(model, pth_path):
-    state_dict = torch.load(pth_path)["model"]
+    checkpoint = torch.load(pth_path)
+    state_dict = checkpoint["model"]
+    # print(f"the keys in checkpoint are {state_dict.keys()}")  # Check the top-level keys
+    model_state_dict = checkpoint.get("model", {})
+    # print(f"\n the model state dict key are{model_state_dict.keys()}")  # Check the model's state dict keys
+    try:
+        state_dict = torch.load(pth_path)["model"]
+    except RuntimeError as e:
+        print(f"Error loading state_dict from {pth_path}")
+        raise e
 
     mutation_keys = [
         ("mask_token", "decoder.mask_token"),

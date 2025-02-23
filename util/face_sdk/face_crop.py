@@ -74,16 +74,21 @@ def crop_face_video(video_path: str, save_path: str, fourcc=cv2.VideoWriter_four
 def crop_face_img(img_path: str, save_path: str):
     frame = cv2.imread(img_path)
     face = crop_face(frame)[0]
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     cv2.imwrite(save_path, face)
 
 
+
+
 def process_videos(video_path, output_path, ext="mp4", max_workers=8):
-    if ext == "mp4" or ext == "MP4":
+    if ext.lower() == "mp4":  # Use lower() for case insensitive check
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    elif ext == "avi":
+    elif ext.lower() == "avi":
         fourcc = cv2.VideoWriter_fourcc(*"XVID")
+    elif ext.lower() == "wmv":
+        fourcc = cv2.VideoWriter_fourcc(*"WMV1")  # You can also use "WMV2" depending on your needs
     else:
-        raise ValueError("ext should be mp4 or avi")
+        raise ValueError("ext should be mp4, avi, or wmv")
 
     Path(output_path).mkdir(parents=True, exist_ok=True)
 
@@ -106,12 +111,13 @@ def process_videos(video_path, output_path, ext="mp4", max_workers=8):
 
 
 def process_images(image_path: str, output_path: str, max_workers: int = 8):
+    print("Processing images in face cropping")
     Path(output_path).mkdir(parents=True, exist_ok=True)
     files = glob.glob(f"{image_path}/*/*/*.jpg")
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = []
 
-        for file in tqdm(files):
+        for file in tqdm(files, desc="Processing images:crop_face_img"):
             save_path = file.replace(image_path, output_path)
             Path("/".join(save_path.split("/")[:-1])).mkdir(parents=True, exist_ok=True)
             futures.append(executor.submit(crop_face_img, file, save_path))

@@ -14,6 +14,7 @@ from torch.optim.lr_scheduler import LambdaLR
 from marlin_pytorch.model.decoder import MarlinDecoder
 from marlin_pytorch.model.encoder import MarlinEncoder
 from marlin_pytorch.model.modules import MLP
+# from torch.utils.tensorboard import SummaryWriter
 
 
 class Marlin(LightningModule):
@@ -341,4 +342,9 @@ class Marlin(LightningModule):
         if self.logger is None:
             return
 
-        self.logger.experiment.add_image(name, torch.clip(image, 0, 1), self.trainer.global_step)
+        # self.logger.experiment.add_image(name, torch.clip(image, 0, 1), self.trainer.global_step)
+        # writer = SummaryWriter(log_dir='logs')
+        #
+        # # Log an image
+        # writer.add_image(name, torch.clip(image, 0, 1), global_step=self.trainer.global_step)
+

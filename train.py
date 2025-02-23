@@ -6,6 +6,7 @@ from pytorch_lightning.trainer import Trainer
 from dataset.youtube_face import YoutubeFaceDataModule
 from marlin_pytorch.util import read_yaml
 from util.misc import load_official_pretrain_model
+import os
 
 parser = argparse.ArgumentParser("MARLIN pretraining")
 parser.add_argument("--config", type=str)
@@ -124,18 +125,38 @@ if __name__ == '__main__':
         model.d_steps = config["d_steps"]
         model.g_steps = config["g_steps"]
 
+    # if official_pretrained is not None:
+    #     print(f"loading official pretrained model from {official_pretrained}")
+    #     print(load_official_pretrain_model(model, official_pretrained))
     if official_pretrained is not None:
-        print(load_official_pretrain_model(model, official_pretrained))
+        # Check if the file exists
+        if not os.path.exists(official_pretrained):
+            raise FileNotFoundError(f"The specified checkpoint file does not exist: {official_pretrained}")
 
-    accelerator = None if n_gpus <= 1 else "ddp"
+        print(f"Loading official pretrained model from {official_pretrained}")
+        try:
+            load_result = load_official_pretrain_model(model, official_pretrained)
+            print("Successfully loaded model with the following result:", load_result)
+        except Exception as e:
+            print(f"Failed to load the official pretrained model: {e}")
+    strategy = "auto" if n_gpus <= 1 else "ddp"
+    accelerator = "cpu" if n_gpus == 0 else "gpu"
+    accelerator = strategy
+    # accelerator = None if n_gpus <= 1 else "ddp"
     device = "gpu" if n_gpus > 0 else "cpu"
     n_gpus = n_gpus if n_gpus > 0 else None
-
+    print(f"checkpointing to ckpt/{resume_ckpt}")
+    # trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=device,
+    #     logger=True, precision=32, max_epochs=max_epochs,
+    #     strategy=accelerator, resume_from_checkpoint=resume_ckpt,
+    #     callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
+    #         filename=model.name + "-{epoch}-{val_loss:.3f}",
+    #         monitor="val_loss", mode="min")])
     trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=device,
-        logger=True, precision=32, max_epochs=max_epochs,
-        strategy=accelerator, resume_from_checkpoint=resume_ckpt,
-        callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
-            filename=model.name + "-{epoch}-{val_loss:.3f}",
-            monitor="val_loss", mode="min")])
+                      logger=True, precision=32, max_epochs=max_epochs,
+                      strategy=accelerator,
+                      callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
+                                                 filename=model.name + "-{epoch}-{val_loss:.3f}",
+                                                 monitor="val_loss", mode="min")])
 
     trainer.fit(model, dm)
