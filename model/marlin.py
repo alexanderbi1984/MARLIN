@@ -342,7 +342,7 @@ class Marlin(LightningModule):
         if self.logger is None:
             return
 
-        # self.logger.experiment.add_image(name, torch.clip(image, 0, 1), self.trainer.global_step)
+        self.logger.experiment.add_image(name, torch.clip(image, 0, 1), self.trainer.global_step)
         # writer = SummaryWriter(log_dir='logs')
         #
         # # Log an image

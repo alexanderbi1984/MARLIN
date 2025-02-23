@@ -3,6 +3,7 @@ numpy>=1.23
 einops~=0.4
 torchvision>=0.12.0
 torch
+tensorboard
 pyyaml>=6.0
 tqdm>=4.64.0
 scikit-image>=0.19.3
