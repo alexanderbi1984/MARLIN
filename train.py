@@ -146,17 +146,20 @@ if __name__ == '__main__':
     device = "gpu" if n_gpus > 0 else "cpu"
     n_gpus = n_gpus if n_gpus > 0 else None
     print(f"checkpointing to ckpt/{resume_ckpt}")
-    trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=device,
-        logger=True, precision=32, max_epochs=max_epochs,
-        strategy=accelerator, resume_from_checkpoint=resume_ckpt,
-        callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
-            filename=model.name + "-{epoch}-{val_loss:.3f}",
-            monitor="val_loss", mode="min")])
     # trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=device,
-    #                   logger=True, precision=32, max_epochs=max_epochs,
-    #                   strategy=accelerator,
-    #                   callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
-    #                                              filename=model.name + "-{epoch}-{val_loss:.3f}",
-    #                                              monitor="val_loss", mode="min")])
-
-    trainer.fit(model, dm)
+    #     logger=True, precision=32, max_epochs=max_epochs,
+    #     strategy=accelerator, resume_from_checkpoint=resume_ckpt,
+    #     callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
+    #         filename=model.name + "-{epoch}-{val_loss:.3f}",
+    #         monitor="val_loss", mode="min")])
+    trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=device,
+                      logger=True, precision=32, max_epochs=max_epochs,
+                      strategy=accelerator,
+                      callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
+                                                 filename=model.name + "-{epoch}-{val_loss:.3f}",
+                                                 monitor="val_loss", mode="min")])
+    if resume_ckpt:  # Check if a checkpoint path is provided
+        trainer.fit(model, dm, ckpt_path=resume_ckpt)  # Resume training from the checkpoint
+    else:
+        trainer.fit(model, dm)  # Start training from scratch
+    # trainer.fit(model, dm)
