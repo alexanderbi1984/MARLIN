@@ -64,7 +64,6 @@ def parse_face_img(img_path: str, output_path: str):
     with torch.no_grad():
         for i in range(face_nums):
             landmarks = faceAlignModelHandler.inference_on_image(image, dets[i])
-
             landmarks = torch.from_numpy(landmarks[[104, 105, 54, 84, 90]]).float()
             if i == 0:
                 landmarks_five = landmarks.unsqueeze(0)
