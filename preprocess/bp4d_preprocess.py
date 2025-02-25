@@ -24,14 +24,33 @@ if __name__ == '__main__':
 
     from util.face_sdk.face_crop import process_images as face_crop_process_images
     face_crop_process_images(
-        os.path.join(args.data_dir, "frame_images_DB"),
-        os.path.join(args.data_dir, "crop_images_DB"),
+        os.path.join(args.data_dir, "Texture_crop"),
+        os.path.join(args.data_dir, "Texture_crop_crop_images_DB"),
         args.max_workers,
     )
 
     # Face parsing based on these cropped faces
     from util.face_sdk.face_parse import process_images as face_parse_process_images
     face_parse_process_images(
-        os.path.join(args.data_dir, "crop_images_DB"),
-        os.path.join(args.data_dir, "face_parsing_images_DB")
+        os.path.join(args.data_dir, "Texture_crop_crop_images_DB"),
+        os.path.join(args.data_dir, "Texture_crop_face_parsing_images_DB")
     )
+    face_crop_process_images(
+        os.path.join(args.data_dir, "Thermal_crop"),
+        os.path.join(args.data_dir, "Thermal_crop_crop_images_DB"),
+        args.max_workers,
+    )
+    face_parse_process_images(
+        os.path.join(args.data_dir, "Thermal_crop_crop_images_DB"),
+        os.path.join(args.data_dir, "Thermal_crop_face_parsing_images_DB")
+    )
+    face_crop_process_images(
+        os.path.join(args.data_dir, "Depth_crop"),
+        os.path.join(args.data_dir, "Depth_crop_crop_images_DB"),
+        args.max_workers,
+    )
+    face_parse_process_images(
+        os.path.join(args.data_dir, "Depth_crop_crop_images_DB"),
+        os.path.join(args.data_dir, "Depth_crop_face_parsing_images_DB")
+    )
+

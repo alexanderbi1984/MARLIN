@@ -73,6 +73,8 @@ def crop_face_video(video_path: str, save_path: str, fourcc=cv2.VideoWriter_four
 
 def crop_face_img(img_path: str, save_path: str):
     frame = cv2.imread(img_path)
+    if frame is None:
+        print("something is wrong.")
     face = crop_face(frame)[0]
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     cv2.imwrite(save_path, face)
@@ -113,7 +115,9 @@ def process_videos(video_path, output_path, ext="mp4", max_workers=8):
 def process_images(image_path: str, output_path: str, max_workers: int = 8):
     print("Processing images in face cropping")
     Path(output_path).mkdir(parents=True, exist_ok=True)
-    files = glob.glob(f"{image_path}/*/*/*.jpg")
+    files = glob.glob(f"{image_path}/**/*.jpg", recursive=True)
+    # files = glob.glob(f"{image_path}/*/*/*.jpg")
+    print(f"there are {len(files)} images")
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = []
 
@@ -124,3 +128,30 @@ def process_images(image_path: str, output_path: str, max_workers: int = 8):
 
         for future in tqdm(futures):
             future.result()
+# def process_images(image_path: str, output_path: str, max_workers: int = 8):
+#     print("Processing images in face cropping")
+#     print(f"Processing {image_path} in face cropping")
+#     # Create output directory if it doesn't exist
+#     Path(output_path).mkdir(parents=True, exist_ok=True)
+#
+#     # Use glob to find all .jpg files in subdirectories
+#     files = glob.glob(f"{image_path}/**/*.jpg", recursive=True)
+#     print(f"There are {len(files)} images to process.")
+#
+#     with ProcessPoolExecutor(max_workers=max_workers) as executor:
+#         futures = []
+#
+#         for file in tqdm(files, desc="Processing images: crop_face_img"):
+#             # Create the corresponding save path
+#             # Replace the image_path with output_path in the file path
+#             save_path = file.replace(image_path, output_path)
+#
+#             # Create the directory for the save path if it doesn't exist
+#             Path("/".join(save_path.split("/")[:-1])).mkdir(parents=True, exist_ok=True)
+#
+#             # Submit the cropping task to the executor
+#             futures.append(executor.submit(crop_face_img, file, save_path))
+#
+#         # Wait for all futures to complete
+#         for future in tqdm(futures, desc="Waiting for crops to finish"):
+#             future.result()
