@@ -4,14 +4,18 @@ from dataset.bp4d_multimodal import BP4DMultiModalDataModule
 
 # Create a small test dataset
 test_dataset = BP4DMultiModalDataModule(
-    meta_file="val_set.csv",
-    root_dir="./BP4D+",
+    root_dir=r"W:\Nan\MARLIN\BP4D+",
+    batch_size = 2,
+    clip_frames = 16,
+    temporal_sample_rate = 2,
+    patch_size = 16,
+    tubelet_size = 2,
+
 )
+test_dataset.setup()
 
 # Create a dataloader with a small batch size
-batch_size = 2
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-
+test_loader = test_dataset.val_dataloader()
 # Get a single batch and examine its properties
 for batch in test_loader:
     mixed_video, mask, rgb_frames, depth_frames, thermal_frames = batch

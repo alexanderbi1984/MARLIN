@@ -98,7 +98,7 @@ class BP4DMultiModal(Dataset):
         """
         # Load metadata and video file paths
         meta = self.metadata.iloc[index]
-        files = sorted(os.listdir(os.path.join(self.root_dir, "crop_images_DB", meta.path)))
+        files = sorted(os.listdir(os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path)))
         indexes = self._sample_indexes(len(files))
         assert len(indexes) == self.clip_frames
 
@@ -126,10 +126,10 @@ class BP4DMultiModal(Dataset):
         for i in range(self.clip_frames):
             # Load RGB, Depth, and Thermal images
             #todo: check the path for the depth and thermal images
-            rgb_img = cv2.imread(os.path.join(self.root_dir, "Texture_crop_images_DB", meta.path, files[indexes[i]]))
-            depth_img = cv2.imread(os.path.join(self.root_dir, "Depth_crop_images_DB", meta.path, files[indexes[i]]),
+            rgb_img = cv2.imread(os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path, files[indexes[i]]))
+            depth_img = cv2.imread(os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta.path, files[indexes[i]]),
                                    cv2.IMREAD_GRAYSCALE)
-            thermal_img = cv2.imread(os.path.join(self.root_dir, "Thermal_crop_images_DB", meta.path, files[indexes[i]]),
+            thermal_img = cv2.imread(os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta.path, files[indexes[i]]),
                                      cv2.IMREAD_GRAYSCALE)
 
             # Convert RGB from BGR to RGB and normalize all modalities to [0,1]
@@ -329,7 +329,7 @@ class BP4DMultiModalDataModule(LightningDataModule):
         patch_size: int,
         tubelet_size: int,
         mask_percentage_target: float = 0.8,
-        mask_strategy: str = "face",
+        mask_strategy: str = "fasking",
         num_workers: int = 0,
         take_train: Optional[int] = None,
         take_val: Optional[int] = None
