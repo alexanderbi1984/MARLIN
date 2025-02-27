@@ -58,11 +58,22 @@ class MarlinEncoder(nn.Module):
 
     def forward(self, x: Tensor, mask: Tensor) -> Tensor:
         # mask: (B, T, N) with boolean values, 0 -> masked, 1 -> visible
+        # Debug prints to understand initial dimensions
+        print(f"Input x shape: {x.shape}")
+        print(f"Mask shape: {mask.shape}")
+        print(f"Mask sum: {mask.sum()}")  # Number of True values
+
         assert len(x.shape) == 5, "x must be 5D"
         emb = self.patch_embedding(x)
+        print(f"After patch embedding, emb shape: {emb.shape}")
         emb = self.pos_embedding(emb)
+        print(f"After positional embedding, emb shape: {emb.shape}")
         b, _, c = emb.shape
+        print(f"b={b}, n={n}, c={c}")
+        print(f"Before mask indexing, emb shape: {emb.shape}")
         emb = emb[mask].view(b, -1, c)  # only visible patches are used
+        print(f"After mask indexing, visible_emb shape: {emb.shape}")
+        print(f"Number of visible patches per batch: {emb.shape[1]}")
         emb = self.forward_features(emb)
         return emb
 
