@@ -729,3 +729,9 @@ class MultiModalMarlin(LightningModule):
         # Final grid
         log_img = torch.cat([rgb_row, thermal_row, depth_row], dim=1)
         self.log_image("sample_multimodal", log_img)
+
+    def log_image(self, name: str, image: torch.Tensor) -> None:
+        """Log an image to the logger"""
+        if self.logger is None:
+            return
+        self.logger.experiment.add_image(name, image, self.current_epoch)
