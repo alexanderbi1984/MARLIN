@@ -540,12 +540,90 @@ class MultiModalMarlin(LightningModule):
         return [g_optimizer, d_optimizer], [g_lr_scheduler, d_lr_scheduler]
 
 
+    # def _log_sample_reconstruction_image(self, batch):
+    #     mixed_video, mask, rgb_frames, depth_frames, thermal_frames = batch
+    #     # Print shapes to diagnose the issue
+    #     print(f"Mixed video shape: {mixed_video.shape}")
+    #     print(f"Mask shape: {mask.shape}")
+    #     print(f"RGB frames shape: {rgb_frames.shape}")
+    #     # Take only the first batch item for visualization
+    #     mixed_video = mixed_video[:1]
+    #     mask = mask[:1]
+    #     rgb_frames = rgb_frames[:1]
+    #     depth_frames = depth_frames[:1]
+    #     thermal_frames = thermal_frames[:1]
+    #
+    #     # Get predictions
+    #     rgb_pred, thermal_pred, depth_pred = self(mixed_video, mask)
+    #
+    #     # Print more shapes
+    #     print(f"RGB prediction shape: {rgb_pred.shape}")
+    #     print(
+    #         f"Expected number of patches: {mixed_video.shape[2] // self.tubelet_size * (mixed_video.shape[3] // self.patch_size) * (mixed_video.shape[4] // self.patch_size)}")
+    #
+    #     # Prepare RGB visualization
+    #     rgb_gt_img = rgb_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
+    #         .unfold(3, self.patch_size, self.patch_size) \
+    #         .unfold(4, self.patch_size, self.patch_size)
+    #     rgb_gt_img = rearrange(rgb_gt_img, "b c nt nh nw pt ph pw -> b (nt nh nw) (c pt ph pw)")
+    #     rgb_gt_img = self.rgb_decoder.unpatch_to_img(rgb_gt_img).detach()[0, :, 0]  # (C, H, W)
+    #
+    #     # Prepare Thermal visualization
+    #     thermal_gt_img = thermal_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
+    #         .unfold(3, self.patch_size, self.patch_size) \
+    #         .unfold(4, self.patch_size, self.patch_size)
+    #     thermal_gt_img = rearrange(thermal_gt_img, "b c nt nh nw pt ph pw -> b (nt nh nw) (c pt ph pw)")
+    #     thermal_gt_img = self.thermal_decoder.unpatch_to_img(thermal_gt_img).detach()[0, :, 0]  # (C, H, W)
+    #
+    #     # Prepare Depth visualization
+    #     depth_gt_img = depth_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
+    #         .unfold(3, self.patch_size, self.patch_size) \
+    #         .unfold(4, self.patch_size, self.patch_size)
+    #     depth_gt_img = rearrange(depth_gt_img, "b c nt nh nw pt ph pw -> b (nt nh nw) (c pt ph pw)")
+    #     depth_gt_img = self.depth_decoder.unpatch_to_img(depth_gt_img).detach()[0, :, 0]  # (C, H, W)
+    #
+    #     # Make patched versions for reconstruction
+    #     # Patch mixed input
+    #     x = rearrange(mixed_video, "b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2) c",
+    #                   p0=self.tubelet_size, p1=self.patch_size, p2=self.patch_size)
+    #     x = rearrange(x, "b n p c -> b n (c p)")
+    #
+    #     # Make masked visualization
+    #     x_masked = x.clone()
+    #     x_masked[~mask] = 0.5
+    #     masked_img = self.rgb_decoder.unpatch_to_img(x_masked).detach()[0, :, 0]  # Using RGB decoder for visualization
+    #
+    #     # Reconstructed images
+    #     rgb_rec_img = self.rgb_decoder.unpatch_to_img(rgb_pred).detach()[0, :, 0]
+    #     thermal_rec_img = self.thermal_decoder.unpatch_to_img(thermal_pred).detach()[0, :, 0]
+    #     depth_rec_img = self.depth_decoder.unpatch_to_img(depth_pred).detach()[0, :, 0]
+    #
+    #     # Create visualization grid
+    #     # RGB row
+    #     rgb_row = torch.cat([rgb_gt_img, masked_img, rgb_rec_img], dim=2)
+    #
+    #     # Thermal row (repeat channels to make it visible if it's single-channel)
+    #     if thermal_gt_img.size(0) == 1:
+    #         thermal_gt_img = thermal_gt_img.repeat(3, 1, 1)
+    #         thermal_rec_img = thermal_rec_img.repeat(3, 1, 1)
+    #     thermal_row = torch.cat([thermal_gt_img, masked_img, thermal_rec_img], dim=2)
+    #
+    #     # Depth row (repeat channels to make it visible if it's single-channel)
+    #     if depth_gt_img.size(0) == 1:
+    #         depth_gt_img = depth_gt_img.repeat(3, 1, 1)
+    #         depth_rec_img = depth_rec_img.repeat(3, 1, 1)
+    #     depth_row = torch.cat([depth_gt_img, masked_img, depth_rec_img], dim=2)
+    #
+    #     # Final grid
+    #     log_img = torch.cat([rgb_row, thermal_row, depth_row], dim=1)
+    #     self.log_image("sample_multimodal", log_img)
     def _log_sample_reconstruction_image(self, batch):
         mixed_video, mask, rgb_frames, depth_frames, thermal_frames = batch
         # Print shapes to diagnose the issue
         print(f"Mixed video shape: {mixed_video.shape}")
         print(f"Mask shape: {mask.shape}")
         print(f"RGB frames shape: {rgb_frames.shape}")
+
         # Take only the first batch item for visualization
         mixed_video = mixed_video[:1]
         mask = mask[:1]
@@ -553,13 +631,33 @@ class MultiModalMarlin(LightningModule):
         depth_frames = depth_frames[:1]
         thermal_frames = thermal_frames[:1]
 
-        # Get predictions
+        # Get predictions (these will be just the masked patches)
         rgb_pred, thermal_pred, depth_pred = self(mixed_video, mask)
 
         # Print more shapes
         print(f"RGB prediction shape: {rgb_pred.shape}")
-        print(
-            f"Expected number of patches: {mixed_video.shape[2] // self.tubelet_size * (mixed_video.shape[3] // self.patch_size) * (mixed_video.shape[4] // self.patch_size)}")
+        expected_patches = mixed_video.shape[2] // self.tubelet_size * (mixed_video.shape[3] // self.patch_size) * (
+                    mixed_video.shape[4] // self.patch_size)
+        print(f"Expected number of patches: {expected_patches}")
+
+        # Count visible and masked patches
+        visible_patches = mask.sum().item()
+        masked_patches = mask.numel() - visible_patches
+        print(f"Visible patches: {visible_patches}, Masked patches: {masked_patches}")
+
+        # Create full tensors that include all patches for visualization
+        b = mixed_video.shape[0]  # Should be 1 for visualization
+
+        # Create empty tensors for visualization with all patches
+        rgb_full = torch.zeros(b, expected_patches, rgb_pred.shape[-1], device=rgb_pred.device)
+        thermal_full = torch.zeros(b, expected_patches, thermal_pred.shape[-1], device=thermal_pred.device)
+        depth_full = torch.zeros(b, expected_patches, depth_pred.shape[-1], device=depth_pred.device)
+
+        # Fill in the reconstructed patches only at the masked positions
+        # The decoder outputs are in the same order as the masked positions
+        rgb_full[~mask] = rgb_pred
+        thermal_full[~mask] = thermal_pred
+        depth_full[~mask] = depth_pred
 
         # Prepare RGB visualization
         rgb_gt_img = rgb_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
@@ -593,10 +691,24 @@ class MultiModalMarlin(LightningModule):
         x_masked[~mask] = 0.5
         masked_img = self.rgb_decoder.unpatch_to_img(x_masked).detach()[0, :, 0]  # Using RGB decoder for visualization
 
-        # Reconstructed images
-        rgb_rec_img = self.rgb_decoder.unpatch_to_img(rgb_pred).detach()[0, :, 0]
-        thermal_rec_img = self.thermal_decoder.unpatch_to_img(thermal_pred).detach()[0, :, 0]
-        depth_rec_img = self.depth_decoder.unpatch_to_img(depth_pred).detach()[0, :, 0]
+        try:
+            # Try to visualize using the full tensors we created
+            rgb_rec_img = self.rgb_decoder.unpatch_to_img(rgb_full).detach()[0, :, 0]
+            thermal_rec_img = self.thermal_decoder.unpatch_to_img(thermal_full).detach()[0, :, 0]
+            depth_rec_img = self.depth_decoder.unpatch_to_img(depth_full).detach()[0, :, 0]
+        except Exception as e:
+            print(f"Visualization error: {e}")
+            # Fallback: create simplified visualization
+            # Just show a grid of the reconstructed patches
+            print("Using fallback visualization method")
+
+            # Create a blank canvas for each modality
+            rgb_rec_img = torch.zeros_like(rgb_gt_img)
+            thermal_rec_img = torch.zeros_like(thermal_gt_img)
+            depth_rec_img = torch.zeros_like(depth_gt_img)
+
+            # Place text or indicator that visualization failed
+            # (in a real implementation, you might want a more sophisticated fallback)
 
         # Create visualization grid
         # RGB row
