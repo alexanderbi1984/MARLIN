@@ -15,6 +15,28 @@ from torch.utils.data import Dataset, DataLoader
 from util.misc import sample_indexes
 
 
+def load_image_safely(file_path, grayscale=False, img_size=224):
+    """Safely load an image with fallback to small values if missing."""
+    if os.path.exists(file_path):
+        if grayscale:
+            img = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
+        else:
+            img = cv2.imread(file_path)
+
+        if img is not None:
+            return img
+        else:
+            print(f"Warning: Failed to load image {file_path}. Using small values instead.")
+    else:
+        print(f"Warning: Missing file {file_path}. Using small values instead.")
+
+    # Return array with small non-zero values (e.g., 0.001 after normalization)
+    # Using 1 here (before normalization) will result in ~0.004 after dividing by 255
+    if grayscale:
+        return np.ones((img_size, img_size), dtype=np.uint8) * 1
+    else:
+        return np.ones((img_size, img_size, 3), dtype=np.uint8) * 1
+
 class BP4DMultiModal(Dataset):
     seg_groups = [
         [2, 4],  # right eye
@@ -148,41 +170,58 @@ class BP4DMultiModal(Dataset):
         #     # Store in video tensor (T, H, W, 5)
         #     video[i] = torch.from_numpy(multimodal_frame)
 
-        for i in range(self.clip_frames):
-            # Define file paths
-            rgb_path = os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path, files[indexes[i]])
-            depth_path = os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta.path, files[indexes[i]])
-            thermal_path = os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta.path, files[indexes[i]])
-
-            # Load RGB image with fallback
-            if os.path.exists(rgb_path):
-                rgb_img = cv2.imread(rgb_path)
-                if rgb_img is None:
-                    print(f"Warning: Failed to load RGB image {rgb_path}. Using zeros instead.")
-                    rgb_img = np.zeros((self.img_size, self.img_size, 3), dtype=np.uint8)
-            else:
-                print(f"Warning: Missing RGB file {rgb_path}. Using zeros instead.")
-                rgb_img = np.zeros((self.img_size, self.img_size, 3), dtype=np.uint8)
-
-            # Load depth image with fallback
-            if os.path.exists(depth_path):
-                depth_img = cv2.imread(depth_path, cv2.IMREAD_GRAYSCALE)
-                if depth_img is None:
-                    print(f"Warning: Failed to load depth image {depth_path}. Using zeros instead.")
-                    depth_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
-            else:
-                print(f"Warning: Missing depth file {depth_path}. Using zeros instead.")
-                depth_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
-
-            # Load thermal image with fallback
-            if os.path.exists(thermal_path):
-                thermal_img = cv2.imread(thermal_path, cv2.IMREAD_GRAYSCALE)
-                if thermal_img is None:
-                    print(f"Warning: Failed to load thermal image {thermal_path}. Using zeros instead.")
-                    thermal_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
-            else:
-                print(f"Warning: Missing thermal file {thermal_path}. Using zeros instead.")
-                thermal_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
+        # for i in range(self.clip_frames):
+        #     # Define file paths
+        #     rgb_path = os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path, files[indexes[i]])
+        #     depth_path = os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta.path, files[indexes[i]])
+        #     thermal_path = os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta.path, files[indexes[i]])
+        #
+        #     # Load RGB image with fallback
+        #     if os.path.exists(rgb_path):
+        #         rgb_img = cv2.imread(rgb_path)
+        #         if rgb_img is None:
+        #             print(f"Warning: Failed to load RGB image {rgb_path}. Using zeros instead.")
+        #             rgb_img = np.zeros((self.img_size, self.img_size, 3), dtype=np.uint8)
+        #     else:
+        #         print(f"Warning: Missing RGB file {rgb_path}. Using zeros instead.")
+        #         rgb_img = np.zeros((self.img_size, self.img_size, 3), dtype=np.uint8)
+        #
+        #     # Load depth image with fallback
+        #     if os.path.exists(depth_path):
+        #         depth_img = cv2.imread(depth_path, cv2.IMREAD_GRAYSCALE)
+        #         if depth_img is None:
+        #             print(f"Warning: Failed to load depth image {depth_path}. Using zeros instead.")
+        #             depth_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
+        #     else:
+        #         print(f"Warning: Missing depth file {depth_path}. Using zeros instead.")
+        #         depth_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
+        #
+        #     # Load thermal image with fallback
+        #     if os.path.exists(thermal_path):
+        #         thermal_img = cv2.imread(thermal_path, cv2.IMREAD_GRAYSCALE)
+        #         if thermal_img is None:
+        #             print(f"Warning: Failed to load thermal image {thermal_path}. Using zeros instead.")
+        #             thermal_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
+        #     else:
+        #         print(f"Warning: Missing thermal file {thermal_path}. Using zeros instead.")
+        #         thermal_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
+            for i in range(self.clip_frames):
+                # Load images with fallback to small non-zero values
+                rgb_img = load_image_safely(
+                    os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path, files[indexes[i]]),
+                    grayscale=False,
+                    img_size=self.img_size
+                )
+                depth_img = load_image_safely(
+                    os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta.path, files[indexes[i]]),
+                    grayscale=True,
+                    img_size=self.img_size
+                )
+                thermal_img = load_image_safely(
+                    os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta.path, files[indexes[i]]),
+                    grayscale=True,
+                    img_size=self.img_size
+                )
 
             # Process RGB
             rgb_img = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2RGB) / 255.0
@@ -249,38 +288,40 @@ class BP4DMultiModal(Dataset):
         return mixed_video, masks.flatten().bool(), rgb_frames, depth_frames, thermal_frames
 
 
-    def load_image_safely(file_path, fallback_shape=(224, 224), channels=1):
-        """
-        Load an image with fallback to zeros if the file is missing.
+    # def load_image_safely(file_path, fallback_shape=(224, 224), channels=1):
+    #     """
+    #     Load an image with fallback to zeros if the file is missing.
+    #
+    #     Args:
+    #         file_path: Path to the image file
+    #         fallback_shape: Shape to use for zero tensor if image is missing (height, width)
+    #         channels: Number of channels for the image (1 for depth/thermal, 3 for RGB)
+    #
+    #     Returns:
+    #         Loaded image as numpy array or zero array if file is missing
+    #     """
+    #     if os.path.exists(file_path) and os.path.isfile(file_path):
+    #         try:
+    #             img = cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
+    #             if img is not None:
+    #                 # Successfully loaded
+    #                 if channels == 1 and len(img.shape) == 3:
+    #                     # Convert RGB to grayscale if needed
+    #                     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    #                 return img
+    #         except Exception as e:
+    #             print(f"Error loading {file_path}: {e}")
+    #
+    #     # If we get here, the file is missing or couldn't be loaded
+    #     print(f"Warning: Missing or corrupt file {file_path}. Using zero tensor instead.")
+    #
+    #     # Create an appropriate zero array based on channels
+    #     if channels == 1:
+    #         return np.zeros(fallback_shape, dtype=np.uint8)
+    #     else:
+    #         return np.zeros((*fallback_shape, channels), dtype=np.uint8)
 
-        Args:
-            file_path: Path to the image file
-            fallback_shape: Shape to use for zero tensor if image is missing (height, width)
-            channels: Number of channels for the image (1 for depth/thermal, 3 for RGB)
 
-        Returns:
-            Loaded image as numpy array or zero array if file is missing
-        """
-        if os.path.exists(file_path) and os.path.isfile(file_path):
-            try:
-                img = cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
-                if img is not None:
-                    # Successfully loaded
-                    if channels == 1 and len(img.shape) == 3:
-                        # Convert RGB to grayscale if needed
-                        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    return img
-            except Exception as e:
-                print(f"Error loading {file_path}: {e}")
-
-        # If we get here, the file is missing or couldn't be loaded
-        print(f"Warning: Missing or corrupt file {file_path}. Using zero tensor instead.")
-
-        # Create an appropriate zero array based on channels
-        if channels == 1:
-            return np.zeros(fallback_shape, dtype=np.uint8)
-        else:
-            return np.zeros((*fallback_shape, channels), dtype=np.uint8)
 
     def apply_mask_strategy(self, masks):
         """
