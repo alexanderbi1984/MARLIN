@@ -385,6 +385,29 @@ class MultiModalMarlin(LightningModule):
 
         return loss_dict["loss"]
 
+
+    def _cosine_scheduler_factors(self):
+        warmup_schedule = np.array([])
+        warmup_iters = self.warmup_epochs * self.iter_per_epoch
+        if self.warmup_epochs > 0:
+            warmup_schedule = np.linspace(0, self.learning_rate, warmup_iters)
+
+        iters = np.arange(self.max_epochs * self.iter_per_epoch - warmup_iters)
+        schedule = np.array(
+            [self.min_lr + 0.5 * (self.learning_rate - self.min_lr) * (1 + math.cos(math.pi * i / (len(iters))))
+                for i in iters])
+
+        schedule = np.concatenate((warmup_schedule, schedule))
+
+        assert len(schedule) == self.max_epochs * self.iter_per_epoch
+        values_factors = schedule[::self.iter_per_epoch] / self.learning_rate
+        return values_factors
+
+
+    def _cosine_scheduler_fn(self, epoch):
+        return self.lr_scheduler_factors[epoch]
+
+
     def configure_optimizers(self):
         g_optimizer = self.optimizer_type(
             itertools.chain(
