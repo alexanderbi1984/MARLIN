@@ -206,6 +206,29 @@ class MultiModalMarlin(LightningModule):
 
         return rgb_out, thermal_out, depth_out
 
+    @staticmethod 
+    def g_loss_fn(pred) -> Tensor:
+        return -pred.mean()
+
+    @staticmethod
+    def d_loss_fn(pred, target) -> Tensor:
+        real_score = pred[target == 1]
+        fake_score = pred[target == 0]
+        return fake_score.mean() - real_score.mean()
+
+    def gradient_penalty_fn(self, real_patches: Tensor, fake_patches: Tensor) -> Tensor:
+        alpha = torch.rand(1).to(self.device).expand(real_patches.size())
+
+        interpolates = torch.autograd.Variable(alpha * real_patches + ((1 - alpha) * fake_patches), requires_grad=True)
+        disc_interpolates = self.discriminator(interpolates)
+
+        gradients = torch.autograd.grad(outputs=disc_interpolates, inputs=interpolates,
+                                        grad_outputs=torch.ones(disc_interpolates.size(), device=self.device),
+                                        create_graph=True)[0]
+
+        gradients = rearrange(gradients, 'b n c -> (b n) c')
+        gp = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+        return gp
 
     def step(self, batch):
         # Forward step
