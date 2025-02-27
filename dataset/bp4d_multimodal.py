@@ -15,7 +15,7 @@ from torch.utils.data import Dataset, DataLoader
 from util.misc import sample_indexes
 
 
-class YoutubeFace(Dataset):
+class BP4DMultiModal(Dataset):
     seg_groups = [
         [2, 4],  # right eye
         [3, 5],  # left eye
@@ -38,7 +38,6 @@ class YoutubeFace(Dataset):
         take_num: Optional[int] = None
     ):
 
-        ## docstring
         """	Arguments:
 	•	root_dir: Path to the dataset.
 	•	split: Either “train” or “val”.
@@ -81,75 +80,38 @@ class YoutubeFace(Dataset):
 
     def __getitem__(self, index):
         """
-            Retrieves and processes a video sample along with a corresponding masking strategy.
+        Retrieves and processes a multimodal video sample (RGB, Depth, Thermal) with patch-level channel mixing and masking.
 
-            Args:
-                index (int): Index of the video sample in the dataset.
+        Args:
+            index (int): Index of the video sample in the dataset.
 
-            Returns:
-                Tuple[Tensor, Tensor]:
-                    - Processed video tensor of shape `(C, T, H, W)`, where:
-                        - C: Number of color channels (3 for RGB).
-                        - T: Number of frames in the clip.
-                        - H, W: Image height and width.
-                    - Flattened boolean mask tensor indicating visible (`True`) and masked (`False`) regions.
-
-            Functionality:
-            1. **Load Video Frames**:
-                - Retrieves metadata for the video sample.
-                - Loads image file names from the specified directory.
-                - Selects a subset of frames using `_sample_indexes()`.
-                - Initializes a zero tensor (`video`) to store processed frames.
-
-            2. **Preprocess Frames**:
-                - Reads each image file using OpenCV.
-                - Converts images from BGR to RGB.
-                - Normalizes pixel values to range [0, 1].
-                - Stores the images as PyTorch tensors in the `video` tensor.
-
-            3. **Generate Masking Strategy**:
-                - Initializes a mask tensor (`masks`) with either **patch-based masking** (low-resolution)
-                  or **full-frame masking** (high-resolution).
-                - If `face_strategy` is enabled, determines which face regions should be kept/masked.
-
-            4. **Apply Face-Based Masking**:
-                - Calls `gen_mask()` on the first frame of each **tubelet** (a small segment of frames)
-                  to determine visible/masked regions.
-                - Stores generated masks in the `masks` tensor.
-
-            5. **Apply Masking Strategies**:
-                - **"Tube" Strategy**:
-                    - Uses only the first frame’s mask.
-                    - Randomly reduces the number of visible patches to match `mask_percentage_target`.
-                    - Repeats this mask across all tubelets.
-                - **"Frame" Strategy**:
-                    - Selects frames to be visible/masked at a fixed rate.
-                    - Expands this mask to match the shape of the video.
-                - **Default**: Uses the original generated mask.
-
-            6. **Normalize Masking for Batch Computation**:
-                - Ensures the final mask matches the target visibility percentage.
-                - Randomly removes extra visible patches to align with `mask_percentage_target`.
-
-            7. **Return Processed Video and Mask**:
-                - Rearranges video tensor to shape `(C, T, H, W)`.
-                - Returns the **original video frames** (not masked) and a **1D mask vector**.
-
-            Notes:
-            - The mask is not directly applied to the video; it is returned separately for later use.
-            - This function is designed for **masked video modeling**, where regions of frames are hidden
-              and the model learns to reconstruct or infer missing parts.
-
-            """
+        Returns:
+            Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+                - Mixed multimodal video tensor of shape `(C=3, T, H, W)`, where:
+                    - C: Number of mixed channels (3 after dropping 2).
+                    - T: Number of frames in the clip.
+                    - H, W: Image height and width.
+                - Flattened boolean mask tensor indicating visible (`True`) and masked (`False`) regions.
+                - Original RGB frames `(3, T, H, W)`, before mixing.
+                - Original Depth frames `(1, T, H, W)`, before mixing.
+                - Original Thermal frames `(1, T, H, W)`, before mixing.
+        """
+        # Load metadata and video file paths
         meta = self.metadata.iloc[index]
         files = sorted(os.listdir(os.path.join(self.root_dir, "crop_images_DB", meta.path)))
         indexes = self._sample_indexes(len(files))
         assert len(indexes) == self.clip_frames
 
-        video = torch.zeros(self.clip_frames, self.img_size, self.img_size, 3, dtype=torch.float32)
+        # Initialize video tensors
+        video = torch.zeros(self.clip_frames, self.img_size, self.img_size, 5,
+                            dtype=torch.float32)  # 5-channel (RGB-D-T)
+        rgb_frames = torch.zeros(self.clip_frames, self.img_size, self.img_size, 3, dtype=torch.float32)
+        depth_frames = torch.zeros(self.clip_frames, self.img_size, self.img_size, 1, dtype=torch.float32)
+        thermal_frames = torch.zeros(self.clip_frames, self.img_size, self.img_size, 1, dtype=torch.float32)
+
         if self.patch_masking:
             masks = torch.zeros(self.clip_frames // self.tubelet_size,
-                self.mask_unit_num, self.mask_unit_num, dtype=torch.float32)
+                                self.mask_unit_num, self.mask_unit_num, dtype=torch.float32)
         else:
             masks = torch.zeros(self.clip_frames, self.img_size, self.img_size, dtype=torch.float32)
 
@@ -162,50 +124,125 @@ class YoutubeFace(Dataset):
             keep_queue = None
 
         for i in range(self.clip_frames):
+            # Load RGB, Depth, and Thermal images
+            rgb_img = cv2.imread(os.path.join(self.root_dir, "crop_images_DB", meta.path, files[indexes[i]]))
+            depth_img = cv2.imread(os.path.join(self.root_dir, "depth_images_DB", meta.path, files[indexes[i]]),
+                                   cv2.IMREAD_GRAYSCALE)
+            thermal_img = cv2.imread(os.path.join(self.root_dir, "thermal_images_DB", meta.path, files[indexes[i]]),
+                                     cv2.IMREAD_GRAYSCALE)
 
-            ## docstring
-            """
-            	1.	Loads an image from the specified folder.
-	            2.	Converts it from BGR to RGB (for compatibility with deep learning models).
-	            3.	Normalizes pixel values (scales them to [0, 1]).
-	            4.	Converts the image into a PyTorch tensor.
-	            5.	Stores it in a pre-allocated video tensor, which contains multiple frames.
+            # Convert RGB from BGR to RGB and normalize all modalities to [0,1]
+            rgb_img = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2RGB) / 255.0
+            depth_img = np.expand_dims(depth_img, axis=-1) / 255.0  # Convert (H, W) → (H, W, 1)
+            thermal_img = np.expand_dims(thermal_img, axis=-1) / 255.0  # Convert (H, W) → (H, W, 1)
 
-            """
-            img = cv2.imread(os.path.join(self.root_dir, "crop_images_DB", meta.path, files[indexes[i]]))
-            video[i] = torch.from_numpy(cv2.cvtColor(img, cv2.COLOR_BGR2RGB) / 255)
+            # Store the original frames before mixing
+            rgb_frames[i] = torch.from_numpy(rgb_img)
+            depth_frames[i] = torch.from_numpy(depth_img)
+            thermal_frames[i] = torch.from_numpy(thermal_img)
+
+            # Stack all modalities along the channel dimension (H, W, 5)
+            multimodal_frame = np.concatenate([rgb_img, depth_img, thermal_img], axis=-1)
+
+            # Store in video tensor (T, H, W, 5)
+            video[i] = torch.from_numpy(multimodal_frame)
+
+        # Get patch dimensions
+        patch_h = self.img_size // self.patch_size  # Number of patches along height
+        patch_w = self.img_size // self.patch_size  # Number of patches along width
+
+        # Generate a random patch-wise channel selection map (each patch gets its own channel mix)
+        patch_channel_map = np.zeros((patch_h, patch_w, 3), dtype=int)  # Stores selected channels per patch
+        for ph in range(patch_h):
+            for pw in range(patch_w):
+                selected_channels = np.random.choice(5, 3, replace=False)  # Pick 3 of 5 channels
+                np.random.shuffle(selected_channels)  # Shuffle the selected channels
+                patch_channel_map[ph, pw] = selected_channels  # Assign to this patch
+
+        # Apply the patch-wise channel mixing to the entire video
+        mixed_video = torch.zeros(self.clip_frames, self.img_size, self.img_size, 3, dtype=torch.float32)
+        for i in range(self.clip_frames):
+            for ph in range(patch_h):
+                for pw in range(patch_w):
+                    # Get pixel locations for this patch
+                    h_start, h_end = ph * self.patch_size, (ph + 1) * self.patch_size
+                    w_start, w_end = pw * self.patch_size, (pw + 1) * self.patch_size
+
+                    # Apply selected channels to the corresponding patch
+                    mixed_video[i, h_start:h_end, w_start:w_end, :] = video[i, h_start:h_end, w_start:w_end,
+                                                                      patch_channel_map[ph, pw]]
+
+        # Generate a single spatial mask for all channels
+        for i in range(self.clip_frames):
             if i % self.tubelet_size == 0:
-                mask = self.gen_mask(meta.path, files[indexes[i]].replace(".jpg", ".npy"), keep_queue)
-                masks[i // self.tubelet_size] = mask
+                mask = self.gen_mask(meta.path, files[indexes[i]].replace(".jpg", ".npy"), keep_queue)  # Generate one mask
+                masks[i // self.tubelet_size] = mask  # Apply the same mask to all channels
 
+        # Apply masking strategy (tube, frame, random)
+        masks = self.apply_mask_strategy(masks).bool()
+
+        # Normalize masking to match target visibility percentage
+        masks = self.normalize_mask(masks).bool()
+
+        # Rearrange tensors for proper shape
+        mixed_video = rearrange(mixed_video, "t h w c -> c t h w")  # Mixed channels first
+        rgb_frames = rearrange(rgb_frames, "t h w c -> c t h w")  # Original RGB
+        depth_frames = rearrange(depth_frames, "t h w c -> c t h w")  # Original Depth
+        thermal_frames = rearrange(thermal_frames, "t h w c -> c t h w")  # Original Thermal
+
+        return mixed_video, masks.flatten().bool(), rgb_frames, depth_frames, thermal_frames
+
+    def apply_mask_strategy(self, masks):
+        """
+        Applies the selected masking strategy (tube, frame, or random).
+
+        Args:
+            masks (Tensor): Initial mask tensor of shape (T, H, W).
+
+        Returns:
+            Tensor: Mask tensor with the selected strategy applied.
+        """
         if self.mask_strategy == "tube":
+            # Use the first frame’s mask for all frames
             first_mask = masks[0].flatten().bool()
             target_visible_num = ceil(len(first_mask) * self.mask_percentage_target)
             visible_indexes = first_mask.nonzero().flatten()
-            extra_indexes = np.random.choice(visible_indexes, len(visible_indexes) - target_visible_num,
-                replace=False)
+            extra_indexes = np.random.choice(visible_indexes, len(visible_indexes) - target_visible_num, replace=False)
             first_mask[extra_indexes] = False
-            masks = first_mask.repeat(self.clip_frames // self.tubelet_size)
+            # masks = first_mask.repeat(self.clip_frames).view(masks.shape)  # Repeat for all frames
+            masks = first_mask.view(1, *masks.shape[1:]).expand(masks.shape)
+
         elif self.mask_strategy == "frame":
-            frame_mask = torch.ones(self.clip_frames // self.tubelet_size)
+            # Mask whole frames based on visibility percentage
+            frame_mask = torch.ones(self.clip_frames)
             target_visible_num = ceil(len(frame_mask) * self.mask_percentage_target)
             visible_indexes = frame_mask.nonzero().flatten()
-            extra_indexes = np.random.choice(visible_indexes, len(visible_indexes) - target_visible_num,
-                replace=False)
+            extra_indexes = np.random.choice(visible_indexes, len(visible_indexes) - target_visible_num, replace=False)
             frame_mask[extra_indexes] = 0.0
-            masks = rearrange(frame_mask, "t -> t 1 1").expand_as(masks).flatten().bool()
+            masks = frame_mask.view(self.clip_frames, 1, 1).expand_as(masks).bool()  # Apply frame-wise mask
 
         else:
+            # Random masking (no structured constraints)
             masks = masks.flatten().bool()
 
-        # normalize the masking to strictly target percentage for batch computation.
-        target_visible_num = int(len(masks) * self.mask_percentage_target)
-        visible_indexes = masks.nonzero().flatten()
-        extra_indexes = np.random.choice(visible_indexes, len(visible_indexes) - target_visible_num,
-            replace=False)
-        masks[extra_indexes] = False
+        return masks
 
-        return rearrange(video, "t h w c -> c t h w"), masks.flatten().bool()
+    def normalize_mask(self, masks):
+        """
+        Ensures the mask strictly follows the target visibility percentage.
+
+        Args:
+            masks (Tensor): Mask tensor of shape (T, H, W).
+
+        Returns:
+            Tensor: Normalized mask tensor.
+        """
+        target_visible_num = int(len(masks.flatten()) * self.mask_percentage_target)
+        visible_indexes = masks.nonzero().flatten()
+        extra_indexes = np.random.choice(visible_indexes, len(visible_indexes) - target_visible_num, replace=False)
+        masks[extra_indexes] = False  # Set excess visible patches to False (masked)
+
+        return masks
 
     def gen_mask(self, dir_path, file_name, keep_queue: Collection[int]) -> Tensor:
         # we follow the tube style masking, where the masking is only determined by the first frame
@@ -239,7 +276,7 @@ class YoutubeFace(Dataset):
             7. If no face data exists, return a fully `1` mask.
 
             Example Usage:
-            # >>> mask = gen_mask("subject_01/video_03", "frame_10.npy", keep_queue=[1, 2])
+            # mask = gen_mask("subject_01/video_03", "frame_10.npy", keep_queue=[1, 2])
             """
         patch_masking = torch.zeros(self.mask_unit_num, self.mask_unit_num, dtype=torch.float32)
         # if mask randomly, early return
@@ -280,7 +317,7 @@ class YoutubeFace(Dataset):
         return sample_indexes(num_frames, self.clip_frames, self.temporal_sample_rate)
 
 
-class YoutubeFaceDataModule(LightningDataModule):
+class BP4DMultiModalDataModule(LightningDataModule):
 
     def __init__(self,
         root_dir: str,
@@ -311,7 +348,7 @@ class YoutubeFaceDataModule(LightningDataModule):
         self.val_dataset = None
 
     def setup(self, stage: Optional[str] = None) -> None:
-        self.train_dataset = YoutubeFace(
+        self.train_dataset = BP4DMultiModal(
             root_dir=self.root_dir,
             split="train",
             clip_frames=self.clip_frames,
@@ -323,7 +360,7 @@ class YoutubeFaceDataModule(LightningDataModule):
             take_num=self.take_train
         )
 
-        self.val_dataset = YoutubeFace(
+        self.val_dataset = BP4DMultiModal(
             root_dir=self.root_dir,
             split="val",
             clip_frames=self.clip_frames,

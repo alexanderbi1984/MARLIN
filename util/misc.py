@@ -53,6 +53,9 @@ def sample_indexes(total_frames: int, n_frames: int, temporal_sample_rate: int) 
     except RuntimeError as e:
         print(f"total_frames: {total_frames}, n_frames: {n_frames}, temporal_sample_rate: {temporal_sample_rate}")
         raise e
+    # torch.arange(n_frames) Generates a tensor of integers from 0 to n_frames - 1.
+    # Multiply by temporal_sample_rate to get the actual frame indexes.
+    # Add start_ind to get the actual frame indexes in the video.
     return torch.arange(n_frames) * temporal_sample_rate + start_ind
 
 
