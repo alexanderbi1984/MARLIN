@@ -126,10 +126,10 @@ class BP4DMultiModal(Dataset):
         for i in range(self.clip_frames):
             # Load RGB, Depth, and Thermal images
             #todo: check the path for the depth and thermal images
-            rgb_img = cv2.imread(os.path.join(self.root_dir, "crop_images_DB", meta.path, files[indexes[i]]))
-            depth_img = cv2.imread(os.path.join(self.root_dir, "depth_images_DB", meta.path, files[indexes[i]]),
+            rgb_img = cv2.imread(os.path.join(self.root_dir, "Texture_crop_images_DB", meta.path, files[indexes[i]]))
+            depth_img = cv2.imread(os.path.join(self.root_dir, "Depth_crop_images_DB", meta.path, files[indexes[i]]),
                                    cv2.IMREAD_GRAYSCALE)
-            thermal_img = cv2.imread(os.path.join(self.root_dir, "thermal_images_DB", meta.path, files[indexes[i]]),
+            thermal_img = cv2.imread(os.path.join(self.root_dir, "Thermal_crop_images_DB", meta.path, files[indexes[i]]),
                                      cv2.IMREAD_GRAYSCALE)
 
             # Convert RGB from BGR to RGB and normalize all modalities to [0,1]
@@ -287,7 +287,7 @@ class BP4DMultiModal(Dataset):
             return patch_masking
 
         # load face parsing results
-        npy_file = os.path.join(self.root_dir, "face_parsing_images_DB", dir_path, file_name)
+        npy_file = os.path.join(self.root_dir, "Texture_crop_face_parsing_images_DB", dir_path, file_name)
         face_parsing = torch.from_numpy(np.load(npy_file))
         if face_parsing.shape[0] > 0:
             terminate = False
