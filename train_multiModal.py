@@ -8,6 +8,7 @@ from dataset.bp4d_multimodal import BP4DMultiModalDataModule
 from marlin_pytorch.util import read_yaml
 from util.misc import load_official_pretrain_model
 import os
+import platform
 
 parser = argparse.ArgumentParser("MULTIMODALMARLIN pretraining")
 parser.add_argument("--config", type=str)
@@ -141,25 +142,81 @@ if __name__ == '__main__':
             print("Successfully loaded model with the following result:", load_result)
         except Exception as e:
             print(f"Failed to load the official pretrained model: {e}")
-    strategy = "auto" if n_gpus <= 1 else "ddp"
-    accelerator = "cpu" if n_gpus == 0 else "gpu"
-    accelerator = strategy
-    # accelerator = None if n_gpus <= 1 else "ddp"
-    device = "gpu" if n_gpus > 0 else "cpu"
-    n_gpus = n_gpus if n_gpus > 0 else None
-    print(f"checkpointing to ckpt/{resume_ckpt}")
+    # ddp is not available on windows. need to use dp
+    # strategy = "auto" if n_gpus <= 1 else "ddp"
+    # # accelerator = "cpu" if n_gpus == 0 else "gpu"
+    # accelerator = strategy
+    # # accelerator = None if n_gpus <= 1 else "ddp"
+    # device = "gpu" if n_gpus > 0 else "cpu"
+    # n_gpus = n_gpus if n_gpus > 0 else None
+    # print(f"checkpointing to ckpt/{resume_ckpt}")
+    # # trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=device,
+    # #     logger=True, precision=32, max_epochs=max_epochs,
+    # #     strategy=accelerator, resume_from_checkpoint=resume_ckpt,
+    # #     callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
+    # #         filename=model.name + "-{epoch}-{val_loss:.3f}",
+    # #         monitor="val_loss", mode="min")])
     # trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=device,
-    #     logger=True, precision=32, max_epochs=max_epochs,
-    #     strategy=accelerator, resume_from_checkpoint=resume_ckpt,
-    #     callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
-    #         filename=model.name + "-{epoch}-{val_loss:.3f}",
-    #         monitor="val_loss", mode="min")])
-    trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=device,
-                      logger=True, precision=32, max_epochs=max_epochs,
-                      strategy=accelerator,
-                      callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
-                                                 filename=model.name + "-{epoch}-{val_loss:.3f}",
-                                                 monitor="val_loss", mode="min")])
+    #                   logger=True, precision=32, max_epochs=max_epochs,
+    #                   strategy=accelerator,
+    #                   callbacks=[ModelCheckpoint(dirpath=f"ckpt/{model_name}", save_last=True,
+    #                                              filename=model.name + "-{epoch}-{val_loss:.3f}",
+    #                                              monitor="val_loss", mode="min")])
+
+
+
+
+    def configure_trainer(n_gpus, max_epochs, model_name):
+        # Check the operating system
+        is_windows = platform.system() == "Windows"
+
+        # Device configuration (same for both platforms)
+        accelerator = "gpu" if n_gpus > 0 else "cpu"
+        devices = n_gpus if n_gpus > 0 else None
+
+        # Strategy configuration - differs between platforms
+        if n_gpus <= 1:
+            # For single GPU or CPU, use "auto" strategy on both platforms
+            strategy = "auto"
+        else:
+            # For multiple GPUs, use different strategies based on platform
+            if is_windows:
+                strategy = "auto"
+                print("Using auto strategy for multi-GPU on Windows")
+            else:
+                strategy = "ddp"  # Distributed Data Parallel works on Linux
+                print("Using Distributed Data Parallel strategy for multi-GPU on Linux")
+
+        # Checkpoint callback (same for both platforms)
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=f"ckpt/{model_name}",
+            save_last=True,
+            filename=model.name + "-{epoch}-{val_loss:.3f}",
+            monitor="val_loss",
+            mode="min"
+        )
+
+        # Create and return trainer
+        trainer = Trainer(
+            log_every_n_steps=1,
+            devices=devices,
+            accelerator=accelerator,
+            logger=True,
+            precision=32,
+            max_epochs=max_epochs,
+            strategy=strategy,
+            callbacks=[checkpoint_callback]
+        )
+
+        print(f"Trainer configured with: accelerator={accelerator}, devices={devices}, strategy={strategy}")
+        return trainer
+
+
+    trainer = configure_trainer(
+        n_gpus=n_gpus,
+        max_epochs=100,
+        model_name="multimodal_marlin",
+    )
     if resume_ckpt:  # Check if a checkpoint path is provided
         trainer.fit(model, dm, ckpt_path=resume_ckpt)  # Resume training from the checkpoint
     else:

@@ -10,8 +10,8 @@ from torch import Tensor
 from torch.nn import Linear, MSELoss, LeakyReLU
 from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import LambdaLR
-
-from marlin_pytorch.model.decoder_multimodal import MarlinDecoder
+from model.decoder import MarlinDecoder
+# from marlin_pytorch.model.decoder import MarlinDecoder
 from marlin_pytorch.model.encoder import MarlinEncoder
 from marlin_pytorch.model.modules import MLP
 # from torch.utils.tensorboard import SummaryWriter
@@ -405,6 +405,72 @@ class MultiModalMarlin(LightningModule):
         }
         self.log_dict({f"train_{k}": v for k, v in loss_dict.items()}, on_step=True, on_epoch=True,
             prog_bar=False, sync_dist=self.distributed)
+
+        return loss_dict["loss"]
+
+    def validation_step(self, batch: Optional[Union[Tensor, Sequence[Tensor]]] = None, batch_idx: Optional[int] = None,
+                        dataloader_idx: Optional[int] = None
+                        ) -> Tensor:
+        # Log sample reconstruction image at the beginning of each validation epoch
+        if batch_idx == 0:
+            self._log_sample_reconstruction_image(batch)
+
+        # Unpack the batch
+        mixed_video, mask, rgb_frames, depth_frames, thermal_frames = batch
+
+        # Get predictions for each modality
+        rgb_pred, thermal_pred, depth_pred = self(mixed_video, mask)
+
+        # Process ground truth targets for each modality
+        # RGB patches
+        rgb_patches = rgb_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
+            .unfold(3, self.patch_size, self.patch_size) \
+            .unfold(4, self.patch_size, self.patch_size)
+        rgb_patches = rearrange(rgb_patches, "b c nt nh nw pt ph pw -> b (nt nh nw) (c pt ph pw)")
+
+        # Thermal patches
+        thermal_patches = thermal_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
+            .unfold(3, self.patch_size, self.patch_size) \
+            .unfold(4, self.patch_size, self.patch_size)
+        thermal_patches = rearrange(thermal_patches, "b c nt nh nw pt ph pw -> b (nt nh nw) (c pt ph pw)")
+
+        # Depth patches
+        depth_patches = depth_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
+            .unfold(3, self.patch_size, self.patch_size) \
+            .unfold(4, self.patch_size, self.patch_size)
+        depth_patches = rearrange(depth_patches, "b c nt nh nw pt ph pw -> b (nt nh nw) (c pt ph pw)")
+
+        # Filter masked patches
+        b, _, c_rgb = rgb_patches.shape
+        b, _, c_thermal = thermal_patches.shape
+        b, _, c_depth = depth_patches.shape
+
+        rgb_patches_masked = rgb_patches[~mask].view(b, -1, c_rgb)
+        thermal_patches_masked = thermal_patches[~mask].view(b, -1, c_thermal)
+        depth_patches_masked = depth_patches[~mask].view(b, -1, c_depth)
+
+        # Prepare inputs for loss calculation
+        preds = (rgb_pred, thermal_pred, depth_pred)
+        targets = (rgb_patches_masked, thermal_patches_masked, depth_patches_masked)
+
+        # Calculate discriminator loss
+        d_result = self.d_step(preds, targets)
+        d_loss = d_result["loss"]
+
+        # Calculate generator loss
+        g_result = self.g_step(preds, targets)
+        g_loss = g_result["loss"]
+
+        # Combine all losses and metrics
+        loss_dict = {
+            "loss": d_loss + g_loss,
+            **{k: v for k, v in d_result.items() if k != "loss"},
+            **{k: v for k, v in g_result.items() if k != "loss"},
+        }
+
+        # Log all metrics
+        self.log_dict({f"val_{k}": v for k, v in loss_dict.items()}, on_step=False, on_epoch=True,
+                      prog_bar=True, sync_dist=self.distributed)
 
         return loss_dict["loss"]
 

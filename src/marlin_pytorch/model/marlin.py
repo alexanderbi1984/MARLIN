@@ -16,7 +16,7 @@ from torch.nn import Linear, Module
 from ..config import resolve_config, Downloadable
 from ..face_detector import FaceXZooFaceDetector
 
-from .decoder import MarlinDecoder
+from .decoder_original import MarlinDecoder
 from .encoder import MarlinEncoder
 from ..util import read_video, padding_video, DownloadProgressBar
 

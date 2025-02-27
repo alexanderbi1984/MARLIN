@@ -6,20 +6,20 @@ from torch.nn import LayerNorm, Linear, ModuleList
 from .modules import Block, no_grad_trunc_normal_
 from .positional_embedding import SinCosPositionalEmbedding
 
+
 class MarlinDecoder(nn.Module):
+
     def __init__(self, img_size=224, patch_size=16, n_frames=16, embed_dim=384, depth=8,
-                 num_heads=6, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
-                 norm_layer="LayerNorm", init_values=1., tubelet_size=2, output_channels=3
-                 ):
+        num_heads=6, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0.,
+        norm_layer="LayerNorm", init_values=1., tubelet_size=2
+    ):
         super().__init__()
-        output_dim = output_channels * tubelet_size * patch_size * patch_size
+        output_dim = 3 * tubelet_size * patch_size * patch_size
         self.patch_size = patch_size
         self.tubelet_size = tubelet_size
         self.n_patch_h = img_size // patch_size
         self.n_patch_w = img_size // patch_size
         self.embed_dim = embed_dim
-        self.output_channels = output_channels  # Store output_channels for use in unpatch_to_img
-
         if norm_layer == "LayerNorm":
             self.norm_layer = LayerNorm
             self.norm = self.norm_layer(embed_dim)
@@ -54,17 +54,10 @@ class MarlinDecoder(nn.Module):
 
     def unpatch_to_img(self, x: Tensor) -> Tensor:
         # x: (Batch, No. batches, Prod of cube size * C)
-        # Rearrange accounting for the correct number of channels
-        x = rearrange(x, "b n (c p) -> b n p c", c=self.output_channels)
+        x = rearrange(x, "b n (c p) -> b n p c", c=3)
         # x: (Batch, No. batches, Prod of cube size, C)
-
-        # Rearrange into proper spatial dimensions
-        x = rearrange(x, "b (t h w) (p0 p1 p2) c -> b c (t p0) (h p1) (w p2)",
-                      p0=self.tubelet_size,
-                      p1=self.patch_size,
-                      p2=self.patch_size,
-                      h=self.n_patch_h,
-                      w=self.n_patch_w)
+        x = rearrange(x, "b (t h w) (p0 p1 p2) c -> b c (t p0) (h p1) (w p2)", p0=self.tubelet_size,
+            p1=self.patch_size, p2=self.patch_size, h=self.n_patch_h, w=self.n_patch_w)
         # x: (B, C, T, H, W)
         return x
 
