@@ -541,7 +541,10 @@ class MultiModalMarlin(LightningModule):
 
     def _log_sample_reconstruction_image(self, batch):
         mixed_video, mask, rgb_frames, depth_frames, thermal_frames = batch
-
+        # Print shapes to diagnose the issue
+        print(f"Mixed video shape: {mixed_video.shape}")
+        print(f"Mask shape: {mask.shape}")
+        print(f"RGB frames shape: {rgb_frames.shape}")
         # Take only the first batch item for visualization
         mixed_video = mixed_video[:1]
         mask = mask[:1]
@@ -551,6 +554,11 @@ class MultiModalMarlin(LightningModule):
 
         # Get predictions
         rgb_pred, thermal_pred, depth_pred = self(mixed_video, mask)
+
+        # Print more shapes
+        print(f"RGB prediction shape: {rgb_pred.shape}")
+        print(
+            f"Expected number of patches: {mixed_video.shape[2] // self.tubelet_size * (mixed_video.shape[3] // self.patch_size) * (mixed_video.shape[4] // self.patch_size)}")
 
         # Prepare RGB visualization
         rgb_gt_img = rgb_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
