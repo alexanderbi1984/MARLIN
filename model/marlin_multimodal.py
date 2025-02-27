@@ -159,6 +159,31 @@ class MultiModalMarlin(LightningModule):
 
         # ... original optimizer and scheduler setup code ...
 
+        if optimizer_type == "AdamW":
+            self.optimizer_type = AdamW
+        elif optimizer_type == "Adam":
+            self.optimizer_type = Adam
+        else:
+            raise ValueError("optimizer_type must be either AdamW or Adam")
+
+        self.optimizer_eps = optimizer_eps
+        self.optimizer_betas = optimizer_betas
+        self.weight_decay = weight_decay
+
+        self.learning_rate = learning_rate
+        self.warmup_lr = warmup_lr
+        self.min_lr = min_lr
+        self.warmup_epochs = warmup_epochs
+        self.max_epochs = max_epochs
+        self.iter_per_epoch = iter_per_epoch
+
+        self.d_steps = d_steps
+        self.g_steps = g_steps
+        self.adv_weight = adv_weight
+        self.gp_weight = gp_weight
+
+        self.lr_scheduler_factors = self._cosine_scheduler_factors()
+
         self.loss_fn = MSELoss()
         self.automatic_optimization = False
         self.distributed = distributed
