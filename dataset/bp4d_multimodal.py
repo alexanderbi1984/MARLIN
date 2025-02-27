@@ -125,6 +125,7 @@ class BP4DMultiModal(Dataset):
 
         for i in range(self.clip_frames):
             # Load RGB, Depth, and Thermal images
+            #todo: check the path for the depth and thermal images
             rgb_img = cv2.imread(os.path.join(self.root_dir, "crop_images_DB", meta.path, files[indexes[i]]))
             depth_img = cv2.imread(os.path.join(self.root_dir, "depth_images_DB", meta.path, files[indexes[i]]),
                                    cv2.IMREAD_GRAYSCALE)
@@ -175,6 +176,7 @@ class BP4DMultiModal(Dataset):
         # Generate a single spatial mask for all channels
         for i in range(self.clip_frames):
             if i % self.tubelet_size == 0:
+                #todo: check the face parsing data path
                 mask = self.gen_mask(meta.path, files[indexes[i]].replace(".jpg", ".npy"), keep_queue)  # Generate one mask
                 masks[i // self.tubelet_size] = mask  # Apply the same mask to all channels
 
