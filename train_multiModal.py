@@ -63,6 +63,13 @@ if __name__ == '__main__':
     optimizer_betas = config["optimizer"]["betas"]
     weight_decay = config["weight_decay"]
     adv_loss = config["adv_loss"]
+    adv_weight = config["adv_weight"]
+    gp_weight = config["gp_weight"]
+    d_steps = config["d_steps"]
+    g_steps = config["g_steps"]
+    rgb_weight = config["rgb_weight"]
+    thermal_weight = config["thermal_weight"]
+    depth_weight = config["depth_weight"]
 
     total_batch_size = batch_size * n_gpus
     learning_rate = learning_rate * total_batch_size / 256
@@ -118,16 +125,17 @@ if __name__ == '__main__':
         max_epochs=max_epochs,
         iter_per_epoch=len(dm.train_dataloader()),
         distributed=n_gpus > 1,
+        d_steps=d_steps,
+        g_steps=g_steps,
+        adv_weight=adv_weight,
+        gp_weight=gp_weight,
+        rgb_weight=rgb_weight,
+        thermal_weight=thermal_weight,
+        depth_weight=depth_weight,
         name=model_name
     )
 
-    model.adv_weight = config["adv_weight"]
-    model.gp_weight = config["gp_weight"]
-    model.d_steps = config["d_steps"]
-    model.g_steps = config["g_steps"]
-    model.rgb_weight = config["rgb_weight"]
-    model.thermal_weight = config["thermal_weight"]
-    model.depth_weight = config["depth_weight"]
+
     # if official_pretrained is not None:
     #     print(f"loading official pretrained model from {official_pretrained}")
     #     print(load_official_pretrain_model(model, official_pretrained))
