@@ -150,7 +150,9 @@ class MultiModalMarlin(LightningModule):
         self.enc_dec_proj_depth = Linear(encoder_embed_dim, decoder_embed_dim, bias=False)
 
         # Weights for each modality in the loss function
+        print(f"before assignment, the type of rgb_weight is {type(rgb_weight)}")
         self.rgb_weight = rgb_weight
+        print(f"after assignment, the type of self.rgb_weight is {type(self.rgb_weight)}")
         self.thermal_weight = thermal_weight
         self.depth_weight = depth_weight
 
@@ -269,6 +271,44 @@ class MultiModalMarlin(LightningModule):
         return (rgb_pred, thermal_pred, depth_pred), (rgb_patches_masked, thermal_patches_masked, depth_patches_masked)
 
 
+    # def g_step(self, preds, targets):
+    #     rgb_pred, thermal_pred, depth_pred = preds
+    #     rgb_target, thermal_target, depth_target = targets
+    #
+    #     # Reconstruction losses
+    #     rgb_rec_loss = self.loss_fn(rgb_pred, rgb_target)
+    #     thermal_rec_loss = self.loss_fn(thermal_pred, thermal_target)
+    #     depth_rec_loss = self.loss_fn(depth_pred, depth_target)
+    #
+    #     # Combined reconstruction loss with weights
+    #     rec_loss = (
+    #             self.rgb_weight * rgb_rec_loss +
+    #             self.thermal_weight * thermal_rec_loss +
+    #             self.depth_weight * depth_rec_loss
+    #     )
+    #
+    #     # Adversarial losses
+    #     rgb_adv_loss = self.adv_weight * self.g_loss_fn(self.rgb_discriminator(rgb_pred)).mean()
+    #     thermal_adv_loss = self.adv_weight * self.g_loss_fn(self.thermal_discriminator(thermal_pred)).mean()
+    #     depth_adv_loss = self.adv_weight * self.g_loss_fn(self.depth_discriminator(depth_pred)).mean()
+    #
+    #     # Combined adversarial loss
+    #     adv_loss = rgb_adv_loss + thermal_adv_loss + depth_adv_loss
+    #
+    #     # Total loss
+    #     total_loss = rec_loss + adv_loss
+    #
+    #     return {
+    #         "loss": total_loss,
+    #         "g_loss": total_loss,
+    #         "rgb_rec_loss": rgb_rec_loss,
+    #         "thermal_rec_loss": thermal_rec_loss,
+    #         "depth_rec_loss": depth_rec_loss,
+    #         "rgb_adv_loss": rgb_adv_loss,
+    #         "thermal_adv_loss": thermal_adv_loss,
+    #         "depth_adv_loss": depth_adv_loss
+    #     }
+
     def g_step(self, preds, targets):
         rgb_pred, thermal_pred, depth_pred = preds
         rgb_target, thermal_target, depth_target = targets
@@ -278,17 +318,31 @@ class MultiModalMarlin(LightningModule):
         thermal_rec_loss = self.loss_fn(thermal_pred, thermal_target)
         depth_rec_loss = self.loss_fn(depth_pred, depth_target)
 
+        # Convert weights to tensors if they aren't already
+        print(f"the type of the rgb_weight:{type(self.rgb_weight)}")
+        rgb_weight = torch.tensor(self.rgb_weight, device=rgb_rec_loss.device, dtype=rgb_rec_loss.dtype)
+        thermal_weight = torch.tensor(self.thermal_weight, device=thermal_rec_loss.device, dtype=thermal_rec_loss.dtype)
+        depth_weight = torch.tensor(self.depth_weight, device=depth_rec_loss.device, dtype=depth_rec_loss.dtype)
+
         # Combined reconstruction loss with weights
         rec_loss = (
-                self.rgb_weight * rgb_rec_loss +
-                self.thermal_weight * thermal_rec_loss +
-                self.depth_weight * depth_rec_loss
+                rgb_weight * rgb_rec_loss +
+                thermal_weight * thermal_rec_loss +
+                depth_weight * depth_rec_loss
         )
 
-        # Adversarial losses
-        rgb_adv_loss = self.adv_weight * self.g_loss_fn(self.rgb_discriminator(rgb_pred)).mean()
-        thermal_adv_loss = self.adv_weight * self.g_loss_fn(self.thermal_discriminator(thermal_pred)).mean()
-        depth_adv_loss = self.adv_weight * self.g_loss_fn(self.depth_discriminator(depth_pred)).mean()
+        # Adversarial losses - ensure we're not using tensors as indices
+        adv_weight = torch.tensor(self.adv_weight, device=rgb_pred.device, dtype=rgb_pred.dtype)
+
+        # Compute discriminator outputs
+        rgb_disc_out = self.rgb_discriminator(rgb_pred)
+        thermal_disc_out = self.thermal_discriminator(thermal_pred)
+        depth_disc_out = self.depth_discriminator(depth_pred)
+
+        # Apply g_loss_fn
+        rgb_adv_loss = adv_weight * self.g_loss_fn(rgb_disc_out).mean()
+        thermal_adv_loss = adv_weight * self.g_loss_fn(thermal_disc_out).mean()
+        depth_adv_loss = adv_weight * self.g_loss_fn(depth_disc_out).mean()
 
         # Combined adversarial loss
         adv_loss = rgb_adv_loss + thermal_adv_loss + depth_adv_loss
@@ -620,9 +674,9 @@ class MultiModalMarlin(LightningModule):
     def _log_sample_reconstruction_image(self, batch):
         mixed_video, mask, rgb_frames, depth_frames, thermal_frames = batch
         # Print shapes to diagnose the issue
-        print(f"Mixed video shape: {mixed_video.shape}")
-        print(f"Mask shape: {mask.shape}")
-        print(f"RGB frames shape: {rgb_frames.shape}")
+        # print(f"Mixed video shape: {mixed_video.shape}")
+        # print(f"Mask shape: {mask.shape}")
+        # print(f"RGB frames shape: {rgb_frames.shape}")
 
         # Take only the first batch item for visualization
         mixed_video = mixed_video[:1]
@@ -635,15 +689,15 @@ class MultiModalMarlin(LightningModule):
         rgb_pred, thermal_pred, depth_pred = self(mixed_video, mask)
 
         # Print more shapes
-        print(f"RGB prediction shape: {rgb_pred.shape}")
+        # print(f"RGB prediction shape: {rgb_pred.shape}")
         expected_patches = mixed_video.shape[2] // self.tubelet_size * (mixed_video.shape[3] // self.patch_size) * (
                     mixed_video.shape[4] // self.patch_size)
-        print(f"Expected number of patches: {expected_patches}")
+        # print(f"Expected number of patches: {expected_patches}")
 
         # Count visible and masked patches
         visible_patches = mask.sum().item()
         masked_patches = mask.numel() - visible_patches
-        print(f"Visible patches: {visible_patches}, Masked patches: {masked_patches}")
+        # print(f"Visible patches: {visible_patches}, Masked patches: {masked_patches}")
 
         # Create full tensors that include all patches for visualization
         b = mixed_video.shape[0]  # Should be 1 for visualization
