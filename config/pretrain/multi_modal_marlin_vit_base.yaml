@@ -18,11 +18,11 @@ feature_dir: "Marlin_Features_Vit_Base"
 adv_loss: true
 adv_weight: 0.01
 gp_weight: 0.0
-d_steps: 1
-g_steps: 1
-rgb_weight: 1,
-thermal_weight: 1,
-depth_weight: 1,
+d_steps: 1.0
+g_steps: 1.0
+rgb_weight: 1.0,
+thermal_weight: 1.0,
+depth_weight: 1.0,
 
 learning_rate:
   base: 1.5e-4
