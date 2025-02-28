@@ -150,9 +150,9 @@ class MultiModalMarlin(LightningModule):
         self.enc_dec_proj_depth = Linear(encoder_embed_dim, decoder_embed_dim, bias=False)
 
         # Weights for each modality in the loss function
-        print(f"before assignment, the type of rgb_weight is {type(rgb_weight)}")
+        # print(f"before assignment, the type of rgb_weight is {type(rgb_weight)}")
         self.rgb_weight = rgb_weight
-        print(f"after assignment, the type of self.rgb_weight is {type(self.rgb_weight)}")
+        # print(f"after assignment, the type of self.rgb_weight is {type(self.rgb_weight)}")
         self.thermal_weight = thermal_weight
         self.depth_weight = depth_weight
 
