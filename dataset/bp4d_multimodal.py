@@ -121,10 +121,10 @@ class BP4DMultiModal(Dataset):
         # Load metadata and video file paths
         meta = self.metadata.iloc[index]
         files = sorted(os.listdir(os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path)))
-        try:
-            indexes = self._sample_indexes(len(files))
-        except ValueError:
-            print(f"Error sampling indexes for video {meta.path}.")
+        if len(files) < self.clip_frames:
+            print(f"Warning: Not enough frames in {meta.path}. Skipping this sample.")
+        indexes = self._sample_indexes(len(files))
+
 
         assert len(indexes) == self.clip_frames
 
