@@ -319,7 +319,7 @@ class MultiModalMarlin(LightningModule):
         depth_rec_loss = self.loss_fn(depth_pred, depth_target)
 
         # Convert weights to tensors if they aren't already
-        print(f"the type of the rgb_weight:{type(self.rgb_weight)}")
+        # print(f"the type of the rgb_weight:{type(self.rgb_weight)}")
         rgb_weight = torch.tensor(self.rgb_weight, device=rgb_rec_loss.device, dtype=rgb_rec_loss.dtype)
         thermal_weight = torch.tensor(self.thermal_weight, device=thermal_rec_loss.device, dtype=thermal_rec_loss.dtype)
         depth_weight = torch.tensor(self.depth_weight, device=depth_rec_loss.device, dtype=depth_rec_loss.dtype)

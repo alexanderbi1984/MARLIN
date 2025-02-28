@@ -70,7 +70,7 @@ if __name__ == '__main__':
     rgb_weight = config["rgb_weight"]
     thermal_weight = config["thermal_weight"]
     depth_weight = config["depth_weight"]
-    # print(f"the type of img_size is {type(img_size)} before init the model")
+    # (f"the type of img_size is {type(img_size)} before init the model")
 
     total_batch_size = batch_size * n_gpus
     learning_rate = learning_rate * total_batch_size / 256
@@ -175,6 +175,51 @@ if __name__ == '__main__':
 
 
 
+    # def configure_trainer(n_gpus, max_epochs, model_name):
+    #     # Check the operating system
+    #     is_windows = platform.system() == "Windows"
+    #
+    #     # Device configuration (same for both platforms)
+    #     accelerator = "gpu" if n_gpus > 0 else "cpu"
+    #     devices = n_gpus if n_gpus > 0 else None
+    #
+    #     # Strategy configuration - differs between platforms
+    #     if n_gpus <= 1:
+    #         # For single GPU or CPU, use "auto" strategy on both platforms
+    #         strategy = "auto"
+    #     else:
+    #         # For multiple GPUs, use different strategies based on platform
+    #         if is_windows:
+    #             strategy = "auto"
+    #             print("Using auto strategy for multi-GPU on Windows")
+    #         else:
+    #             strategy = "ddp"  # Distributed Data Parallel works on Linux
+    #             print("Using Distributed Data Parallel strategy for multi-GPU on Linux")
+    #
+    #     # Checkpoint callback (same for both platforms)
+    #     checkpoint_callback = ModelCheckpoint(
+    #         dirpath=f"ckpt/{model_name}",
+    #         save_last=True,
+    #         filename=model.name + "-{epoch}-{val_loss:.3f}",
+    #         monitor="val_loss",
+    #         mode="min"
+    #     )
+    #
+    #     # Create and return trainer
+    #     trainer = Trainer(
+    #         log_every_n_steps=1,
+    #         devices=devices,
+    #         accelerator=accelerator,
+    #         logger=True,
+    #         precision=32,
+    #         max_epochs=max_epochs,
+    #         strategy=strategy,
+    #         callbacks=[checkpoint_callback]
+    #     )
+    #
+    #     print(f"Trainer configured with: accelerator={accelerator}, devices={devices}, strategy={strategy}")
+    #     return trainer
+
     def configure_trainer(n_gpus, max_epochs, model_name):
         # Check the operating system
         is_windows = platform.system() == "Windows"
@@ -190,10 +235,13 @@ if __name__ == '__main__':
         else:
             # For multiple GPUs, use different strategies based on platform
             if is_windows:
-                strategy = "auto"
-                print("Using auto strategy for multi-GPU on Windows")
+                # Force 'gloo' backend for Windows multi-GPU setup
+                # Create an explicit DDPStrategy with gloo backend
+                from pytorch_lightning.strategies import DDPStrategy
+                strategy = DDPStrategy(process_group_backend="gloo", find_unused_parameters=False)
+                print("Using Distributed Data Parallel strategy with gloo backend for multi-GPU on Windows")
             else:
-                strategy = "ddp"  # Distributed Data Parallel works on Linux
+                strategy = "ddp"  # Distributed Data Parallel works on Linux with NCCL by default
                 print("Using Distributed Data Parallel strategy for multi-GPU on Linux")
 
         # Checkpoint callback (same for both platforms)
