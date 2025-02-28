@@ -70,6 +70,7 @@ if __name__ == '__main__':
     rgb_weight = config["rgb_weight"]
     thermal_weight = config["thermal_weight"]
     depth_weight = config["depth_weight"]
+    print(f"the type of rgb_weight is {type(rgb_weight)} before init the model")
 
     total_batch_size = batch_size * n_gpus
     learning_rate = learning_rate * total_batch_size / 256
