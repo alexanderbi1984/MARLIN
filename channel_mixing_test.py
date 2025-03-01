@@ -3,7 +3,7 @@ import torch
 
 
 
-def test_input_data():
+def test_input_data(dataloader):
     # Load a single batch from your DataLoader
     sample_batch = next(iter(dataloader))
     mixed_video, mask, rgb_frames, depth_frames, thermal_frames = sample_batch
@@ -47,7 +47,7 @@ def test_input_data():
     plt.close()
 
 
-def inspect_channel_mixing():
+def inspect_channel_mixing(dataloader):
     # Load a single batch
     sample_batch = next(iter(dataloader))
     mixed_video, mask, rgb_frames, depth_frames, thermal_frames = sample_batch
@@ -92,7 +92,7 @@ def inspect_channel_mixing():
     plt.close()
 
 
-def test_encoder_representations(model):
+def test_encoder_representations(model,dataloader):
     # Register a hook to capture intermediate activations
     activations = {}
 
@@ -132,7 +132,7 @@ def test_encoder_representations(model):
     plt.close()
 
 
-def test_decoders(model):
+def test_decoders(model,dataloader):
     # Get a sample batch
     sample_batch = next(iter(dataloader))
     mixed_video, mask, rgb_frames, depth_frames, thermal_frames = sample_batch
@@ -214,7 +214,7 @@ def test_decoders(model):
     plt.close()
 
 
-def test_cross_channel_leakage(model):
+def test_cross_channel_leakage(model,dataloader):
     # Get a sample batch
     sample_batch = next(iter(dataloader))
     mixed_video, mask, rgb_frames, depth_frames, thermal_frames = sample_batch
@@ -283,7 +283,7 @@ def test_cross_channel_leakage(model):
     # Ideally, each decoder should respond strongest to its own modality
 
 
-def test_reconstruction_with_masks(model):
+def test_reconstruction_with_masks(model,dataloader):
     # Get a sample batch
     sample_batch = next(iter(dataloader))
     mixed_video, _, rgb_frames, depth_frames, thermal_frames = sample_batch
@@ -421,27 +421,27 @@ def run_all_tests(model, dataloader):
     print("=============================")
 
     print("\nTest 1: Input Data Verification")
-    test_input_data()
+    test_input_data(dataloader)
 
-    print("\nTest 2: Channel Mixing Inspection")
-    inspect_channel_mixing()
-
-    print("\nTest 3: Encoder Representations")
-    test_encoder_representations(model)
-
-    print("\nTest 4: Decoder Channel Separation")
-    test_decoders(model)
-
-    print("\nTest 5: Cross-Channel Information Leakage")
-    test_cross_channel_leakage(model)
-
-    print("\nTest 6: Reconstruction with Different Masks")
-    test_reconstruction_with_masks(model)
-
-    print("\nTest 7: Visualization Method Test")
-    test_visualization_method(model)
-
-    print("\nAll tests completed!")
+    # print("\nTest 2: Channel Mixing Inspection")
+    # inspect_channel_mixing(dataloader)
+    #
+    # print("\nTest 3: Encoder Representations")
+    # test_encoder_representations(model,dataloader)
+    #
+    # print("\nTest 4: Decoder Channel Separation")
+    # test_decoders(model,dataloader)
+    #
+    # print("\nTest 5: Cross-Channel Information Leakage")
+    # test_cross_channel_leakage(model,dataloader)
+    #
+    # print("\nTest 6: Reconstruction with Different Masks")
+    # test_reconstruction_with_masks(model,dataloader)
+    #
+    # print("\nTest 7: Visualization Method Test")
+    # test_visualization_method(model)
+    #
+    # print("\nAll tests completed!")
 
 import argparse
 

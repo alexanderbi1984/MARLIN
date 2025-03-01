@@ -32,10 +32,10 @@ def load_image_safely(file_path, grayscale=False, img_size=224):
 
     # Return array with small non-zero values (e.g., 0.001 after normalization)
     # Using 1 here (before normalization) will result in ~0.004 after dividing by 255
-    if grayscale:
-        return np.ones((img_size, img_size), dtype=np.uint8) * 1
-    else:
-        return np.ones((img_size, img_size, 3), dtype=np.uint8) * 1
+        if grayscale:
+            return np.ones((img_size, img_size), dtype=np.uint8) * 1
+        else:
+            return np.ones((img_size, img_size, 3), dtype=np.uint8) * 1
 
 class BP4DMultiModal(Dataset):
     seg_groups = [
@@ -118,6 +118,7 @@ class BP4DMultiModal(Dataset):
                 - Original Depth frames `(1, T, H, W)`, before mixing.
                 - Original Thermal frames `(1, T, H, W)`, before mixing.
         """
+
         # Load metadata and video file paths
         meta = self.metadata.iloc[index]
         files = sorted(os.listdir(os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path)))
@@ -209,23 +210,24 @@ class BP4DMultiModal(Dataset):
         #     else:
         #         print(f"Warning: Missing thermal file {thermal_path}. Using zeros instead.")
         #         thermal_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
-            for i in range(self.clip_frames):
-                # Load images with fallback to small non-zero values
-                rgb_img = load_image_safely(
-                    os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path, files[indexes[i]]),
-                    grayscale=False,
-                    img_size=self.img_size
-                )
-                depth_img = load_image_safely(
-                    os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta.path, files[indexes[i]]),
-                    grayscale=True,
-                    img_size=self.img_size
-                )
-                thermal_img = load_image_safely(
-                    os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta.path, files[indexes[i]]),
-                    grayscale=True,
-                    img_size=self.img_size
-                )
+
+        for i in range(self.clip_frames):
+            # Load images with fallback to small non-zero values
+            rgb_img = load_image_safely(
+                os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path, files[indexes[i]]),
+                grayscale=False,
+                img_size=self.img_size
+            )
+            depth_img = load_image_safely(
+                os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta.path, files[indexes[i]]),
+                grayscale=True,
+                img_size=self.img_size
+            )
+            thermal_img = load_image_safely(
+                os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta.path, files[indexes[i]]),
+                grayscale=True,
+                img_size=self.img_size
+            )
 
             # Process RGB
             rgb_img = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2RGB) / 255.0
@@ -506,6 +508,7 @@ class BP4DMultiModalDataModule(LightningDataModule):
             mask_strategy=self.mask_strategy,
             take_num=self.take_val
         )
+        # print("The dataset has {} train and {} val samples.".format(len(self.train_dataset), len(self.val_dataset)))
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,
