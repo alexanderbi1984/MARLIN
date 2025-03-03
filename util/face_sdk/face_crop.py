@@ -218,14 +218,52 @@ def process_single_image_set(image_set: tuple) -> None:
         # Save the cropped thermal image
         cv2.imwrite(thermal_save_path, thermal_face)
 
+def find_valid_path(base_dir, alternatives):
+    """Find a valid path from a list of alternatives."""
+    for alt in alternatives:
+        path = os.path.join(base_dir, alt)
+        if os.path.exists(path):
+            return path
+    return None
+
 def process_images_multi_modal(texture_base_path: str, depth_base_path: str, thermal_base_path: str, save_dir: str, max_workers=None) -> None:
     os.makedirs(save_dir, exist_ok=True)
+    
+    # Define alternative folder names
+    texture_alternatives = ["Texture_crop", "TextureCrop", "texture_crop", "texturecrop"]
+    depth_alternatives = ["Depth_crop", "DepthCrop", "depth_crop", "depthcrop"]
+    thermal_alternatives = ["Thermal_crop", "ThermalCrop", "thermal_crop", "thermalcrop"]
+    
+    # Check if the provided paths exist, if not, try alternatives
+    if not os.path.exists(texture_base_path):
+        texture_base_path = find_valid_path(os.path.dirname(texture_base_path), texture_alternatives)
+        if texture_base_path:
+            print(f"Using alternative texture path: {texture_base_path}")
+        else:
+            print("No valid texture path found.")
+            return
+    
+    if not os.path.exists(depth_base_path):
+        depth_base_path = find_valid_path(os.path.dirname(depth_base_path), depth_alternatives)
+        if depth_base_path:
+            print(f"Using alternative depth path: {depth_base_path}")
+        else:
+            print("No valid depth path found.")
+            return
+    
+    if not os.path.exists(thermal_base_path):
+        thermal_base_path = find_valid_path(os.path.dirname(thermal_base_path), thermal_alternatives)
+        if thermal_base_path:
+            print(f"Using alternative thermal path: {thermal_base_path}")
+        else:
+            print("No valid thermal path found.")
+            return
 
     # Debug: Check if the base paths exist
     print(f"Checking base paths:")
-    print(f"Texture base path exists: {os.path.exists(texture_base_path)}")
-    print(f"Depth base path exists: {os.path.exists(depth_base_path)}")
-    print(f"Thermal base path exists: {os.path.exists(thermal_base_path)}")
+    print(f"Texture base path: {texture_base_path}")
+    print(f"Depth base path: {depth_base_path}")
+    print(f"Thermal base path: {thermal_base_path}")
 
     # Use glob to find all texture images
     texture_files = glob.glob(f"{texture_base_path}/**/*.jpg", recursive=True)
