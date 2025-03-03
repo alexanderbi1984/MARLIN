@@ -221,23 +221,54 @@ def process_single_image_set(image_set: tuple) -> None:
 def process_images_multi_modal(texture_base_path: str, depth_base_path: str, thermal_base_path: str, save_dir: str, max_workers=None) -> None:
     os.makedirs(save_dir, exist_ok=True)
 
+    # Debug: Check if the base paths exist
+    print(f"Checking base paths:")
+    print(f"Texture base path exists: {os.path.exists(texture_base_path)}")
+    print(f"Depth base path exists: {os.path.exists(depth_base_path)}")
+    print(f"Thermal base path exists: {os.path.exists(thermal_base_path)}")
+
     # Use glob to find all texture images
     texture_files = glob.glob(f"{texture_base_path}/**/*.jpg", recursive=True)
     print(f"Found {len(texture_files)} texture images.")
 
+    # Debug: Check a few texture files
+    if texture_files:
+        print("Sample texture files:")
+        for i in range(min(5, len(texture_files))):
+            print(f"  {texture_files[i]}")
+
     # Prepare a list of tuples containing paths for processing
     image_sets = []
+    missing_depth = 0
+    missing_thermal = 0
+    
     for texture_path in texture_files:
         # Calculate the relative path for depth and thermal images
         relative_path = os.path.relpath(texture_path, texture_base_path)
         depth_path = os.path.join(depth_base_path, relative_path)
         thermal_path = os.path.join(thermal_base_path, relative_path)
         
+        # Check if depth and thermal images exist
+        depth_exists = os.path.exists(depth_path)
+        thermal_exists = os.path.exists(thermal_path)
+        
+        if not depth_exists:
+            missing_depth += 1
+        if not thermal_exists:
+            missing_thermal += 1
+        
         # Append the set only if all modalities exist
-        if os.path.exists(depth_path) and os.path.exists(thermal_path):
+        if depth_exists and thermal_exists:
             image_sets.append((texture_path, depth_path, thermal_path, save_dir))
     
+    print(f"Missing depth images: {missing_depth}")
+    print(f"Missing thermal images: {missing_thermal}")
     print(f"Processing {len(image_sets)} complete image sets.")
+
+    # If no valid image sets were found, exit
+    if not image_sets:
+        print("No valid image sets found. Exiting.")
+        return
 
     # Try with a smaller batch size or sequential processing if multiprocessing fails
     try:
