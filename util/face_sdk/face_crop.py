@@ -4,13 +4,14 @@ import os
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, List
 
 import cv2
 import ffmpeg
 import yaml
 from numpy import ndarray
 from tqdm.auto import tqdm
+import numpy as np
 
 from marlin_pytorch.util import crop_with_padding
 from util.face_sdk.core.model_handler.face_detection.FaceDetModelHandler import FaceDetModelHandler
@@ -128,6 +129,121 @@ def process_images(image_path: str, output_path: str, max_workers: int = 8):
 
         for future in tqdm(futures):
             future.result()
+
+            
+def process_single_image_set(image_set: tuple) -> None:
+    texture_path, depth_path, thermal_path, save_dir = image_set
+
+    # Check if all modalities are present
+    if not all([os.path.exists(texture_path), os.path.exists(depth_path), os.path.exists(thermal_path)]):
+        return
+
+    # Read the texture image
+    texture_frame = cv2.imread(texture_path)
+    if texture_frame is None:
+        return
+    
+    # Get texture frame dimensions
+    texture_h, texture_w = texture_frame.shape[:2]
+    
+    # Crop the texture image and get coordinates and margin
+    face, margin, x, y = crop_face(texture_frame)
+
+    # Get the directory of the texture image
+    texture_dir = os.path.dirname(texture_path)
+
+    # Calculate the relative path from the texture directory to the save directory
+    relative_path = os.path.relpath(texture_dir, save_dir)
+
+    # Construct save paths
+    texture_save_path = os.path.join(save_dir, "Texture_crop_crop_images_DB", relative_path, os.path.basename(texture_path))
+    depth_save_path = os.path.join(save_dir, "Depth_crop_crop_images_DB", relative_path, os.path.basename(depth_path))
+    thermal_save_path = os.path.join(save_dir, "Thermal_crop_crop_images_DB", relative_path, os.path.basename(thermal_path))
+
+    # Ensure the directories exist for saving cropped images
+    os.makedirs(os.path.dirname(texture_save_path), exist_ok=True)
+    os.makedirs(os.path.dirname(depth_save_path), exist_ok=True)
+    os.makedirs(os.path.dirname(thermal_save_path), exist_ok=True)
+
+    # Save cropped texture image
+    cv2.imwrite(texture_save_path, face)
+
+    # Crop depth image using scaled coordinates and margin
+    depth_frame = cv2.imread(depth_path)
+    if depth_frame is not None:
+        depth_h, depth_w = depth_frame.shape[:2]
+        
+        # Scale coordinates and margin based on depth image dimensions
+        depth_x = int(x * (depth_w / texture_w))
+        depth_y = int(y * (depth_h / texture_h))
+        depth_margin = int(margin * (depth_w / texture_w))  # Assuming aspect ratio is preserved
+        
+        # Ensure the coordinates are within the bounds of the depth image
+        x_min = max(0, depth_x - depth_margin)
+        x_max = min(depth_w, depth_x + depth_margin)
+        y_min = max(0, depth_y - depth_margin)
+        y_max = min(depth_h, depth_y + depth_margin)
+        
+        # Crop the depth image
+        depth_face = depth_frame[y_min:y_max, x_min:x_max]
+        
+        # Resize the cropped image
+        depth_face = cv2.resize(depth_face, (224, 224))
+        
+        # Save the cropped depth image
+        cv2.imwrite(depth_save_path, depth_face)
+
+    # Crop thermal image using scaled coordinates and margin
+    thermal_frame = cv2.imread(thermal_path)
+    if thermal_frame is not None:
+        thermal_h, thermal_w = thermal_frame.shape[:2]
+        
+        # Scale coordinates and margin based on thermal image dimensions
+        thermal_x = int(x * (thermal_w / texture_w))
+        thermal_y = int(y * (thermal_h / texture_h))
+        thermal_margin = int(margin * (thermal_w / texture_w))  # Assuming aspect ratio is preserved
+        
+        # Ensure the coordinates are within the bounds of the thermal image
+        x_min = max(0, thermal_x - thermal_margin)
+        x_max = min(thermal_w, thermal_x + thermal_margin)
+        y_min = max(0, thermal_y - thermal_margin)
+        y_max = min(thermal_h, thermal_y + thermal_margin)
+        
+        # Crop the thermal image
+        thermal_face = thermal_frame[y_min:y_max, x_min:x_max]
+        
+        # Resize the cropped image
+        thermal_face = cv2.resize(thermal_face, (224, 224))
+        
+        # Save the cropped thermal image
+        cv2.imwrite(thermal_save_path, thermal_face)
+
+def process_images_multi_modal(texture_base_path: str, depth_base_path: str, thermal_base_path: str, save_dir: str, max_workers=None) -> None:
+    os.makedirs(save_dir, exist_ok=True)
+
+    # Use glob to find all texture images
+    texture_files = glob.glob(f"{texture_base_path}/**/*.jpg", recursive=True)
+    print(f"Found {len(texture_files)} texture images.")
+
+    # Prepare a list of tuples containing paths for processing
+    image_sets = []
+    for texture_path in texture_files:
+        # Calculate the relative path for depth and thermal images
+        relative_path = os.path.relpath(texture_path, texture_base_path)
+        depth_path = os.path.join(depth_base_path, relative_path)
+        thermal_path = os.path.join(thermal_base_path, relative_path)
+        
+        # Append the set only if all modalities exist
+        image_sets.append((texture_path, depth_path, thermal_path, save_dir))
+
+    # Use ProcessPoolExecutor for concurrent processing with a progress bar
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Create a progress bar
+        with tqdm(total=len(image_sets), desc="Processing images") as pbar:
+            # Process images and update progress bar
+            for _ in executor.map(process_single_image_set, image_sets):
+                pbar.update(1)
+
 # def process_images(image_path: str, output_path: str, max_workers: int = 8):
 #     print("Processing images in face cropping")
 #     print(f"Processing {image_path} in face cropping")
@@ -155,3 +271,4 @@ def process_images(image_path: str, output_path: str, max_workers: int = 8):
 #         # Wait for all futures to complete
 #         for future in tqdm(futures, desc="Waiting for crops to finish"):
 #             future.result()
+
