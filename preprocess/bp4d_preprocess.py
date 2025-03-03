@@ -5,6 +5,7 @@ import shutil
 
 parser = argparse.ArgumentParser("Preprocess YTF dataset")
 parser.add_argument("--data_dir", type=str)
+parser.add_argument("--output_dir", type=str)
 parser.add_argument("--max_workers", type=int, default=8)
 
 if __name__ == '__main__':
