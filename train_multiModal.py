@@ -271,7 +271,7 @@ if __name__ == '__main__':
 
     trainer = configure_trainer(
         n_gpus=n_gpus,
-        max_epochs=100,
+        max_epochs=max_epochs,
         model_name="multimodal_marlin",
     )
     if resume_ckpt:  # Check if a checkpoint path is provided
