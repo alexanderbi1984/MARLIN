@@ -22,19 +22,21 @@ if __name__ == '__main__':
     sys.path.append(".")
     if not os.path.exists("logs"):
         os.mkdir("logs")
-
+#create output dir if not exists
+    if not os.path.exists(args.output_dir):
+        os.mkdir(args.output_dir)
     from util.face_sdk.face_crop import process_images_multi_modal
     process_images_multi_modal(
         os.path.join(args.data_dir, "Texture_crop"),
         os.path.join(args.data_dir, "Depth_crop"),
         os.path.join(args.data_dir, "Thermal_crop"),
-        os.path.join(args.data_dir)  # Save directory
+        os.path.join(args.output_dir)  # Save directory
     )
 
     # Face parsing based on these cropped faces (only for texture images)
     from util.face_sdk.face_parse import process_images as face_parse_process_images
     face_parse_process_images(
         os.path.join(args.data_dir, "Texture_crop_crop_images_DB"),
-        os.path.join(args.data_dir, "Texture_crop_face_parsing_images_DB")
+        os.path.join(args.output_dir, "Texture_crop_face_parsing_images_DB")
     )
 
