@@ -84,8 +84,10 @@ def check_exists(output_path: str):
 
 def process_images(image_path: str, output_path: str):
     Path(output_path).mkdir(parents=True, exist_ok=True)
-    files = glob.glob(f"{image_path}/*/*/*.jpg")
-
+    # files = glob.glob(f"{image_path}/*/*/*.jpg")
+    files = glob.glob(f"{image_path}/**/*.jpg", recursive=True)
+    # files = glob.glob(f"{image_path}/*/*/*.jpg")
+    print(f"there are {len(files)} images")
     for i, file in enumerate(tqdm(files)):
         save_path = file.replace(image_path, output_path).replace(".jpg", ".npy")
         Path("/".join(save_path.split("/")[:-1])).mkdir(parents=True, exist_ok=True)
