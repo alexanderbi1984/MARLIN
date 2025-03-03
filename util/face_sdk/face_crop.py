@@ -234,14 +234,28 @@ def process_images_multi_modal(texture_base_path: str, depth_base_path: str, the
         thermal_path = os.path.join(thermal_base_path, relative_path)
         
         # Append the set only if all modalities exist
-        image_sets.append((texture_path, depth_path, thermal_path, save_dir))
+        if os.path.exists(depth_path) and os.path.exists(thermal_path):
+            image_sets.append((texture_path, depth_path, thermal_path, save_dir))
+    
+    print(f"Processing {len(image_sets)} complete image sets.")
 
-    # Use ProcessPoolExecutor for concurrent processing with a progress bar
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # Create a progress bar
+    # Try with a smaller batch size or sequential processing if multiprocessing fails
+    try:
+        # Use ProcessPoolExecutor for concurrent processing with a progress bar
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            # Create a progress bar
+            with tqdm(total=len(image_sets), desc="Processing images") as pbar:
+                # Process images and update progress bar
+                for _ in executor.map(process_single_image_set, image_sets):
+                    pbar.update(1)
+    except Exception as e:
+        print(f"Error with multiprocessing: {e}")
+        print("Falling back to sequential processing...")
+        
+        # Sequential processing as a fallback
         with tqdm(total=len(image_sets), desc="Processing images") as pbar:
-            # Process images and update progress bar
-            for _ in executor.map(process_single_image_set, image_sets):
+            for image_set in image_sets:
+                process_single_image_set(image_set)
                 pbar.update(1)
 
 # def process_images(image_path: str, output_path: str, max_workers: int = 8):
