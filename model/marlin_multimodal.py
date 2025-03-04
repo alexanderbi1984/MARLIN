@@ -695,20 +695,46 @@ class MultiModalMarlin(LightningModule):
         # print(f"Expected number of patches: {expected_patches}")
 
         # Count visible and masked patches
-        visible_patches = mask.sum().item()
-        masked_patches = mask.numel() - visible_patches
+        # visible_patches = mask.sum().item()
+        # masked_patches = mask.numel() - visible_patches
         # print(f"Visible patches: {visible_patches}, Masked patches: {masked_patches}")
 
         # Create full tensors that include all patches for visualization
-        b = mixed_video.shape[0]  # Should be 1 for visualization
+        # b = mixed_video.shape[0]  # Should be 1 for visualization
 
-        # Create empty tensors for visualization with all patches
-        rgb_full = torch.zeros(b, expected_patches, rgb_pred.shape[-1], device=rgb_pred.device)
-        thermal_full = torch.zeros(b, expected_patches, thermal_pred.shape[-1], device=thermal_pred.device)
-        depth_full = torch.zeros(b, expected_patches, depth_pred.shape[-1], device=depth_pred.device)
+        # # Create empty tensors for visualization with all patches
+        # rgb_full = torch.zeros(b, expected_patches, rgb_pred.shape[-1], device=rgb_pred.device)
+        # thermal_full = torch.zeros(b, expected_patches, thermal_pred.shape[-1], device=thermal_pred.device)
+        # depth_full = torch.zeros(b, expected_patches, depth_pred.shape[-1], device=depth_pred.device)
+        #
+        # # Fill in the reconstructed patches only at the masked positions
+        # # The decoder outputs are in the same order as the masked positions
+        # rgb_full[~mask] = rgb_pred
+        # thermal_full[~mask] = thermal_pred
+        # depth_full[~mask] = depth_pred
 
-        # Fill in the reconstructed patches only at the masked positions
-        # The decoder outputs are in the same order as the masked positions
+        # Create full tensors with original content first
+        rgb_patches = rgb_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
+            .unfold(3, self.patch_size, self.patch_size) \
+            .unfold(4, self.patch_size, self.patch_size)
+        rgb_patches = rearrange(rgb_patches, "b c nt nh nw pt ph pw -> b (nt nh nw) (c pt ph pw)")
+
+        thermal_patches = thermal_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
+            .unfold(3, self.patch_size, self.patch_size) \
+            .unfold(4, self.patch_size, self.patch_size)
+        thermal_patches = rearrange(thermal_patches, "b c nt nh nw pt ph pw -> b (nt nh nw) (c pt ph pw)")
+
+        depth_patches = depth_frames.unfold(2, self.tubelet_size, self.tubelet_size) \
+            .unfold(3, self.patch_size, self.patch_size) \
+            .unfold(4, self.patch_size, self.patch_size)
+        depth_patches = rearrange(depth_patches, "b c nt nh nw pt ph pw -> b (nt nh nw) (c pt ph pw)")
+
+        # Start with the original content for each modality
+        rgb_full = rgb_patches.clone()
+        thermal_full = thermal_patches.clone()
+        depth_full = depth_patches.clone()
+
+        # Replace only the masked regions with predictions
         rgb_full[~mask] = rgb_pred
         thermal_full[~mask] = thermal_pred
         depth_full[~mask] = depth_pred
