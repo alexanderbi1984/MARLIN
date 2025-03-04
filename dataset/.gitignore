@@ -1,0 +1,8 @@
+# Dataset split files (ignore changes but keep files)
+!test_set.txt
+!train_set.txt
+!val_set.txt
+*.txt
+!test_set.txt
+!train_set.txt
+!val_set.txt 
