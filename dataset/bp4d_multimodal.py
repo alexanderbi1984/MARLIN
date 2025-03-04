@@ -11,15 +11,12 @@ from pytorch_lightning import LightningDataModule
 from torch import Tensor
 from torch.nn import functional as F
 from torch.utils.data import Dataset, DataLoader
-from pathlib import Path
+
 from util.misc import sample_indexes
 
 
 def load_image_safely(file_path, grayscale=False, img_size=224):
-    """Safely load an image with fallback to small non-zero values."""
-    # Convert to str if Path object
-    file_path = str(file_path)
-
+    """Safely load an image with fallback to small values if missing."""
     if os.path.exists(file_path):
         if grayscale:
             img = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
@@ -35,11 +32,10 @@ def load_image_safely(file_path, grayscale=False, img_size=224):
 
     # Return array with small non-zero values (e.g., 0.001 after normalization)
     # Using 1 here (before normalization) will result in ~0.004 after dividing by 255
-    if grayscale:
-        return np.ones((img_size, img_size), dtype=np.uint8) * 1
-    else:
-        return np.ones((img_size, img_size, 3), dtype=np.uint8) * 1
-
+        if grayscale:
+            return np.ones((img_size, img_size), dtype=np.uint8) * 1
+        else:
+            return np.ones((img_size, img_size, 3), dtype=np.uint8) * 1
 
 class BP4DMultiModal(Dataset):
     seg_groups = [
@@ -53,20 +49,20 @@ class BP4DMultiModal(Dataset):
     ]
 
     def __init__(self,
-                 root_dir: str,
-                 split: str,
-                 clip_frames: int,  # T = 16
-                 temporal_sample_rate: int,  # 2
-                 patch_size: int,  # 16
-                 tubelet_size: int,  # 2
-                 mask_percentage_target: float = 0.8,  # 0.9
-                 mask_strategy: str = "fasking",
-                 take_num: Optional[int] = None
-                 ):
+        root_dir: str,
+        split: str,
+        clip_frames: int,  # T = 16
+        temporal_sample_rate: int,  # 2
+        patch_size: int,  # 16
+        tubelet_size: int,  # 2
+        mask_percentage_target: float = 0.8,  # 0.9
+        mask_strategy: str = "fasking",
+        take_num: Optional[int] = None
+    ):
 
         """	Arguments:
 	•	root_dir: Path to the dataset.
-	•	split: Either "train" or "val".
+	•	split: Either “train” or “val”.
 	•	clip_frames: Number of frames per clip.
     .   temporal_sample_rate: The step size between consecutive frames.
 	•	patch_size: Size of spatial patches.
@@ -76,7 +72,7 @@ class BP4DMultiModal(Dataset):
 	•	take_num: Limits the number of samples. like using only 1000 samples for training.
 	"""
         self.img_size = 224
-        self.root_dir = Path(root_dir)  # Convert to Path object
+        self.root_dir = root_dir
         self.clip_frames = clip_frames
         self.patch_size = patch_size
         self.tubelet_size = tubelet_size
@@ -100,9 +96,7 @@ class BP4DMultiModal(Dataset):
             raise ValueError("mask_strategy must be one of 'fasking', 'fasking_opp', 'random', 'tube' and 'frame'")
 
         self.mask_strategy = mask_strategy
-        # Use Path for consistent path handling
-        csv_path = self.root_dir / f"{split}_set.csv"
-        self.metadata = pd.read_csv(csv_path)
+        self.metadata = pd.read_csv(os.path.join(root_dir, f"{split}_set.csv"))
         if take_num:
             self.metadata = self.metadata.iloc[:take_num]
 
@@ -127,20 +121,12 @@ class BP4DMultiModal(Dataset):
 
         # Load metadata and video file paths
         meta = self.metadata.iloc[index]
-
-        # Ensure path is normalized for cross-platform compatibility
-        meta_path = Path(str(meta.path).replace('\\', '/'))
-
-        # Get texture directory path and file list
-        texture_dir_path = self.root_dir / "Texture_crop_crop_images_DB" / meta_path
-
-        # List all files in the directory
-        files = sorted([f.name for f in texture_dir_path.iterdir() if f.is_file()])
-
+        files = sorted(os.listdir(os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path)))
         if len(files) < self.clip_frames:
-            print(f"Warning: Not enough frames in {meta_path}. Skipping this sample.")
-
+            print(f"Warning: Not enough frames in {meta.path}. Skipping this sample.")
         indexes = self._sample_indexes(len(files))
+
+
         assert len(indexes) == self.clip_frames
 
         # Initialize video tensors
@@ -164,25 +150,81 @@ class BP4DMultiModal(Dataset):
         else:
             keep_queue = None
 
-        for i in range(self.clip_frames):
-            # Construct paths using Path objects for all modalities
-            texture_file_path = self.root_dir / "Texture_crop_crop_images_DB" / meta_path / files[indexes[i]]
-            depth_file_path = self.root_dir / "Depth_crop_crop_images_DB" / meta_path / files[indexes[i]]
-            thermal_file_path = self.root_dir / "Thermal_crop_crop_images_DB" / meta_path / files[indexes[i]]
+        # for i in range(self.clip_frames):
+        #     # Load RGB, Depth, and Thermal images
+        #     #todo: check the path for the depth and thermal images
+        #     rgb_img = cv2.imread(os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path, files[indexes[i]]))
+        #     depth_img = cv2.imread(os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta.path, files[indexes[i]]),
+        #                            cv2.IMREAD_GRAYSCALE)
+        #     thermal_img = cv2.imread(os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta.path, files[indexes[i]]),
+        #                              cv2.IMREAD_GRAYSCALE)
+        #
+        #     # Convert RGB from BGR to RGB and normalize all modalities to [0,1]
+        #     rgb_img = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2RGB) / 255.0
+        #     depth_img = np.expand_dims(depth_img, axis=-1) / 255.0  # Convert (H, W) → (H, W, 1)
+        #     thermal_img = np.expand_dims(thermal_img, axis=-1) / 255.0  # Convert (H, W) → (H, W, 1)
+        #
+        #     # Store the original frames before mixing
+        #     rgb_frames[i] = torch.from_numpy(rgb_img)
+        #     depth_frames[i] = torch.from_numpy(depth_img)
+        #     thermal_frames[i] = torch.from_numpy(thermal_img)
+        #
+        #     # Stack all modalities along the channel dimension (H, W, 5)
+        #     multimodal_frame = np.concatenate([rgb_img, depth_img, thermal_img], axis=-1)
+        #
+        #     # Store in video tensor (T, H, W, 5)
+        #     video[i] = torch.from_numpy(multimodal_frame)
 
+        # for i in range(self.clip_frames):
+        #     # Define file paths
+        #     rgb_path = os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path, files[indexes[i]])
+        #     depth_path = os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta.path, files[indexes[i]])
+        #     thermal_path = os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta.path, files[indexes[i]])
+        #
+        #     # Load RGB image with fallback
+        #     if os.path.exists(rgb_path):
+        #         rgb_img = cv2.imread(rgb_path)
+        #         if rgb_img is None:
+        #             print(f"Warning: Failed to load RGB image {rgb_path}. Using zeros instead.")
+        #             rgb_img = np.zeros((self.img_size, self.img_size, 3), dtype=np.uint8)
+        #     else:
+        #         print(f"Warning: Missing RGB file {rgb_path}. Using zeros instead.")
+        #         rgb_img = np.zeros((self.img_size, self.img_size, 3), dtype=np.uint8)
+        #
+        #     # Load depth image with fallback
+        #     if os.path.exists(depth_path):
+        #         depth_img = cv2.imread(depth_path, cv2.IMREAD_GRAYSCALE)
+        #         if depth_img is None:
+        #             print(f"Warning: Failed to load depth image {depth_path}. Using zeros instead.")
+        #             depth_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
+        #     else:
+        #         print(f"Warning: Missing depth file {depth_path}. Using zeros instead.")
+        #         depth_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
+        #
+        #     # Load thermal image with fallback
+        #     if os.path.exists(thermal_path):
+        #         thermal_img = cv2.imread(thermal_path, cv2.IMREAD_GRAYSCALE)
+        #         if thermal_img is None:
+        #             print(f"Warning: Failed to load thermal image {thermal_path}. Using zeros instead.")
+        #             thermal_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
+        #     else:
+        #         print(f"Warning: Missing thermal file {thermal_path}. Using zeros instead.")
+        #         thermal_img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
+
+        for i in range(self.clip_frames):
             # Load images with fallback to small non-zero values
             rgb_img = load_image_safely(
-                texture_file_path,
+                os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path, files[indexes[i]]),
                 grayscale=False,
                 img_size=self.img_size
             )
             depth_img = load_image_safely(
-                depth_file_path,
+                os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta.path, files[indexes[i]]),
                 grayscale=True,
                 img_size=self.img_size
             )
             thermal_img = load_image_safely(
-                thermal_file_path,
+                os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta.path, files[indexes[i]]),
                 grayscale=True,
                 img_size=self.img_size
             )
@@ -233,9 +275,8 @@ class BP4DMultiModal(Dataset):
         # Generate a single spatial mask for all channels
         for i in range(self.clip_frames):
             if i % self.tubelet_size == 0:
-                # Use Path for consistent npy file path
-                npy_filename = files[indexes[i]].replace(".jpg", ".npy")
-                mask = self.gen_mask(meta_path, npy_filename, keep_queue)  # Generate one mask
+                #todo: check the face parsing data path
+                mask = self.gen_mask(meta.path, files[indexes[i]].replace(".jpg", ".npy"), keep_queue)  # Generate one mask
                 masks[i // self.tubelet_size] = mask  # Apply the same mask to all channels
 
         # Apply masking strategy (tube, frame, random)
@@ -252,6 +293,42 @@ class BP4DMultiModal(Dataset):
 
         return mixed_video, masks.flatten().bool(), rgb_frames, depth_frames, thermal_frames
 
+
+    # def load_image_safely(file_path, fallback_shape=(224, 224), channels=1):
+    #     """
+    #     Load an image with fallback to zeros if the file is missing.
+    #
+    #     Args:
+    #         file_path: Path to the image file
+    #         fallback_shape: Shape to use for zero tensor if image is missing (height, width)
+    #         channels: Number of channels for the image (1 for depth/thermal, 3 for RGB)
+    #
+    #     Returns:
+    #         Loaded image as numpy array or zero array if file is missing
+    #     """
+    #     if os.path.exists(file_path) and os.path.isfile(file_path):
+    #         try:
+    #             img = cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
+    #             if img is not None:
+    #                 # Successfully loaded
+    #                 if channels == 1 and len(img.shape) == 3:
+    #                     # Convert RGB to grayscale if needed
+    #                     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    #                 return img
+    #         except Exception as e:
+    #             print(f"Error loading {file_path}: {e}")
+    #
+    #     # If we get here, the file is missing or couldn't be loaded
+    #     print(f"Warning: Missing or corrupt file {file_path}. Using zero tensor instead.")
+    #
+    #     # Create an appropriate zero array based on channels
+    #     if channels == 1:
+    #         return np.zeros(fallback_shape, dtype=np.uint8)
+    #     else:
+    #         return np.zeros((*fallback_shape, channels), dtype=np.uint8)
+
+
+
     def apply_mask_strategy(self, masks):
         """
         Applies the selected masking strategy (tube, frame, or random).
@@ -263,7 +340,7 @@ class BP4DMultiModal(Dataset):
             Tensor: Mask tensor with the selected strategy applied.
         """
         if self.mask_strategy == "tube":
-            # Use the first frame's mask for all frames
+            # Use the first frame’s mask for all frames
             first_mask = masks[0].flatten().bool()
             target_visible_num = ceil(len(first_mask) * self.mask_percentage_target)
             visible_indexes = first_mask.nonzero().flatten()
@@ -344,35 +421,28 @@ class BP4DMultiModal(Dataset):
             patch_masking[:] = 1
             return patch_masking
 
-        # Ensure directory path is a Path object
-        dir_path = Path(str(dir_path).replace('\\', '/'))
-
-        # load face parsing results using Path for consistent handling
-        npy_file = self.root_dir / "Texture_crop_face_parsing_images_DB" / dir_path / file_name
-
-        if npy_file.exists():
-            face_parsing = torch.from_numpy(np.load(npy_file))
-
-            if face_parsing.shape[0] > 0:
-                terminate = False
-                for i in keep_queue:
-                    if terminate:
+        # load face parsing results
+        npy_file = os.path.join(self.root_dir, "Texture_crop_face_parsing_images_DB", dir_path, file_name)
+        face_parsing = torch.from_numpy(np.load(npy_file))
+        if face_parsing.shape[0] > 0:
+            terminate = False
+            for i in keep_queue:
+                if terminate:
+                    break
+                # self.seg_groups[i] holds face component labels (e.g., left eye, mouth, etc.).
+                # 	•	Checks if pixels in face_parsing match comp_value and converts them to float (1 where matched, 0 otherwise).
+                # 	•	Uses max pooling (F.max_pool2d) to enlarge the mask region.
+                # 	•	torch.maximum() ensures that once a pixel is unmasked (1), it stays unmasked.
+                for comp_value in self.seg_groups[i]:
+                    #	Convert to Patch-Based Masking Using Max Pooling
+	# •	The max pooling operation (F.max_pool2d) with kernel_size=self.patch_size (e.g., 16) downsamples this absolute mask into the patch grid.
+	# •	If any pixel in a patch is 1 (i.e., belongs to the selected face component), the entire patch is marked as visible (1).
+                    patch_masking = torch.maximum(patch_masking, F.max_pool2d((face_parsing == comp_value).float(),
+                        kernel_size=self.patch_size)[0])
+                    if patch_masking.mean() >= self.mask_percentage_target:
+                        terminate = True
                         break
-                    # self.seg_groups[i] holds face component labels (e.g., left eye, mouth, etc.).
-                    # 	•	Checks if pixels in face_parsing match comp_value and converts them to float (1 where matched, 0 otherwise).
-                    # 	•	Uses max pooling (F.max_pool2d) to enlarge the mask region.
-                    # 	•	torch.maximum() ensures that once a pixel is unmasked (1), it stays unmasked.
-                    for comp_value in self.seg_groups[i]:
-                        #	Convert to Patch-Based Masking Using Max Pooling
-                        # •	The max pooling operation (F.max_pool2d) with kernel_size=self.patch_size (e.g., 16) downsamples this absolute mask into the patch grid.
-                        # •	If any pixel in a patch is 1 (i.e., belongs to the selected face component), the entire patch is marked as visible (1).
-                        patch_masking = torch.maximum(patch_masking, F.max_pool2d((face_parsing == comp_value).float(),
-                                                                                  kernel_size=self.patch_size)[0])
-                        if patch_masking.mean() >= self.mask_percentage_target:
-                            terminate = True
-                            break
         else:
-            print(f"Warning: Missing face parsing file {npy_file}. Using fully visible mask.")
             patch_masking[:] = 1.
 
         return patch_masking
@@ -387,20 +457,20 @@ class BP4DMultiModal(Dataset):
 class BP4DMultiModalDataModule(LightningDataModule):
 
     def __init__(self,
-                 root_dir: str,
-                 batch_size: int,
-                 clip_frames: int,
-                 temporal_sample_rate: int,
-                 patch_size: int,
-                 tubelet_size: int,
-                 mask_percentage_target: float = 0.8,
-                 mask_strategy: str = "fasking",
-                 num_workers: int = 0,
-                 take_train: Optional[int] = None,
-                 take_val: Optional[int] = None
-                 ):
+        root_dir: str,
+        batch_size: int,
+        clip_frames: int,
+        temporal_sample_rate: int,
+        patch_size: int,
+        tubelet_size: int,
+        mask_percentage_target: float = 0.8,
+        mask_strategy: str = "fasking",
+        num_workers: int = 0,
+        take_train: Optional[int] = None,
+        take_val: Optional[int] = None
+    ):
         super().__init__()
-        self.root_dir = Path(root_dir)  # Convert to Path object
+        self.root_dir = root_dir
         self.batch_size = batch_size
         self.clip_frames = clip_frames
         self.temporal_sample_rate = temporal_sample_rate
@@ -442,12 +512,12 @@ class BP4DMultiModalDataModule(LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers,
-                          pin_memory=True)
+            pin_memory=True)
 
     def val_dataloader(self) -> DataLoader:
         return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers,
-                          pin_memory=True)
+            pin_memory=True)
 
     def test_dataloader(self) -> DataLoader:
         return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers,
-                          pin_memory=True)
+            pin_memory=True)
