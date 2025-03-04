@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 
 
-def scan_and_split_subfolders(root_dir, output_dir, train_ratio=0.8, copy_files=False):
+def scan_and_split_subfolders(root_dir, output_dir, train_ratio=0.9, copy_files=False):
     """
     Scan all subfolders within the given directory, split them into training and testing sets,
     and create CSV files with folder paths and number of files in each folder.

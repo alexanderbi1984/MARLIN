@@ -11,7 +11,7 @@ from pytorch_lightning import LightningDataModule
 from torch import Tensor
 from torch.nn import functional as F
 from torch.utils.data import Dataset, DataLoader
-
+from pathlib import Path
 from util.misc import sample_indexes
 
 
@@ -121,7 +121,9 @@ class BP4DMultiModal(Dataset):
 
         # Load metadata and video file paths
         meta = self.metadata.iloc[index]
-        files = sorted(os.listdir(os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path)))
+        # Ensure meta.path is handled correctly for both Windows and Linux
+        meta_path = Path(meta.path)
+        files = sorted(os.listdir(os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta_path)))
         if len(files) < self.clip_frames:
             print(f"Warning: Not enough frames in {meta.path}. Skipping this sample.")
         indexes = self._sample_indexes(len(files))
@@ -214,17 +216,17 @@ class BP4DMultiModal(Dataset):
         for i in range(self.clip_frames):
             # Load images with fallback to small non-zero values
             rgb_img = load_image_safely(
-                os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta.path, files[indexes[i]]),
+                os.path.join(self.root_dir, "Texture_crop_crop_images_DB", meta_path, files[indexes[i]]),
                 grayscale=False,
                 img_size=self.img_size
             )
             depth_img = load_image_safely(
-                os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta.path, files[indexes[i]]),
+                os.path.join(self.root_dir, "Depth_crop_crop_images_DB", meta_path, files[indexes[i]]),
                 grayscale=True,
                 img_size=self.img_size
             )
             thermal_img = load_image_safely(
-                os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta.path, files[indexes[i]]),
+                os.path.join(self.root_dir, "Thermal_crop_crop_images_DB", meta_path, files[indexes[i]]),
                 grayscale=True,
                 img_size=self.img_size
             )
@@ -276,7 +278,7 @@ class BP4DMultiModal(Dataset):
         for i in range(self.clip_frames):
             if i % self.tubelet_size == 0:
                 #todo: check the face parsing data path
-                mask = self.gen_mask(meta.path, files[indexes[i]].replace(".jpg", ".npy"), keep_queue)  # Generate one mask
+                mask = self.gen_mask(meta_path, files[indexes[i]].replace(".jpg", ".npy"), keep_queue)  # Generate one mask
                 masks[i // self.tubelet_size] = mask  # Apply the same mask to all channels
 
         # Apply masking strategy (tube, frame, random)
