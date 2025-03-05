@@ -125,12 +125,9 @@ def visualize_outputs(rgb_input, thermal_output, depth_output, save_path=None):
 
 parser = argparse.ArgumentParser("MULTIMODALMARLIN pretraining")
 parser.add_argument("--config", type=str)
-parser.add_argument("--data_dir", type=str)
 parser.add_argument("--n_gpus", type=int, default=1)
-parser.add_argument("--num_workers", type=int, default=8)
 parser.add_argument("--batch_size", type=int, default=16)
 parser.add_argument("--epochs", type=int, default=2000)
-parser.add_argument("--official_pretrained", type=str, default=None)
 parser.add_argument("--resume", type=str, default=None)
 parser.add_argument("--image_path", type=str, required=True,
                       help="Path to the input image file to generate thermal and depth maps")
@@ -140,14 +137,12 @@ def main():
     from model.marlin_multimodal import MultiModalMarlin
     args = parser.parse_args()
     config_path = args.config
-    data_path = args.data_dir
     resume_ckpt = args.resume
     config = read_yaml(config_path)
 
     batch_size = args.batch_size
     max_epochs = args.epochs
-    num_workers = args.num_workers
-    official_pretrained = args.official_pretrained
+
     image_path = args.image_path
 
 
@@ -161,9 +156,9 @@ def main():
     patch_size = config["patch_size"]
     clip_frames = config["clip_frames"]
     tubelet_size = config["tubelet_size"]
-    mask_strategy = config["mask_strategy"]
-    temporal_sample_rate = config["temporal_sample_rate"]
-    mask_percentage_target = config["mask_percentage_target"]
+    # mask_strategy = config["mask_strategy"]
+    # temporal_sample_rate = config["temporal_sample_rate"]
+    # mask_percentage_target = config["mask_percentage_target"]
     encoder_embed_dim = config["encoder"]["embed_dim"]
     encoder_depth = config["encoder"]["depth"]
     encoder_num_heads = config["encoder"]["num_heads"]
@@ -223,7 +218,7 @@ def main():
         min_lr=min_lr,
         warmup_epochs=warmup_epochs,
         max_epochs=max_epochs,
-        iter_per_epoch=len(dm.train_dataloader()),
+        iter_per_epoch=2,
         distributed=n_gpus > 1,
         d_steps=d_steps,
         g_steps=g_steps,
