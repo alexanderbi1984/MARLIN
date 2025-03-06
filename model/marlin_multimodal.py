@@ -1,6 +1,11 @@
 import itertools
 import math
-from typing import Optional, Union, Sequence, Tuple
+from typing import Optional, Union, Sequence, Tuple, Generator
+import cv2
+from collections import deque
+import ffmpeg
+from pathlib import Path
+import os.path
 
 import numpy as np
 import torch
@@ -12,10 +17,14 @@ from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import LambdaLR
 from model.decoder import MarlinDecoder
 from model.encoder import MarlinEncoder
+from model.config import resolve_config
+from src.marlin_pytorch.face_detector import FaceXZooFaceDetector
 # from marlin_pytorch.model.decoder import MarlinDecoder
 # from marlin_pytorch.model.encoder import MarlinEncoder
 from marlin_pytorch.model.modules import MLP
 # from torch.utils.tensorboard import SummaryWriter
+from src.marlin_pytorch.util import read_video, padding_video, DownloadProgressBar
+
 
 
 class MultiModalMarlin(LightningModule):
@@ -815,3 +824,239 @@ class MultiModalMarlin(LightningModule):
         if self.logger is None:
             return
         self.logger.experiment.add_image(name, image, self.current_epoch)
+
+
+    @classmethod
+    def from_file(cls, model_name: str, path: str) -> "MultiModalMarlin":
+        """
+        Load a MultiModalMarlin model from a checkpoint file.
+
+        Args:
+            model_name (str): The name of the model configuration to use.
+            path (str): Path to the checkpoint file (.pt or .ckpt).
+
+        Returns:
+            MultiModalMarlin: The loaded model.
+
+        Raises:
+            ValueError: If the file type is not supported.
+        """
+        if path.endswith(".pt"):
+            state_dict = torch.load(path, map_location="cpu")
+        elif path.endswith(".ckpt"):
+            state_dict = torch.load(path, map_location="cpu")["state_dict"]
+
+            # Remove discriminator keys if present (optional)
+            discriminator_keys = [k for k in state_dict.keys()
+                                  if k.startswith("rgb_discriminator") or
+                                  k.startswith("thermal_discriminator") or
+                                  k.startswith("depth_discriminator")]
+            for key in discriminator_keys:
+                del state_dict[key]
+        else:
+            raise ValueError(f"Unsupported file type: {path.split('.')[-1]}")
+
+        # Determine if the checkpoint is encoder only by checking for decoder keys
+        as_feature_extractor = True
+        decoder_prefixes = ["rgb_decoder.", "thermal_decoder.", "depth_decoder."]
+        for prefix in decoder_prefixes:
+            if any(key.startswith(prefix) for key in state_dict.keys()):
+                as_feature_extractor = False
+                break
+
+        config = resolve_config(model_name)
+        model = cls(
+            img_size=config.img_size,
+            patch_size=config.patch_size,
+            n_frames=config.n_frames,
+            encoder_embed_dim=config.encoder_embed_dim,
+            encoder_depth=config.encoder_depth,
+            encoder_num_heads=config.encoder_num_heads,
+            decoder_embed_dim=config.decoder_embed_dim,
+            decoder_depth=config.decoder_depth,
+            decoder_num_heads=config.decoder_num_heads,
+            mlp_ratio=config.mlp_ratio,
+            qkv_bias=config.qkv_bias,
+            qk_scale=config.qk_scale,
+            drop_rate=config.drop_rate,
+            attn_drop_rate=config.attn_drop_rate,
+            norm_layer=config.norm_layer,
+            init_values=config.init_values,
+            tubelet_size=config.tubelet_size,
+            # Additional parameters specific to MultiModalMarlin
+            distributed=False,  # Default values
+            d_steps=config.get("d_steps", 1),  # Default to 1 as per your config
+            g_steps=config.get("g_steps", 1),
+            adv_weight=config.get("adv_weight", 0.01),  # Default to 0.01 as per your config
+            gp_weight=config.get("gp_weight", 0.0),  # Default to 0.0 as per your config
+            rgb_weight=config.get("rgb_weight", 1.0),
+            thermal_weight=config.get("thermal_weight", 1.0),
+            depth_weight=config.get("depth_weight", 1.0),
+            name=model_name
+        )
+
+        # Load the state dictionary
+        model.load_state_dict(state_dict)
+        return model
+
+    @torch.no_grad()
+    def extract_video(self, video_path: str, modality: str = "rgb", crop_face: bool = False, sample_rate: int = 2,
+                      stride: int = 16, reduction: str = "none", keep_seq: bool = False,
+                      detector_device: Optional[str] = None) -> Tensor:
+        """
+        Extract features from a video using the MultiModalMarlin encoder.
+
+        Args:
+            video_path (str): Path to the video file.
+            modality (str): Which modality to process the video as. Options: "rgb", "thermal", "depth", or "mixed".
+                If "mixed", the video will be treated as mixed multimodal input.
+            crop_face (bool): Whether to crop faces from the video frames.
+            sample_rate (int): Rate at which to sample frames from the video.
+            stride (int): Stride size for sliding window when processing long videos.
+            reduction (str): How to reduce features across frames. Options: "none", "mean", "max".
+            keep_seq (bool): Whether to keep the sequence dimension in the output features.
+            detector_device (Optional[str]): Device to use for face detection.
+
+        Returns:
+            Tensor: Extracted features.
+        """
+        self.eval()
+        features = []
+
+        for v in self._load_video(video_path, sample_rate, stride):
+            # v: (1, C, T, H, W)
+            if crop_face:
+                if not FaceXZooFaceDetector.inited:
+                    Path(".marlin").mkdir(exist_ok=True)
+                    FaceXZooFaceDetector.init(
+                        face_sdk_path=FaceXZooFaceDetector.install(os.path.join(".marlin", "FaceXZoo")),
+                        device=detector_device or self.device
+                    )
+                v = self._crop_face(v)
+
+            assert v.shape[3:] == (224, 224), f"Expected shape (224, 224), got {v.shape[3:]}"
+
+            # Create dummy mask for encoder (all True = visible)
+            batch_size = v.shape[0]
+            num_patches = (self.encoder.pos_embedding.input_shape[0] // batch_size)
+            mask = torch.ones(batch_size, num_patches, dtype=torch.bool, device=v.device)
+
+            # Process according to modality
+            if modality == "mixed":
+                # Already mixed input
+                encoded = self.encoder(v, mask)
+            else:
+                # Convert to specified modality (project to all three, then extract the one we want)
+                encoded = self.encoder(v, mask)
+
+                if modality == "rgb":
+                    encoded = self.enc_dec_proj_rgb(encoded)
+                elif modality == "thermal":
+                    encoded = self.enc_dec_proj_thermal(encoded)
+                elif modality == "depth":
+                    encoded = self.enc_dec_proj_depth(encoded)
+                else:
+                    raise ValueError(f"Unknown modality: {modality}. "
+                                     f"Options are 'rgb', 'thermal', 'depth', or 'mixed'.")
+
+            # Handle sequence pooling
+            if not keep_seq:
+                encoded = encoded.mean(dim=1)  # Pool over sequence dimension
+
+            features.append(encoded)
+
+        features = torch.cat(features)  # Concatenate all features
+
+        if reduction == "mean":
+            return features.mean(dim=0)
+        elif reduction == "max":
+            return features.max(dim=0)[0]
+
+        return features
+
+    def _load_video(self, video_path: str, sample_rate: int, stride: int) -> Generator[Tensor, None, None]:
+        """
+        Load and preprocess video frames.
+
+        Args:
+            video_path (str): Path to the video file.
+            sample_rate (int): Sample rate for frame extraction.
+            stride (int): Stride for sliding window.
+
+        Yields:
+            Tensor: Processed video clips.
+        """
+        probe = ffmpeg.probe(video_path)
+        total_frames = int(probe["streams"][0]["nb_frames"])
+
+        if total_frames <= self.clip_frames:
+            video = read_video(video_path, channel_first=True) / 255  # (T, C, H, W)
+            # Pad frames to match clip_frames
+            v = padding_video(video, self.clip_frames, "same")  # (T, C, H, W)
+            assert v.shape[0] == self.clip_frames
+            yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
+
+        elif total_frames <= self.clip_frames * sample_rate:
+            video = read_video(video_path, channel_first=True) / 255  # (T, C, H, W)
+            # Use first clip_frames frames
+            if video.shape[0] < self.clip_frames:
+                # Double-check the number of frames
+                v = padding_video(video, self.clip_frames, "same")  # (T, C, H, W)
+            else:
+                v = video[:self.clip_frames]
+            yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
+
+        else:
+            # Extract features based on sliding window
+            cap = cv2.VideoCapture(video_path)
+            deq = deque(maxlen=self.clip_frames)
+
+            clip_start_indexes = list(range(0, total_frames - self.clip_frames * sample_rate, stride * sample_rate))
+            clip_end_indexes = [i + self.clip_frames * sample_rate - 1 for i in clip_start_indexes]
+
+            current_index = -1
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                current_index += 1
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = torch.from_numpy(frame).permute(2, 0, 1) / 255  # (C, H, W)
+
+                for _ in range(sample_rate - 1):
+                    ret, _ = cap.read()
+                    if not ret:
+                        break
+                    current_index += 1
+
+                deq.append(frame)
+                if current_index in clip_end_indexes:
+                    v = torch.stack(list(deq))  # (T, C, H, W)
+                    yield v.permute(1, 0, 2, 3).unsqueeze(0).to(self.device)
+
+            cap.release()
+
+    def _crop_face(self, v: Tensor) -> Tensor:
+        """
+        Crop faces from video frames.
+
+        Args:
+            v (Tensor): Video tensor of shape (1, C, T, H, W)
+
+        Returns:
+            Tensor: Face-cropped video tensor.
+        """
+        # Use face SDK to crop face
+        v = (rearrange(v, "b c t h w -> (b t) h w c").cpu().numpy() * 255).astype(np.uint8)
+        face_frames = []
+        for i in range(v.shape[0]):
+            # crop_face result: (H, W, C)
+            face_results = FaceXZooFaceDetector.crop_face(v[i])
+            if len(face_results) > 0:
+                face_frames.append(torch.from_numpy(face_results[0]))
+            else:
+                # If no face detected, use original frame
+                face_frames.append(torch.from_numpy(v[i]))
+
+        faces = torch.stack(face_frames)  # (T, H, W, C)
+        return rearrange(faces, "(b t) h w c -> b c t h w", b=1).to(self.device) / 255

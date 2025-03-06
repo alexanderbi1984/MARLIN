@@ -8,18 +8,24 @@ import torch
 from tqdm.auto import tqdm
 
 from marlin_pytorch import Marlin
-from marlin_pytorch.config import resolve_config
+from model.marlin_multimodal import MultiModalMarlin
+from model.config import resolve_config
 
 sys.path.append(".")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser("CelebV-HQ Feature Extraction")
+    parser = argparse.ArgumentParser("Marlin Feature Extraction")
     parser.add_argument("--backbone", type=str)
     parser.add_argument("--data_dir", type=str)
+    parser.add_argument("--ckpt", type=str)
     args = parser.parse_args()
     if args.backbone is None:
         args.backbone = "marlin_vit_base_ytf"
-    model = Marlin.from_online(args.backbone)
+        model = Marlin.from_online(args.backbone)
+    else:
+        args.backbone = "multimodal_marlin_base"
+        model = MultiModalMarlin.from_file(args.backbone, args.ckpt)
+
     config = resolve_config(args.backbone)
     feat_dir = args.backbone
 

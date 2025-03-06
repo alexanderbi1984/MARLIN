@@ -255,7 +255,7 @@ python preprocess/celebvhq_preprocess.py --data_dir /path/to/CelebV-HQ
 #### 3. Extract MARLIN features (Optional, if linear probing)
 Extract MARLIN features from the cropped video and saved to `<backbone>` directory in `CelebV-HQ` directory.
 ```bash
-python preprocess/celebvhq_extract.py --data_dir /path/to/CelebV-HQ --backbone marlin_vit_base_ytf
+python preprocess/marlin_feature_extract.py --data_dir /path/to/CelebV-HQ --backbone marlin_vit_base_ytf
 ```
 
 #### 4. Train and evaluate
