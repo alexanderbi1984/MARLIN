@@ -11,7 +11,7 @@ from torch.nn import Linear, MSELoss, LeakyReLU
 from torch.optim import AdamW, Adam
 from torch.optim.lr_scheduler import LambdaLR
 
-from marlin_pytorch.model.decoder_original import MarlinDecoder
+from marlin_pytorch.model.decoder import MarlinDecoder
 from marlin_pytorch.model.encoder import MarlinEncoder
 from marlin_pytorch.model.modules import MLP
 # from torch.utils.tensorboard import SummaryWriter

@@ -6,9 +6,10 @@ from torch.nn import CrossEntropyLoss, Linear, Identity, BCEWithLogitsLoss, MSEL
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torchmetrics import Accuracy, AUROC, MeanSquaredError, MeanAbsoluteError, R2Score
-
-from marlin_pytorch import Marlin
-from marlin_pytorch.config import resolve_config
+# from marlin_pytorch import Marlin
+# from marlin_pytorch.config import resolve_config
+from model.marlin import Marlin
+from model.config import resolve_config
 
 
 class Classifier(LightningModule):

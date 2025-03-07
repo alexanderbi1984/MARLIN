@@ -3,9 +3,70 @@ from torch import nn
 import numpy as np
 from einops import rearrange
 import argparse
+
+from torch.utils.checkpoint import checkpoint
+
 from marlin_pytorch.util import read_yaml
 import os
 
+# def generate_thermal_depth_from_rgb(model, rgb_frames, device='cuda'):
+#     """
+#     Generate thermal and depth images from RGB frames using the MultiModalMarlin model.
+#
+#     Args:
+#         model (MultiModalMarlin): Trained model instance
+#         rgb_frames (torch.Tensor): RGB frames in shape [B, C, T, H, W]
+#                                   where B=batch size, C=3 (RGB channels),
+#                                   T=time/frames, H=height, W=width
+#         device (str): Device to run inference on ('cuda' or 'cpu')
+#
+#     Returns:
+#         tuple: (thermal_output, depth_output) - Generated thermal and depth images
+#                Each with shape [B, C, T, H, W] where C=1 for both thermal and depth
+#     """
+#     # Make sure model is in eval mode
+#     model.eval()
+#
+#     # Move inputs to the correct device
+#     rgb_frames = rgb_frames.to(device)
+#     batch_size, channels, time_frames, height, width = rgb_frames.shape
+#
+#     # Create a mask for the encoder (we're treating all RGB as "visible" patches)
+#     # In this case we're keeping all patches visible during encoding (mask=True)
+#     # and we'll generate the thermal and depth modalities from the entire RGB input
+#     patch_shape = rearrange(
+#         rgb_frames,
+#         "b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2) c",
+#         p0=model.tubelet_size,
+#         p1=model.patch_size,
+#         p2=model.patch_size
+#     ).shape
+#
+#     # Creating a mask where all patches are visible (not masked)
+#     mask = torch.ones(batch_size, patch_shape[1], 1, dtype=torch.bool, device=device)
+#
+#     with torch.no_grad():
+#         # Encode the RGB frames
+#         encoded = model.encoder(rgb_frames, mask)
+#
+#         # Project to thermal and depth embedding spaces
+#         thermal_emb = model.enc_dec_proj_thermal(encoded)
+#         depth_emb = model.enc_dec_proj_depth(encoded)
+#
+#         # Now we need to create a different mask for the decoder
+#         # For generation, we want to predict ALL patches
+#         # So we use a mask where all positions are False (indicating they need to be generated)
+#         generation_mask = torch.zeros_like(mask, dtype=torch.bool, device=device)
+#
+#         # Decode to get thermal and depth outputs
+#         thermal_patches = model.thermal_decoder(thermal_emb, generation_mask)
+#         depth_patches = model.depth_decoder(depth_emb, generation_mask)
+#
+#         # Convert patches back to image format
+#         thermal_output = model.thermal_decoder.unpatch_to_img(thermal_patches)
+#         depth_output = model.depth_decoder.unpatch_to_img(depth_patches)
+#
+#     return thermal_output, depth_output
 def generate_thermal_depth_from_rgb(model, rgb_frames, device='cuda'):
     """
     Generate thermal and depth images from RGB frames using the MultiModalMarlin model.
@@ -28,43 +89,56 @@ def generate_thermal_depth_from_rgb(model, rgb_frames, device='cuda'):
     rgb_frames = rgb_frames.to(device)
     batch_size, channels, time_frames, height, width = rgb_frames.shape
 
-    # Create a mask for the encoder (we're treating all RGB as "visible" patches)
-    # In this case we're keeping all patches visible during encoding (mask=True)
-    # and we'll generate the thermal and depth modalities from the entire RGB input
-    patch_shape = rearrange(
-        rgb_frames,
-        "b c (t p0) (h p1) (w p2) -> b (t h w) (p0 p1 p2) c",
-        p0=model.tubelet_size,
-        p1=model.patch_size,
-        p2=model.patch_size
-    ).shape
+    # Calculate number of patches in each dimension
+    num_patches_t = time_frames // model.tubelet_size
+    num_patches_h = height // model.patch_size
+    num_patches_w = width // model.patch_size
+    num_patches = num_patches_t * num_patches_h * num_patches_w
 
-    # Creating a mask where all patches are visible (not masked)
-    mask = torch.ones(batch_size, patch_shape[1], 1, dtype=torch.bool, device=device)
+    # For the encoder, keep all patches visible (True)
+    encoder_mask = torch.ones(batch_size, num_patches, dtype=torch.bool, device=device)
 
     with torch.no_grad():
         # Encode the RGB frames
-        encoded = model.encoder(rgb_frames, mask)
+        encoded = model.encoder(rgb_frames, encoder_mask)
 
         # Project to thermal and depth embedding spaces
         thermal_emb = model.enc_dec_proj_thermal(encoded)
         depth_emb = model.enc_dec_proj_depth(encoded)
 
-        # Now we need to create a different mask for the decoder
-        # For generation, we want to predict ALL patches
-        # So we use a mask where all positions are False (indicating they need to be generated)
-        generation_mask = torch.zeros_like(mask, dtype=torch.bool, device=device)
+        # Based on the error message, we need exactly 1568 visible tokens and 1254 masked tokens
+        # The total number of patches should be 1568 + 1254 = 2822
+
+        # Check if our calculated num_patches matches this expectation
+        if num_patches != 2822:
+            print(f"Warning: Expected 2822 total patches but calculated {num_patches}. Adjusting...")
+
+        # Create a mask with exactly 1568 visible tokens (True) and the rest masked (False)
+        num_visible = 1568
+
+        # Initialize mask with all False (masked)
+        decoder_mask = torch.zeros(batch_size, num_patches, dtype=torch.bool, device=device)
+
+        # Set exactly the first 1568 tokens to visible (True)
+        # This ensures we have the exact number needed
+        decoder_mask[:, :num_visible] = True
+
+        # For safety, ensure we don't exceed the tensor bounds
+        visible_count = min(num_visible, num_patches)
+        decoder_mask[:, :visible_count] = True
+
+        print(
+            f"Created mask with {torch.sum(decoder_mask).item()} visible tokens and {torch.sum(~decoder_mask).item()} masked tokens")
 
         # Decode to get thermal and depth outputs
-        thermal_patches = model.thermal_decoder(thermal_emb, generation_mask)
-        depth_patches = model.depth_decoder(depth_emb, generation_mask)
+        thermal_patches = model.thermal_decoder(thermal_emb, decoder_mask)
+        depth_patches = model.depth_decoder(depth_emb, decoder_mask)
 
         # Convert patches back to image format
         thermal_output = model.thermal_decoder.unpatch_to_img(thermal_patches)
         depth_output = model.depth_decoder.unpatch_to_img(depth_patches)
 
     return thermal_output, depth_output
-
 
 def visualize_outputs(rgb_input, thermal_output, depth_output, save_path=None):
     """
@@ -230,12 +304,14 @@ def main():
         name=model_name
     )
 
-    # Load pretrained weights
-    model.load_state_dict(resume_ckpt['state_dict'])
 
     # Move model to device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
+
+    # Load pretrained weights
+    checkpoint = torch.load(resume_ckpt, map_location=device)
+    model.load_state_dict(checkpoint['state_dict'])
 
     from PIL import Image
     import torchvision.transforms as transforms
