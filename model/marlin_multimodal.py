@@ -896,7 +896,10 @@ class MultiModalMarlin(LightningModule):
         )
 
         # Load the state dictionary
-        model.load_state_dict(state_dict)
+        # model.load_state_dict(state_dict)
+        encoder_state_dict = {k: v for k, v in state_dict.items() if k.startswith("encoder.")}
+        encoder_state_dict = {k.replace("encoder.", ""): v for k, v in encoder_state_dict.items()}
+        model.encoder.load_state_dict(encoder_state_dict)
         return model
 
     @torch.no_grad()
