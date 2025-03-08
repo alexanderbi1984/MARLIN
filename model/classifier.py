@@ -9,6 +9,7 @@ from torchmetrics import Accuracy, AUROC, MeanSquaredError, MeanAbsoluteError, R
 # from marlin_pytorch import Marlin
 # from marlin_pytorch.config import resolve_config
 from model.marlin import Marlin
+from model.marlin_multimodal import MultiModalMarlin
 from model.config import resolve_config
 
 
@@ -26,7 +27,8 @@ class Classifier(LightningModule):
             if marlin_ckpt is None:
                 self.model = Marlin.from_online(backbone).encoder
             else:
-                self.model = Marlin.from_file(backbone, marlin_ckpt).encoder
+                # self.model = Marlin.from_file(backbone, marlin_ckpt).encoder
+                self.model = MultiModalMarlin.from_file(backbone, marlin_ckpt).encoder
         else:
             self.model = None
 
