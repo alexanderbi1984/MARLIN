@@ -8,7 +8,8 @@ from torch.nn.functional import softmax
 import pandas as pd
 from dataset.celebv_hq import CelebvHqDataModule
 from dataset.biovid import BioVidDataModule
-from marlin_pytorch.config import resolve_config
+from model.config import resolve_config
+# from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import read_yaml
 from model.classifier import Classifier
 from util.earlystop_lr import EarlyStoppingLR
