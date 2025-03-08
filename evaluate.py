@@ -291,10 +291,51 @@ def evaluate_biovid(args, ckpt, dm, config):
     Seed.set(42)
     model.eval()
     task = config["task"]
+    # if args.predict_only:
+    #     # Collect predictions
+    #     preds_list = trainer.predict(model, dm.test_dataloader())
+    #     preds = torch.cat(preds_list)  # Concatenate predictions from all batches
+    #
+    #     # Apply sigmoid if it's a binary classification task
+    #     if task == "binary":
+    #         probability = torch.sigmoid(preds)
+    #     else:
+    #         # For multiclass, apply softmax
+    #         probability = softmax(preds, dim=1)
+    #     # Collect ground truth and filenames
+    #     filenames = []  # Assuming you have a way to collect filenames from your DataModule
+    #     ys = torch.zeros(len(preds), dtype=torch.long)  # Assuming labels are class indices
+    #     for i, (x, y, filename) in enumerate(tqdm(dm.test_dataloader())):
+    #         ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
+    #         filenames.extend(filename)  # Collecting filenames
+    #     # print(f"the length of filenames is {len(filenames)}")
+    #     # print(f"the length of ys is {len(ys)}")
+    #     # Create a DataFrame to save results
+    #     results_df = pd.DataFrame({
+    #         # 'filename': filenames,
+    #         'predictions': probability.numpy().tolist(),
+    #     })
+    #
+    #     # Save to CSV
+    #     results_df.to_csv('predictions.csv', index=False)
+    #     print("Predictions saved to predictions.csv")
+    #     return results_df  # Return the DataFrame if needed
+
     if args.predict_only:
         # Collect predictions
-        preds = trainer.predict(model, dm.test_dataloader())
-        preds = torch.cat(preds)  # Concatenate predictions from all batches
+        preds_list = trainer.predict(model, dm.test_dataloader())
+        preds = torch.cat(preds_list)  # Concatenate predictions from all batches
+
+        # Apply sigmoid if it's a binary classification task
+        if task == "binary":
+            probability = torch.sigmoid(preds)
+            # Convert to binary predictions (0 or 1)
+            pred_classes = (probability > 0.5).int()
+        else:
+            # For multiclass, apply softmax
+            probability = softmax(preds, dim=1)
+            # Get predicted class indices
+            pred_classes = torch.argmax(probability, dim=1)
 
         # Collect ground truth and filenames
         filenames = []  # Assuming you have a way to collect filenames from your DataModule
@@ -303,11 +344,65 @@ def evaluate_biovid(args, ckpt, dm, config):
             ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
             filenames.extend(filename)  # Collecting filenames
 
-        # Create a DataFrame to save results
-        results_df = pd.DataFrame({
-            'filename': filenames,
-            'predictions': preds.numpy().tolist(),
-        })
+        # Calculate metrics for binary classification
+        if task == "binary":
+            # Convert tensors to numpy for sklearn metrics
+            y_true = ys.cpu().numpy()
+            y_pred = pred_classes.cpu().numpy()
+            y_score = probability.cpu().numpy()
+
+            # Calculate confusion matrix
+            cm = confusion_matrix(y_true, y_pred)
+            tn, fp, fn, tp = cm.ravel()
+
+            # Calculate accuracy
+            accuracy = (tp + tn) / (tp + tn + fp + fn)
+
+            # Calculate AUC
+            auc_score = roc_auc_score(y_true, y_score)
+
+            # Calculate precision, recall, and F1 score
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+            recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+            f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+
+            # Print metrics
+            print("\nBinary Classification Metrics:")
+            print(f"Accuracy: {accuracy:.4f}")
+            print(f"AUC: {auc_score:.4f}")
+            print(f"Precision: {precision:.4f}")
+            print(f"Recall: {recall:.4f}")
+            print(f"F1 Score: {f1:.4f}")
+            print("\nConfusion Matrix:")
+            print(f"TN: {tn}, FP: {fp}")
+            print(f"FN: {fn}, TP: {tp}")
+
+            # Add metrics to results DataFrame
+            results_df = pd.DataFrame({
+                'filename': filenames,
+                'true_label': y_true.tolist(),
+                'predicted_label': y_pred.tolist(),
+                'raw_prediction': preds.squeeze().cpu().numpy().tolist(),
+                'probability': y_score.tolist(),  # Probability of class 1
+            })
+
+            # Add metrics as a separate DataFrame for reference
+            metrics_df = pd.DataFrame({
+                'metric': ['accuracy', 'auc', 'precision', 'recall', 'f1', 'tn', 'fp', 'fn', 'tp'],
+                'value': [accuracy, auc_score, precision, recall, f1, tn, fp, fn, tp]
+            })
+            metrics_df.to_csv('metrics.csv', index=False)
+            print("Metrics saved to metrics.csv")
+
+        else:
+            # For multiclass, just save basic prediction info
+            results_df = pd.DataFrame({
+                'filename': filenames,
+                'true_label': ys.cpu().numpy().tolist(),
+                'predicted_label': pred_classes.cpu().numpy().tolist(),
+                'raw_predictions': preds.cpu().numpy().tolist(),
+                'probabilities': probability.cpu().numpy().tolist(),
+            })
 
         # Save to CSV
         results_df.to_csv('predictions.csv', index=False)

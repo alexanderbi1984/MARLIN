@@ -1,5 +1,5 @@
 model_name: "biovid_marlin_binary_ft"
-backbone: "marlin_vit_base_ytf"
+backbone: "multimodal_marlin_base"
 dataset: "biovid"
 task: "binary"
 temporal_reduction: "mean"
