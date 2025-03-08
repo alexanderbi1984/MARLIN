@@ -1,4 +1,6 @@
 import argparse
+import torch
+torch.set_float32_matmul_precision('high')
 
 import torch
 from pytorch_lightning import Trainer
@@ -16,7 +18,6 @@ from util.earlystop_lr import EarlyStoppingLR
 from util.lr_logger import LrLogger
 from util.seed import Seed
 from util.system_stats_logger import SystemStatsLogger
-import torch
 from torch.nn.functional import softmax
 from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report, mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
