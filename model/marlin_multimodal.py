@@ -69,7 +69,7 @@ class MultiModalMarlin(LightningModule):
                  ):
         super().__init__()
         self.save_hyperparameters()
-
+        self.clip_frames = n_frames
         # Shared encoder for mixed input
         self.encoder = MarlinEncoder(
             img_size=img_size,
