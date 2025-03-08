@@ -372,74 +372,119 @@ def evaluate_biovid(args, ckpt, dm, config):
         # Collect predictions
         preds = trainer.predict(model, dm.test_dataloader())
         preds = torch.cat(preds)  # Concatenate predictions from all batches
-        prob = softmax(preds, dim=1)  # Apply softmax to get probabilities
 
         # Collect ground truth
         ys = torch.zeros(len(preds), dtype=torch.long)  # Assuming labels are class indices
         for i, (_, y) in enumerate(tqdm(dm.test_dataloader())):
             ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
 
-        # Calculate top 2 classes with max probabilities
-        topk_probs, topk_indices = torch.topk(prob, k=2, dim=1)  # Get top 2 classes and their probabilities
+        if task == "binary":
+            # For binary, we only have 2 classes (0 and 1)
+            # Reshape predictions if needed (ensure we have logits for both classes)
+            if preds.shape[1] == 1:  # If only one output (common in binary classification)
+                # Convert to two-class logits [negative_class, positive_class]
+                preds = torch.cat([-preds, preds], dim=1)
 
-        # Initialize lists to store differences
-        correct_top1_differences = []
-        correct_top2_differences = []
+            # Apply softmax to get probabilities
+            prob = softmax(preds, dim=1)
 
-        for i in range(len(ys)):
-            if ys[i] == topk_indices[i][0]:  # Check if true class is the top 1 prediction
-                # Calculate the difference between top 1 and top 2 probabilities
-                difference = topk_probs[i][0].item() - topk_probs[i][1].item()
-                correct_top1_differences.append(difference)  # Store the difference
+            # Calculate confidence for correct predictions
+            # For binary, we're interested in the confidence of the correct class
+            confidence_scores = []
+            for i in range(len(ys)):
+                true_class = ys[i].item()
+                confidence = prob[i][true_class].item()
+                confidence_diff = abs(prob[i][0].item() - prob[i][1].item())
+                confidence_scores.append(confidence_diff)
 
-            if ys[i] == topk_indices[i][1]:  # Check if true class is the top 2 prediction
-                # Calculate the difference between top 1 and top 2 probabilities
-                difference = topk_probs[i][1].item() - topk_probs[i][0].item()
-                correct_top2_differences.append(difference)  # Store the difference
+            # Calculate statistics
+            mean_conf = np.mean(confidence_scores)
+            std_conf = np.std(confidence_scores)
+            median_conf = np.median(confidence_scores)
+            q1_conf = np.percentile(confidence_scores, 25)
+            q3_conf = np.percentile(confidence_scores, 75)
 
-        # Calculate statistics for differences
-        def calculate_statistics(differences):
-            if differences:
-                mean_diff = np.mean(differences)
-                std_diff = np.std(differences)
-                median_diff = np.median(differences)
-                q1_diff = np.percentile(differences, 25)
-                q3_diff = np.percentile(differences, 75)
-            else:
-                mean_diff = std_diff = median_diff = q1_diff = q3_diff = 0
-            return mean_diff, std_diff, median_diff, q1_diff, q3_diff
+            # Store results
+            results = {
+                "conf_diff_mean": mean_conf,
+                "conf_diff_std": std_conf,
+                "conf_diff_median": median_conf,
+                "conf_diff_q1": q1_conf,
+                "conf_diff_q3": q3_conf,
+            }
 
-        # Statistics for top 1 hits
-        top1_stats = calculate_statistics(correct_top1_differences)
-        # Statistics for top 2 hits
-        top2_stats = calculate_statistics(correct_top2_differences)
+            print("Evaluation Results (Binary Classification):")
+            print(f"Mean Confidence Difference: {results['conf_diff_mean']:.4f}")
+            print(f"Std Deviation of Confidence Difference: {results['conf_diff_std']:.4f}")
+            print(f"Median Confidence Difference: {results['conf_diff_median']:.4f}")
+            print(f"Q1 of Confidence Difference: {results['conf_diff_q1']:.4f}")
+            print(f"Q3 of Confidence Difference: {results['conf_diff_q3']:.4f}")
 
-        # Store results
-        results = {
-            "top1_diff_mean": top1_stats[0],  # Mean difference for top 1 hits
-            "top1_diff_std": top1_stats[1],  # Std deviation for top 1 hits
-            "top1_diff_median": top1_stats[2],  # Median difference for top 1 hits
-            "top1_diff_q1": top1_stats[3],  # Q1 for top 1 hits
-            "top1_diff_q3": top1_stats[4],  # Q3 for top 1 hits
-            "top2_diff_mean": top2_stats[0],  # Mean difference for top 2 hits
-            "top2_diff_std": top2_stats[1],  # Std deviation for top 2 hits
-            "top2_diff_median": top2_stats[2],  # Median difference for top 2 hits
-            "top2_diff_q1": top2_stats[3],  # Q1 for top 2 hits
-            "top2_diff_q3": top2_stats[4],  # Q3 for top 2 hits
-        }
+        else:  # multiclass case
+            # Apply softmax to get probabilities
+            prob = softmax(preds, dim=1)
 
-        print("Evaluation Results:")
-        print(f"Mean Difference for Top 1 Hits: {results['top1_diff_mean']:.4f}")
-        print(f"Std Deviation for Top 1 Hits: {results['top1_diff_std']:.4f}")
-        print(f"Median Difference for Top 1 Hits: {results['top1_diff_median']:.4f}")
-        print(f"Q1 for Top 1 Hits: {results['top1_diff_q1']:.4f}")
-        print(f"Q3 for Top 1 Hits: {results['top1_diff_q3']:.4f}")
+            # Calculate top 2 classes with max probabilities
+            topk_probs, topk_indices = torch.topk(prob, k=2, dim=1)  # Get top 2 classes and their probabilities
 
-        print(f"Mean Difference for Top 2 Hits: {results['top2_diff_mean']:.4f}")
-        print(f"Std Deviation for Top 2 Hits: {results['top2_diff_std']:.4f}")
-        print(f"Median Difference for Top 2 Hits: {results['top2_diff_median']:.4f}")
-        print(f"Q1 for Top 2 Hits: {results['top2_diff_q1']:.4f}")
-        print(f"Q3 for Top 2 Hits: {results['top2_diff_q3']:.4f}")
+            # Initialize lists to store differences
+            correct_top1_differences = []
+            correct_top2_differences = []
+
+            for i in range(len(ys)):
+                if ys[i] == topk_indices[i][0]:  # Check if true class is the top 1 prediction
+                    # Calculate the difference between top 1 and top 2 probabilities
+                    difference = topk_probs[i][0].item() - topk_probs[i][1].item()
+                    correct_top1_differences.append(difference)  # Store the difference
+
+                if ys[i] == topk_indices[i][1]:  # Check if true class is the top 2 prediction
+                    # Calculate the difference between top 1 and top 2 probabilities
+                    difference = topk_probs[i][1].item() - topk_probs[i][0].item()
+                    correct_top2_differences.append(difference)  # Store the difference
+
+            # Calculate statistics for differences
+            def calculate_statistics(differences):
+                if differences:
+                    mean_diff = np.mean(differences)
+                    std_diff = np.std(differences)
+                    median_diff = np.median(differences)
+                    q1_diff = np.percentile(differences, 25)
+                    q3_diff = np.percentile(differences, 75)
+                else:
+                    mean_diff = std_diff = median_diff = q1_diff = q3_diff = 0
+                return mean_diff, std_diff, median_diff, q1_diff, q3_diff
+
+            # Statistics for top 1 hits
+            top1_stats = calculate_statistics(correct_top1_differences)
+            # Statistics for top 2 hits
+            top2_stats = calculate_statistics(correct_top2_differences)
+
+            # Store results
+            results = {
+                "top1_diff_mean": top1_stats[0],  # Mean difference for top 1 hits
+                "top1_diff_std": top1_stats[1],  # Std deviation for top 1 hits
+                "top1_diff_median": top1_stats[2],  # Median difference for top 1 hits
+                "top1_diff_q1": top1_stats[3],  # Q1 for top 1 hits
+                "top1_diff_q3": top1_stats[4],  # Q3 for top 1 hits
+                "top2_diff_mean": top2_stats[0],  # Mean difference for top 2 hits
+                "top2_diff_std": top2_stats[1],  # Std deviation for top 2 hits
+                "top2_diff_median": top2_stats[2],  # Median difference for top 2 hits
+                "top2_diff_q1": top2_stats[3],  # Q1 for top 2 hits
+                "top2_diff_q3": top2_stats[4],  # Q3 for top 2 hits
+            }
+
+            print("Evaluation Results (Multiclass Classification):")
+            print(f"Mean Difference for Top 1 Hits: {results['top1_diff_mean']:.4f}")
+            print(f"Std Deviation for Top 1 Hits: {results['top1_diff_std']:.4f}")
+            print(f"Median Difference for Top 1 Hits: {results['top1_diff_median']:.4f}")
+            print(f"Q1 for Top 1 Hits: {results['top1_diff_q1']:.4f}")
+            print(f"Q3 for Top 1 Hits: {results['top1_diff_q3']:.4f}")
+
+            print(f"Mean Difference for Top 2 Hits: {results['top2_diff_mean']:.4f}")
+            print(f"Std Deviation for Top 2 Hits: {results['top2_diff_std']:.4f}")
+            print(f"Median Difference for Top 2 Hits: {results['top2_diff_median']:.4f}")
+            print(f"Q1 for Top 2 Hits: {results['top2_diff_q1']:.4f}")
+            print(f"Q3 for Top 2 Hits: {results['top2_diff_q3']:.4f}")
 
 
 
