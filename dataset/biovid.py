@@ -283,7 +283,8 @@ class BioVidDataModule(LightningDataModule):
             shuffle=True,
             num_workers=self.num_workers,
             pin_memory=True,
-            drop_last=True
+            drop_last=True,
+            persistent_workers=True
         )
 
     def val_dataloader(self):
@@ -293,7 +294,8 @@ class BioVidDataModule(LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
             pin_memory=True,
-            drop_last=True
+            drop_last=True,
+            persistent_workers=True
         )
 
     def test_dataloader(self):
