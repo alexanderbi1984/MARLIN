@@ -177,6 +177,9 @@ class BioVidLP(BioVidBase):
             x = x.max(dim=0)[0]
         elif self.temporal_reduction == "min":
             x = x.min(dim=0)[0]
+        elif self.temporal_reduction == "none":
+            # Keep sequence dimension intact
+            pass
         else:
             raise ValueError(self.temporal_reduction)
 

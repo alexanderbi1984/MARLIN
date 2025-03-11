@@ -26,8 +26,8 @@ def main():
     # Training settings
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size")
     parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate")
-    parser.add_argument("--max_epochs", type=int, default=50, help="Maximum number of epochs")
-    parser.add_argument("--num_workers", type=int, default=4, help="Number of dataloader workers")
+    parser.add_argument("--max_epochs", type=int, default=2000, help="Maximum number of epochs")
+    parser.add_argument("--num_workers", type=int, default=8, help="Number of dataloader workers")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--finetune", action="store_true", help="Whether to finetune backbone")
     parser.add_argument("--gpus", type=int, default=1, help="Number of GPUs to use")
