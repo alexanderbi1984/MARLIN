@@ -1,5 +1,4 @@
 import argparse
-
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.trainer import Trainer
 from model.marlin_multimodal import MultiModalMarlin

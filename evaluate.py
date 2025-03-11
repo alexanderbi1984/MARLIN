@@ -342,9 +342,10 @@ def evaluate_biovid(args, ckpt, dm, config):
         # Collect ground truth and filenames
         filenames = []  # Assuming you have a way to collect filenames from your DataModule
         ys = torch.zeros(len(preds), dtype=torch.long)  # Assuming labels are class indices
-        for i, (x, y, filename) in enumerate(tqdm(dm.test_dataloader())):
+        # for i, (x, y, filename) in enumerate(tqdm(dm.test_dataloader())):
+        for i,(x,y) in enumerate(tqdm(dm.test_dataloader())):
             ys[i * args.batch_size: (i + 1) * args.batch_size] = y.view(-1)  # Flatten the label tensor
-            filenames.extend(filename)  # Collecting filenames
+            # filenames.extend(filename)  # Collecting filenames
 
         # Calculate metrics for binary classification
         if task == "binary":

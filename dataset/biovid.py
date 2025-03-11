@@ -213,7 +213,7 @@ class BioVidLP(BioVidBase):
                 # y = -1  # Set to a default value or handle error appropriately
 
 
-        return x, torch.tensor(y, dtype=torch.long), name_without_extension
+        return x, torch.tensor(y, dtype=torch.long)
 
 
 class BioVidDataModule(LightningDataModule):
