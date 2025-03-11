@@ -19,6 +19,7 @@ if __name__ == '__main__':
     parser.add_argument("--data_dir", type=str)
     parser.add_argument("--ckpt", type=str)
     parser.add_argument("--keep_seq", action="store_true")
+    parser.add_argument("--output_dir", type=str)
     args = parser.parse_args()
     if args.ckpt is None:
         args.ckpt = r"ckpt\multimodal_marlin\last-v1_final.ckpt"
