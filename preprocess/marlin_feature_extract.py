@@ -18,6 +18,7 @@ if __name__ == '__main__':
     parser.add_argument("--backbone", type=str)
     parser.add_argument("--data_dir", type=str)
     parser.add_argument("--ckpt", type=str)
+    parser.add_argument("--keep_seq", action="store_true")
     args = parser.parse_args()
     if args.backbone is None:
         args.backbone = "marlin_vit_base_ytf"
@@ -28,7 +29,10 @@ if __name__ == '__main__':
 
     config = resolve_config(args.backbone)
     feat_dir = args.backbone
-
+    if args.keep_seq:
+        keep_seq = True
+    else:
+        keep_seq = False
     model.cuda()
     model.eval()
     if args.data_dir is None:
@@ -49,7 +53,7 @@ if __name__ == '__main__':
             feat = model.extract_video(
                 video_path, crop_face=False,
                 sample_rate=config.tubelet_size, stride=config.n_frames,
-                keep_seq=False, reduction="none")
+                keep_seq=keep_seq, reduction="none")
 
         except Exception as e:
             print(f"Video {video_path} error.", e)

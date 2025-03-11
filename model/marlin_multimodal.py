@@ -938,35 +938,38 @@ class MultiModalMarlin(LightningModule):
                 v = self._crop_face(v)
 
             assert v.shape[3:] == (224, 224), f"Expected shape (224, 224), got {v.shape[3:]}"
+            features.append(self.extract_features(v, keep_seq=keep_seq))
 
-            # Create dummy mask for encoder (all True = visible)
-            batch_size = v.shape[0]
-            num_patches = (self.encoder.pos_embedding.input_shape[0] // batch_size)
-            mask = torch.ones(batch_size, num_patches, dtype=torch.bool, device=v.device)
+            # Process according to modality but not needed for now
 
-            # Process according to modality
-            if modality == "mixed":
-                # Already mixed input
-                encoded = self.encoder(v, mask)
-            else:
-                # Convert to specified modality (project to all three, then extract the one we want)
-                encoded = self.encoder(v, mask)
-
-                if modality == "rgb":
-                    encoded = self.enc_dec_proj_rgb(encoded)
-                elif modality == "thermal":
-                    encoded = self.enc_dec_proj_thermal(encoded)
-                elif modality == "depth":
-                    encoded = self.enc_dec_proj_depth(encoded)
-                else:
-                    raise ValueError(f"Unknown modality: {modality}. "
-                                     f"Options are 'rgb', 'thermal', 'depth', or 'mixed'.")
-
-            # Handle sequence pooling
-            if not keep_seq:
-                encoded = encoded.mean(dim=1)  # Pool over sequence dimension
-
-            features.append(encoded)
+            # # Create dummy mask for encoder (all True = visible)
+            # batch_size = v.shape[0]
+            # num_patches = (self.encoder.pos_embedding.input_shape[0] // batch_size)
+            # mask = torch.ones(batch_size, num_patches, dtype=torch.bool, device=v.device)
+            #
+            # # Process according to modality
+            # if modality == "mixed":
+            #     # Already mixed input
+            #     encoded = self.encoder(v, mask)
+            # else:
+            #     # Convert to specified modality (project to all three, then extract the one we want)
+            #     encoded = self.encoder(v, mask)
+            #
+            #     if modality == "rgb":
+            #         encoded = self.enc_dec_proj_rgb(encoded)
+            #     elif modality == "thermal":
+            #         encoded = self.enc_dec_proj_thermal(encoded)
+            #     elif modality == "depth":
+            #         encoded = self.enc_dec_proj_depth(encoded)
+            #     else:
+            #         raise ValueError(f"Unknown modality: {modality}. "
+            #                          f"Options are 'rgb', 'thermal', 'depth', or 'mixed'.")
+            #
+            # # Handle sequence pooling
+            # if not keep_seq:
+            #     encoded = encoded.mean(dim=1)  # Pool over sequence dimension
+            #
+            # features.append(encoded)
 
         features = torch.cat(features)  # Concatenate all features
 
