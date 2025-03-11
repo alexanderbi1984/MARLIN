@@ -902,6 +902,14 @@ class MultiModalMarlin(LightningModule):
         model.encoder.load_state_dict(encoder_state_dict)
         return model
 
+    def extract_features(self, x: Tensor, keep_seq: bool = True):
+        """Extract features for one video clip (v)"""
+        if self.training:
+            return self.encoder.extract_features(x, seq_mean_pool=not keep_seq)
+        else:
+            with torch.no_grad():
+                return self.encoder.extract_features(x, seq_mean_pool=not keep_seq)
+
     @torch.no_grad()
     def extract_video(self, video_path: str, modality: str = "rgb", crop_face: bool = False, sample_rate: int = 2,
                       stride: int = 16, reduction: str = "none", keep_seq: bool = False,
