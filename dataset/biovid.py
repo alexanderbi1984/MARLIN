@@ -167,6 +167,16 @@ class BioVidLP(BioVidBase):
             print(f"File not found: {self.name_list[index]}")
             # feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
         x = torch.from_numpy(np.load(feat_path)).float()
+        # print(f"Loaded feature shape: {x.shape}")
+        target_clips = 4
+
+        if x.shape[0] > target_clips:
+            # If more clips than needed, truncate
+            x = x[:target_clips]
+        elif x.shape[0] < target_clips:
+            # If fewer clips than needed, pad with zeros
+            padding = torch.zeros(target_clips - x.shape[0], *x.shape[1:], device=x.device)
+            x = torch.cat([x, padding], dim=0)
 
         if x.size(0) == 0:
             x = torch.zeros(1, 768, dtype=torch.float32)

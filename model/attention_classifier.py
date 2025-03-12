@@ -85,6 +85,10 @@ class AttentionClassifier(Classifier):
         Returns:
             Tensor: Attended features of shape [batch_size, feature_dim]
         """
+        # Handle 4D input
+        if len(x.shape) == 4:
+            b, s1, s2, d = x.shape
+            x = x.reshape(b, s1 * s2, d)  # Reshape to 3D
         if self.num_heads > 1:
             # Multi-head attention (using PyTorch's implementation)
             attended_output, _ = self.attention(x, x, x)
@@ -129,6 +133,7 @@ class AttentionClassifier(Classifier):
             Tensor: Class predictions
         """
         if self.model is not None:
+            print("Using Marlin backbone for feature extraction now")
             # Get features from backbone, keeping sequence dimension
             features = self.model.extract_features(x, keep_seq=True)
         else:
