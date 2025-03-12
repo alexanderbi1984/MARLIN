@@ -162,7 +162,7 @@ class AttentionClassifier(Classifier):
                                list(self.value.parameters()) + list(self.fc.parameters())
 
             optimizer = torch.optim.Adam([
-                {'params': backbone_params, 'lr': self.learning_rate * 0.1},  # Lower LR for backbone
+                {'params': backbone_params, 'lr': self.learning_rate * 0.05},  # Lower LR for backbone
                 {'params': attention_params, 'lr': self.learning_rate}  # Higher LR for new layers
             ], betas=(0.5, 0.9))
         else:
