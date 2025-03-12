@@ -17,7 +17,7 @@ class AttentionClassifier(Classifier):
     def __init__(self, num_classes: int, backbone: str, finetune: bool,
                  marlin_ckpt: str = None, task: str = "binary",
                  learning_rate: float = 1e-4, distributed: bool = False,
-                 attention_dim: int = 128, num_heads: int = 1, dropout: float = 0.1):
+                 attention_dim: int = 64, num_heads: int = 1, dropout: float = 0.1):
         """
         Initialize the AttentionClassifier.
 
@@ -64,11 +64,15 @@ class AttentionClassifier(Classifier):
         self.dropout = nn.Dropout(dropout)
 
         # Replace the original classification head
+        # self.fc = nn.Sequential(
+        #     nn.Linear(encoder_dim, encoder_dim // 2),
+        #     nn.ReLU(),
+        #     nn.Dropout(dropout),
+        #     nn.Linear(encoder_dim // 2, num_classes)
+        # )
         self.fc = nn.Sequential(
-            nn.Linear(encoder_dim, encoder_dim // 2),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(encoder_dim // 2, num_classes)
+            nn.BatchNorm1d(encoder_dim),  # Add BatchNorm before any transformations
+            nn.Linear(encoder_dim, num_classes)  # Single layer classifier
         )
 
         # Save hyperparameters
@@ -110,6 +114,11 @@ class AttentionClassifier(Classifier):
 
             # Apply softmax to get attention weights
             attention_weights = F.softmax(scores, dim=2)  # [batch_size, seq_len, seq_len]
+
+            # Add entropy regularization to promote more uniform attention
+            # (prevents attention from focusing too much on specific frames)
+            attention_entropy = -torch.sum(attention_weights * torch.log(attention_weights + 1e-7), dim=2).mean()
+            self.log('attention_entropy', attention_entropy, on_step=False, on_epoch=True)
 
             # Apply attention weights to values
             attended_output = torch.bmm(attention_weights, values)  # [batch_size, seq_len, feature_dim]
