@@ -39,9 +39,9 @@ def main():
     parser.add_argument("--num_classes", type=int, default=5, help="Number of classes")
 
     # Attention settings
-    parser.add_argument("--attention_dim", type=int, default=128, help="Attention dimension")
+    parser.add_argument("--attention_dim", type=int, default=64, help="Attention dimension")
     parser.add_argument("--num_heads", type=int, default=1, help="Number of attention heads")
-    parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate")
+    parser.add_argument("--dropout", type=float, default=0.4, help="Dropout rate")
     parser.add_argument("--resume", type=str, default=None, help="Path to resume checkpoint")
 
     # Parse arguments
