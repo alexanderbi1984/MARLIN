@@ -42,10 +42,11 @@ def main():
     parser.add_argument("--attention_dim", type=int, default=128, help="Attention dimension")
     parser.add_argument("--num_heads", type=int, default=1, help="Number of attention heads")
     parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate")
+    parser.add_argument("--resume", type=str, default=None, help="Path to resume checkpoint")
 
     # Parse arguments
     args = parser.parse_args()
-
+    resume_ckpt = args.resume
     # Set random seed for reproducibility
     Seed.set(args.seed)
 
@@ -122,7 +123,7 @@ def main():
     # Set up early stopping
     early_stop_callback = EarlyStopping(
         monitor=monitor_metric,
-        patience=10,
+        patience=100,
         mode=mode
     )
 
@@ -148,7 +149,10 @@ def main():
     )
 
     # Train model
-    trainer.fit(model, dm)
+    if resume_ckpt:  # Check if a checkpoint path is provided
+        trainer.fit(model, dm, ckpt_path=resume_ckpt)  # Resume training from the checkpoint
+    else:
+        trainer.fit(model, dm)  # Start training from scratch
 
     # Test model
     test_results = trainer.test(model, datamodule=dm)
