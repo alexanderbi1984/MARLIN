@@ -362,7 +362,9 @@ def evaluate_biovid(args, ckpt, dm, config):
             y_true = ys.cpu().numpy()
             y_pred = pred_classes.cpu().numpy()
             y_score = probability.cpu().numpy()
-
+            # print(f"Shape of y_true: {y_true.shape}")
+            # print(f"Shape of y_pred: {y_pred.shape}")
+            # assert y_true.shape == y_pred.shape, "Mismatch in shapes of y_true and y_pred"
             # Calculate confusion matrix
             cm = confusion_matrix(y_true, y_pred)
             tn, fp, fn, tp = cm.ravel()

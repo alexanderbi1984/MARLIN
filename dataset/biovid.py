@@ -349,6 +349,17 @@ class AugmentedBioVidLP(BioVidLP):
             # Use a small default tensor if file is missing
             features = torch.zeros(1, 768, dtype=torch.float32)
 
+        # Standardize sequence length before augmentation
+        target_clips = 4  # Adjust this to your needs
+
+        if features.shape[0] > target_clips:
+            # If more clips than needed, truncate
+            features = features[:target_clips]
+        elif features.shape[0] < target_clips:
+            # If fewer clips than needed, pad with zeros
+            padding = torch.zeros(target_clips - features.shape[0], *features.shape[1:], device=features.device)
+            features = torch.cat([features, padding], dim=0)
+
         # Apply temporal reduction
         if self.temporal_reduction == "mean":
             features = features.mean(dim=0)
