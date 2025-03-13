@@ -53,7 +53,7 @@ def create_subject_independent_splits(json_path, output_dir, train_ratio=0.7, va
     filtered_clips = {}
     for clip_name, clip_info in data['clips'].items():
         multiclass_value = clip_info['attributes']['multiclass'].get('5')
-        if multiclass_value in [0, 4]:
+        if multiclass_value in [0, 3.5, 4]:
             filtered_clips[clip_name] = clip_info
 
     # Group clips by subject AND class
