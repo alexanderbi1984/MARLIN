@@ -13,6 +13,8 @@ from torch.utils.data import DataLoader
 from marlin_pytorch.util import read_video, padding_video
 from util.misc import sample_indexes, read_text, read_json
 
+import random
+
 
 class BioVidBase(LightningDataModule, ABC):
 
@@ -229,6 +231,168 @@ class BioVidLP(BioVidBase):
         return x, torch.tensor(y, dtype=torch.long)
 
 
+class AugmentedBioVidLP(BioVidLP):
+    """
+    Extends BioVidLP dataset with feature-level augmentations.
+    Maintains same interface and functionality as the original class.
+    """
+
+    def __init__(self, root_dir: str,
+                 feature_dir: str,
+                 split: str,
+                 task: str,
+                 num_classes: int,
+                 temporal_reduction: str,
+                 data_ratio: float = 1.0,
+                 take_num: Optional[int] = None,
+                 mixup_alpha: float = 0.2,
+                 feature_noise_std: float = 0.01,
+                 feature_dropout_p: float = 0.05
+                 ):
+        super().__init__(root_dir, feature_dir, split, task, num_classes,
+                         temporal_reduction, data_ratio, take_num)
+
+        # Only apply augmentations during training
+        self.apply_augmentation = split == "train"
+
+        # Augmentation parameters
+        self.mixup_alpha = mixup_alpha
+        self.feature_noise_std = feature_noise_std
+        self.feature_dropout_p = feature_dropout_p
+
+        # Cache for class indices (populated on first use)
+        self.class_indices = None
+
+    def _build_class_indices(self):
+        """Build a dictionary mapping class labels to sample indices"""
+        self.class_indices = {}
+        for idx in range(len(self.name_list)):
+            name = self.name_list[idx]
+            if self.task == "regression":
+                y = self.metadata["clips"][name]["attributes"]['multiclass']['5']
+            else:
+                if self.task == "multiclass":
+                    num_classes = str(self.num_classes)
+                    y = self.metadata["clips"][name]["attributes"][self.task][num_classes]
+                else:
+                    y = self.metadata["clips"][name]["attributes"][self.task]
+
+            if isinstance(y, str):
+                y = int(float(y))
+
+            if y not in self.class_indices:
+                self.class_indices[y] = []
+            self.class_indices[y].append(idx)
+
+    def get_same_class_sample(self, idx, y):
+        """Get a sample index from the same class"""
+        if self.class_indices is None:
+            self._build_class_indices()
+
+        same_class_indices = [i for i in self.class_indices[y] if i != idx]
+        if same_class_indices:
+            return random.choice(same_class_indices)
+        return idx  # Fallback to self if no other samples in class
+
+    def apply_feature_mixup(self, features, idx, y):
+        """Apply mixup at feature level with another sample from same class"""
+        # Get a sample from the same class
+        mix_idx = self.get_same_class_sample(idx, y)
+
+        # Load the mix partner's features
+        mix_name = os.path.splitext(self.name_list[mix_idx])[0]
+        mix_path = os.path.join(self.data_root, self.feature_dir, mix_name + ".npy")
+        mix_features = torch.from_numpy(np.load(mix_path)).float()
+
+        # Apply temporal reduction to mix partner if needed
+        if self.temporal_reduction == "mean":
+            mix_features = mix_features.mean(dim=0)
+        elif self.temporal_reduction == "max":
+            mix_features = mix_features.max(dim=0)[0]
+        elif self.temporal_reduction == "min":
+            mix_features = mix_features.min(dim=0)[0]
+        elif self.temporal_reduction != "none":
+            raise ValueError(f"Unsupported reduction: {self.temporal_reduction}")
+
+        # Generate mixup coefficient
+        lam = np.random.beta(self.mixup_alpha, self.mixup_alpha)
+
+        # Apply mixup
+        if features.dim() == mix_features.dim():
+            mixed = lam * features + (1 - lam) * mix_features
+            return mixed
+        else:
+            # Handle dimension mismatch (should not happen with proper temporal_reduction)
+            print(f"Warning: Feature dimension mismatch: {features.shape} vs {mix_features.shape}")
+            return features
+
+    def apply_feature_noise(self, features):
+        """Add Gaussian noise to features"""
+        noise = torch.randn_like(features) * self.feature_noise_std
+        return features + noise
+
+    def apply_feature_dropout(self, features):
+        """Randomly zero out feature dimensions"""
+        mask = torch.bernoulli(torch.ones_like(features) * (1 - self.feature_dropout_p))
+        return features * mask
+
+    def __getitem__(self, idx):
+        """Get a sample with optional feature augmentations"""
+        # Load features using parent class implementation
+        name_without_extension = os.path.splitext(self.name_list[idx])[0]
+        feat_path = os.path.join(self.data_root, self.feature_dir, name_without_extension + ".npy")
+
+        try:
+            features = torch.from_numpy(np.load(feat_path)).float()
+        except FileNotFoundError:
+            print(f"File not found: {feat_path}")
+            # Use a small default tensor if file is missing
+            features = torch.zeros(1, 768, dtype=torch.float32)
+
+        # Apply temporal reduction
+        if self.temporal_reduction == "mean":
+            features = features.mean(dim=0)
+        elif self.temporal_reduction == "max":
+            features = features.max(dim=0)[0]
+        elif self.temporal_reduction == "min":
+            features = features.min(dim=0)[0]
+        elif self.temporal_reduction != "none":
+            raise ValueError(f"Unsupported reduction: {self.temporal_reduction}")
+
+        # Get label
+        if self.task == "regression":
+            y = self.metadata["clips"][self.name_list[idx]]["attributes"]['multiclass']['5']
+        else:
+            if self.task == "multiclass":
+                num_classes = str(self.num_classes)
+                y = self.metadata["clips"][self.name_list[idx]]["attributes"][self.task][num_classes]
+            else:
+                y = self.metadata["clips"][self.name_list[idx]]["attributes"][self.task]
+
+        if isinstance(y, str):
+            try:
+                y = int(float(y))
+            except ValueError:
+                print(f"Warning: Could not convert y to int: {y}")
+
+        # Apply augmentations during training
+        if self.apply_augmentation:
+            # 1. Feature mixup (with probability 0.5)
+            if random.random() < 0.5:
+                features = self.apply_feature_mixup(features, idx, y)
+
+            # 2. Feature noise (with probability 0.3)
+            if random.random() < 0.3:
+                features = self.apply_feature_noise(features)
+
+            # 3. Feature dropout (with probability 0.2)
+            if random.random() < 0.2:
+                features = self.apply_feature_dropout(features)
+
+        return features, torch.tensor(y, dtype=torch.long)
+
+
+
 class BioVidDataModule(LightningDataModule):
 
     def __init__(self, root_dir: str,
@@ -236,6 +400,7 @@ class BioVidDataModule(LightningDataModule):
         task: str,
         num_classes: int,
         batch_size: int,
+        augmentation: bool = False,
         num_workers: int = 0,
         clip_frames: int = None,
         temporal_sample_rate: int = None,
@@ -261,6 +426,7 @@ class BioVidDataModule(LightningDataModule):
         self.take_train = take_train
         self.take_val = take_val
         self.take_test = take_test
+        self.augmentation = augmentation
 
         if load_raw:
             assert clip_frames is not None
@@ -282,7 +448,16 @@ class BioVidDataModule(LightningDataModule):
             self.test_dataset = BioVidFT(self.root_dir, "test", self.task, self.num_classes, self.clip_frames,
                 self.temporal_sample_rate, 1.0, self.take_test)
         else:
-            self.train_dataset = BioVidLP(self.root_dir, self.feature_dir, "train", self.task, self.num_classes,
+            if self.augmentation:
+                self.train_dataset = AugmentedBioVidLP(
+                    self.root_dir, self.feature_dir, "train", self.task, self.num_classes,
+                    self.temporal_reduction, self.data_ratio, self.take_train,
+                    mixup_alpha=0.2,  # Adjust these parameters as needed
+                    feature_noise_std=0.01,
+                    feature_dropout_p=0.05
+                )
+            else:
+                self.train_dataset = BioVidLP(self.root_dir, self.feature_dir, "train", self.task, self.num_classes,
                 self.temporal_reduction, self.data_ratio, self.take_train)
             self.val_dataset = BioVidLP(self.root_dir, self.feature_dir, "val", self.task, self.num_classes,
                 self.temporal_reduction, self.data_ratio, self.take_val)

@@ -142,14 +142,24 @@ def train_biovid(args, config):
             num_classes, config["backbone"], False,
             args.marlin_ckpt, task, config["learning_rate"], args.n_gpus > 1,
         )
-
-        dm = BioVidDataModule(
-            data_path, finetune, task, num_classes,
-            batch_size=args.batch_size,
-            num_workers=args.num_workers,
-            feature_dir=config["backbone"],
-            temporal_reduction=config["temporal_reduction"]
-        )
+        if args.augmentation:
+            print("Using augmentation")
+            dm = BioVidDataModule(
+                data_path, finetune, task, num_classes,
+                augmentation=True,
+                batch_size=args.batch_size,
+                num_workers=args.num_workers,
+                feature_dir=config["backbone"],
+                temporal_reduction=config["temporal_reduction"]
+            )
+        else:
+            dm = BioVidDataModule(
+                data_path, finetune, task, num_classes,
+                batch_size=args.batch_size,
+                num_workers=args.num_workers,
+                feature_dir=config["backbone"],
+                temporal_reduction=config["temporal_reduction"]
+            )
 
     if args.skip_train:
         dm.setup()
@@ -614,6 +624,7 @@ if __name__ == '__main__':
         help="Skip training and evaluate only.")
     parser.add_argument("--predict_only", action="store_true", default=False,
                         help="Skip evaluation. Save prediction results only.")
+    parser.add_argument("--augmentation", action="store_true", default=False,)
 
     args = parser.parse_args()
     if args.skip_train:
