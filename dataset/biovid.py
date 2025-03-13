@@ -458,7 +458,7 @@ class BioVidDataModule(LightningDataModule):
                 )
             else:
                 self.train_dataset = BioVidLP(self.root_dir, self.feature_dir, "train", self.task, self.num_classes,
-                self.temporal_reduction, self.data_ratio, self.take_train)
+                    self.temporal_reduction, self.data_ratio, self.take_train)
             self.val_dataset = BioVidLP(self.root_dir, self.feature_dir, "val", self.task, self.num_classes,
                 self.temporal_reduction, self.data_ratio, self.take_val)
             self.test_dataset = BioVidLP(self.root_dir, self.feature_dir, "test", self.task, self.num_classes,

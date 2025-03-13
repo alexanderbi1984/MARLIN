@@ -138,10 +138,13 @@ def train_biovid(args, config):
         )
 
     else:
+        print("start initializing model")
         model = Classifier(
             num_classes, config["backbone"], False,
             args.marlin_ckpt, task, config["learning_rate"], args.n_gpus > 1,
         )
+        print("finish initializing model")
+        print("start initializing datamodule")
         if args.augmentation:
             print("Using augmentation")
             dm = BioVidDataModule(
@@ -600,6 +603,7 @@ def evaluate(args):
         evaluate_celebvhq(args, ckpt, dm)
     elif dataset_name == "biovid":
         # implement biovid evaluation here
+        print("Training Biovid")
         ckpt, dm = train_biovid(args, config)
         evaluate_biovid(args, ckpt, dm, config)
         # pass
