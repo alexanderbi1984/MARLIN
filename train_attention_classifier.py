@@ -43,6 +43,7 @@ def main():
     parser.add_argument("--num_heads", type=int, default=1, help="Number of attention heads")
     parser.add_argument("--dropout", type=float, default=0.6, help="Dropout rate")
     parser.add_argument("--resume", type=str, default=None, help="Path to resume checkpoint")
+    parser.add_argument("--augmentation", action="store_true", help="Whether to apply data augmentation")
 
     # Parse arguments
     args = parser.parse_args()
@@ -83,16 +84,29 @@ def main():
         # For linear probing, load pre-extracted features
         # Important: Make sure we have sequence-preserving features (not temporally reduced)
         # This requires that features were extracted with keep_seq=True
-        dm = BioVidDataModule(
-            root_dir=args.data_path,
-            load_raw=False,
-            task=args.task,
-            num_classes=args.num_classes,
-            batch_size=args.batch_size,
-            num_workers=args.num_workers,
-            feature_dir=args.backbone,
-            temporal_reduction="none"  # Critical: Don't reduce, we need clip sequence for attention
-        )
+        if args.augmentation:
+            dm = BioVidDataModule(
+                root_dir=args.data_path,
+                augmentation=True,
+                load_raw=False,
+                task=args.task,
+                num_classes=args.num_classes,
+                batch_size=args.batch_size,
+                num_workers=args.num_workers,
+                feature_dir=args.backbone,
+                temporal_reduction="none"  # Critical: Don't reduce, we need clip sequence for attention
+            )
+        else:
+            dm = BioVidDataModule(
+                root_dir=args.data_path,
+                load_raw=False,
+                task=args.task,
+                num_classes=args.num_classes,
+                batch_size=args.batch_size,
+                num_workers=args.num_workers,
+                feature_dir=args.backbone,
+                temporal_reduction="none"  # Critical: Don't reduce, we need clip sequence for attention
+            )
 
     # Create attention-based classifier
     model = AttentionClassifier(
