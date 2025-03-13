@@ -294,6 +294,38 @@ class AugmentedBioVidLP(BioVidLP):
             return random.choice(same_class_indices)
         return idx  # Fallback to self if no other samples in class
 
+    # def apply_feature_mixup(self, features, idx, y):
+    #     """Apply mixup at feature level with another sample from same class"""
+    #     # Get a sample from the same class
+    #     mix_idx = self.get_same_class_sample(idx, y)
+    #
+    #     # Load the mix partner's features
+    #     mix_name = os.path.splitext(self.name_list[mix_idx])[0]
+    #     mix_path = os.path.join(self.data_root, self.feature_dir, mix_name + ".npy")
+    #     mix_features = torch.from_numpy(np.load(mix_path)).float()
+    #
+    #     # Apply temporal reduction to mix partner if needed
+    #     if self.temporal_reduction == "mean":
+    #         mix_features = mix_features.mean(dim=0)
+    #     elif self.temporal_reduction == "max":
+    #         mix_features = mix_features.max(dim=0)[0]
+    #     elif self.temporal_reduction == "min":
+    #         mix_features = mix_features.min(dim=0)[0]
+    #     elif self.temporal_reduction != "none":
+    #         raise ValueError(f"Unsupported reduction: {self.temporal_reduction}")
+    #
+    #     # Generate mixup coefficient
+    #     lam = np.random.beta(self.mixup_alpha, self.mixup_alpha)
+    #
+    #     # Apply mixup
+    #     if features.dim() == mix_features.dim():
+    #         mixed = lam * features + (1 - lam) * mix_features
+    #         return mixed
+    #     else:
+    #         # Handle dimension mismatch (should not happen with proper temporal_reduction)
+    #         print(f"Warning: Feature dimension mismatch: {features.shape} vs {mix_features.shape}")
+    #         return features
+
     def apply_feature_mixup(self, features, idx, y):
         """Apply mixup at feature level with another sample from same class"""
         # Get a sample from the same class
@@ -304,27 +336,48 @@ class AugmentedBioVidLP(BioVidLP):
         mix_path = os.path.join(self.data_root, self.feature_dir, mix_name + ".npy")
         mix_features = torch.from_numpy(np.load(mix_path)).float()
 
-        # Apply temporal reduction to mix partner if needed
+        # Apply temporal reduction if needed
         if self.temporal_reduction == "mean":
             mix_features = mix_features.mean(dim=0)
+            features = features.mean(dim=0) if features.dim() > 1 else features
         elif self.temporal_reduction == "max":
             mix_features = mix_features.max(dim=0)[0]
+            features = features.max(dim=0)[0] if features.dim() > 1 else features
         elif self.temporal_reduction == "min":
             mix_features = mix_features.min(dim=0)[0]
-        elif self.temporal_reduction != "none":
-            raise ValueError(f"Unsupported reduction: {self.temporal_reduction}")
+            features = features.min(dim=0)[0] if features.dim() > 1 else features
+        elif self.temporal_reduction == "none":
+            # Standardize both sequences to the target length
+            target_clips = 4  # Must match what's used in __getitem__
+
+            # Standardize mix_features
+            if mix_features.shape[0] > target_clips:
+                mix_features = mix_features[:target_clips]
+            elif mix_features.shape[0] < target_clips:
+                padding = torch.zeros(target_clips - mix_features.shape[0], *mix_features.shape[1:],
+                                      dtype=mix_features.dtype)
+                mix_features = torch.cat([mix_features, padding], dim=0)
+
+            # Ensure features is also standardized (should already be done in __getitem__, but double-check)
+            if features.shape[0] > target_clips:
+                features = features[:target_clips]
+            elif features.shape[0] < target_clips:
+                padding = torch.zeros(target_clips - features.shape[0], *features.shape[1:], dtype=features.dtype)
+                features = torch.cat([features, padding], dim=0)
+
+        # Verify shapes match before mixup
+        if features.shape != mix_features.shape:
+            print(
+                f"Warning: Shape mismatch after standardization: features {features.shape}, mix_features {mix_features.shape}")
+            print(f"Defaulting to original features")
+            return features
 
         # Generate mixup coefficient
         lam = np.random.beta(self.mixup_alpha, self.mixup_alpha)
 
         # Apply mixup
-        if features.dim() == mix_features.dim():
-            mixed = lam * features + (1 - lam) * mix_features
-            return mixed
-        else:
-            # Handle dimension mismatch (should not happen with proper temporal_reduction)
-            print(f"Warning: Feature dimension mismatch: {features.shape} vs {mix_features.shape}")
-            return features
+        mixed = lam * features + (1 - lam) * mix_features
+        return mixed
 
     def apply_feature_noise(self, features):
         """Add Gaussian noise to features"""
