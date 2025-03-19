@@ -1,0 +1,3574 @@
+{
+    "clips": {
+        "GX010089.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 42,
+                "vas": 3.7,
+                "ground_truth": 3.7,
+                "temp_cut": "low"
+            }
+        },
+        "GX010089.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 43,
+                "vas": 4.7,
+                "ground_truth": 4.7,
+                "temp_cut": "low"
+            }
+        },
+        "GX010089.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 44,
+                "vas": 7.1,
+                "ground_truth": 7.1,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010089.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 45,
+                "vas": 7.8,
+                "ground_truth": 7.8,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010089.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 46,
+                "vas": 8.8,
+                "ground_truth": 8.8,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010089.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 47,
+                "vas": 9.1,
+                "ground_truth": 9.1,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010089.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 48,
+                "vas": 9.7,
+                "ground_truth": 9.7,
+                "temp_cut": "high"
+            }
+        },
+        "GX010089.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 49,
+                "vas": 10.0,
+                "ground_truth": 10.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010089.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 50,
+                "vas": 10.0,
+                "ground_truth": 10.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010091.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 50,
+                "vas": 9.2,
+                "ground_truth": 9.2,
+                "temp_cut": "high"
+            }
+        },
+        "GX010091.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 49,
+                "vas": 8.9,
+                "ground_truth": 8.9,
+                "temp_cut": "high"
+            }
+        },
+        "GX010091.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 48,
+                "vas": 8.0,
+                "ground_truth": 8.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010091.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 47,
+                "vas": 8.9,
+                "ground_truth": 8.9,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010091.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 46,
+                "vas": 6.4,
+                "ground_truth": 6.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010091.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 45,
+                "vas": 4.5,
+                "ground_truth": 4.5,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010091.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 44,
+                "vas": 3.5,
+                "ground_truth": 3.5,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010091.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 43,
+                "vas": 1.9,
+                "ground_truth": 1.9,
+                "temp_cut": "low"
+            }
+        },
+        "GX010091.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 1,
+                "sex": "Male",
+                "age": 29,
+                "temp": 42,
+                "vas": 0.9,
+                "ground_truth": 0.9,
+                "temp_cut": "low"
+            }
+        },
+        "GX010098.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 39,
+                "vas": 1.0,
+                "ground_truth": 1.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010098.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 40,
+                "vas": 1.4,
+                "ground_truth": 1.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX010098.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 41,
+                "vas": 2.4,
+                "ground_truth": 2.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX010098.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 42,
+                "vas": 3.3,
+                "ground_truth": 3.3,
+                "temp_cut": "low"
+            }
+        },
+        "GX010098.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 43,
+                "vas": 4.2,
+                "ground_truth": 4.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010098.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 44,
+                "vas": 5.2,
+                "ground_truth": 5.2,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010098.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 45,
+                "vas": 5.8,
+                "ground_truth": 5.8,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010098.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 46,
+                "vas": 6.1,
+                "ground_truth": 6.1,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010098.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 47,
+                "vas": 7.8,
+                "ground_truth": 7.8,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010098.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 48,
+                "vas": 8.9,
+                "ground_truth": 8.9,
+                "temp_cut": "high"
+            }
+        },
+        "GX010098.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 49,
+                "vas": 10.0,
+                "ground_truth": 10.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010098.12.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 50,
+                "vas": 10.0,
+                "ground_truth": 10.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010100.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 50,
+                "vas": 10.0,
+                "ground_truth": 10.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010100.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 49,
+                "vas": 9.9,
+                "ground_truth": 9.9,
+                "temp_cut": "high"
+            }
+        },
+        "GX010100.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 48,
+                "vas": 9.4,
+                "ground_truth": 9.4,
+                "temp_cut": "high"
+            }
+        },
+        "GX010100.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 47,
+                "vas": 7.9,
+                "ground_truth": 7.9,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010100.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 46,
+                "vas": 6.7,
+                "ground_truth": 6.7,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010100.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 45,
+                "vas": 5.7,
+                "ground_truth": 5.7,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010100.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 44,
+                "vas": 5.3,
+                "ground_truth": 5.3,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010100.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 43,
+                "vas": 4.7,
+                "ground_truth": 4.7,
+                "temp_cut": "low"
+            }
+        },
+        "GX010100.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 42,
+                "vas": 3.4,
+                "ground_truth": 3.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX010100.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 41,
+                "vas": 2.9,
+                "ground_truth": 2.9,
+                "temp_cut": "low"
+            }
+        },
+        "GX010100.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 40,
+                "vas": 2.2,
+                "ground_truth": 2.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010100.12.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 2,
+                "sex": "Female",
+                "age": 27,
+                "temp": 39,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX010106.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 39,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010106.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 40,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010106.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 41,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010106.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 42,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010106.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 43,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX010106.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 44,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010106.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 45,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010106.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 46,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010106.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 47,
+                "vas": 1.3,
+                "ground_truth": 1.3,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010106.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 48,
+                "vas": 5.0,
+                "ground_truth": 5.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010106.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 49,
+                "vas": 7.4,
+                "ground_truth": 7.4,
+                "temp_cut": "high"
+            }
+        },
+        "GX010106.12.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 50,
+                "vas": 8.8,
+                "ground_truth": 8.8,
+                "temp_cut": "high"
+            }
+        },
+        "GX010108.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 50,
+                "vas": 8.5,
+                "ground_truth": 8.5,
+                "temp_cut": "high"
+            }
+        },
+        "GX010108.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 49,
+                "vas": 6.7,
+                "ground_truth": 6.7,
+                "temp_cut": "high"
+            }
+        },
+        "GX010108.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 48,
+                "vas": 4.9,
+                "ground_truth": 4.9,
+                "temp_cut": "high"
+            }
+        },
+        "GX010108.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 47,
+                "vas": 2.3,
+                "ground_truth": 2.3,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010108.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 46,
+                "vas": 0.5,
+                "ground_truth": 0.5,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010108.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 45,
+                "vas": 0.1,
+                "ground_truth": 0.1,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010108.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 44,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010108.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 43,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010108.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 42,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010108.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 41,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010108.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 40,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010108.11(1)X.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 3,
+                "sex": "Male",
+                "age": 37,
+                "temp": 39,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010111.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 45,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010111.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 46,
+                "vas": 0.5,
+                "ground_truth": 0.5,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010111.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 47,
+                "vas": 0.9,
+                "ground_truth": 0.9,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010111.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 48,
+                "vas": 1.4,
+                "ground_truth": 1.4,
+                "temp_cut": "high"
+            }
+        },
+        "GX010111.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 49,
+                "vas": 3.4,
+                "ground_truth": 3.4,
+                "temp_cut": "high"
+            }
+        },
+        "GX010111.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 50,
+                "vas": 5.9,
+                "ground_truth": 5.9,
+                "temp_cut": "high"
+            }
+        },
+        "GX010113.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 50,
+                "vas": 7.9,
+                "ground_truth": 7.9,
+                "temp_cut": "high"
+            }
+        },
+        "GX010113.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 49,
+                "vas": 6.6,
+                "ground_truth": 6.6,
+                "temp_cut": "high"
+            }
+        },
+        "GX010113.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 48,
+                "vas": 4.3,
+                "ground_truth": 4.3,
+                "temp_cut": "high"
+            }
+        },
+        "GX010113.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 47,
+                "vas": 2.9,
+                "ground_truth": 2.9,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010113.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 46,
+                "vas": 0.5,
+                "ground_truth": 0.5,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010113.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 4,
+                "sex": "Female",
+                "age": 24,
+                "temp": 45,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010119.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 41,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "low"
+            }
+        },
+        "GX010119.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 42,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "low"
+            }
+        },
+        "GX010119.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 43,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "low"
+            }
+        },
+        "GX010119.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 44,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010119.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 45,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010119.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 46,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010119.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 47,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010119.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 48,
+                "vas": 1.0,
+                "ground_truth": 1.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010119.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 49,
+                "vas": 1.5,
+                "ground_truth": 1.5,
+                "temp_cut": "high"
+            }
+        },
+        "GX010119.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 50,
+                "vas": 1.3,
+                "ground_truth": 1.3,
+                "temp_cut": "high"
+            }
+        },
+        "GX010121.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 50,
+                "vas": 1.4,
+                "ground_truth": 1.4,
+                "temp_cut": "high"
+            }
+        },
+        "GX010121.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 49,
+                "vas": 0.5,
+                "ground_truth": 0.5,
+                "temp_cut": "high"
+            }
+        },
+        "GX010121.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 48,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "high"
+            }
+        },
+        "GX010121.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 47,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010121.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 46,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010121.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 45,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010121.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 44,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010121.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 43,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010121.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 42,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010121.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 5,
+                "sex": "Female",
+                "age": 38,
+                "temp": 41,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010125.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 44,
+                "vas": 0.7,
+                "ground_truth": 0.7,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010125.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 45,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010125.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 46,
+                "vas": 1.5,
+                "ground_truth": 1.5,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010125.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 47,
+                "vas": 1.7,
+                "ground_truth": 1.7,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010125.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 48,
+                "vas": 2.2,
+                "ground_truth": 2.2,
+                "temp_cut": "high"
+            }
+        },
+        "GX010125.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 49,
+                "vas": 3.1,
+                "ground_truth": 3.1,
+                "temp_cut": "high"
+            }
+        },
+        "GX010125.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 50,
+                "vas": 4.7,
+                "ground_truth": 4.7,
+                "temp_cut": "high"
+            }
+        },
+        "GX010127.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 50,
+                "vas": 3.0,
+                "ground_truth": 3.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010127.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 49,
+                "vas": 2.8,
+                "ground_truth": 2.8,
+                "temp_cut": "high"
+            }
+        },
+        "GX010127.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 48,
+                "vas": 3.1,
+                "ground_truth": 3.1,
+                "temp_cut": "high"
+            }
+        },
+        "GX010127.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 47,
+                "vas": 1.5,
+                "ground_truth": 1.5,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010127.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 46,
+                "vas": 1.0,
+                "ground_truth": 1.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010127.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 45,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010127.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 6,
+                "sex": "Female",
+                "age": 45,
+                "temp": 44,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010130.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 32,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": NaN
+            }
+        },
+        "GX010130.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 33,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 34,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 35,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 36,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 37,
+                "vas": 1.8,
+                "ground_truth": 1.8,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 38,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 39,
+                "vas": 6.1,
+                "ground_truth": 6.1,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 40,
+                "vas": 1.6,
+                "ground_truth": 1.6,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 41,
+                "vas": 2.9,
+                "ground_truth": 2.9,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 42,
+                "vas": 4.7,
+                "ground_truth": 4.7,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.12.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 43,
+                "vas": 3.2,
+                "ground_truth": 3.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010130.13.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 44,
+                "vas": 5.4,
+                "ground_truth": 5.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010130.14.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 45,
+                "vas": 7.2,
+                "ground_truth": 7.2,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010130.15.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 46,
+                "vas": 7.4,
+                "ground_truth": 7.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX020130.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 47,
+                "vas": 9.3,
+                "ground_truth": 9.3,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX020130.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 48,
+                "vas": 10.0,
+                "ground_truth": 10.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010132.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 48,
+                "vas": 8.7,
+                "ground_truth": 8.7,
+                "temp_cut": "high"
+            }
+        },
+        "GX010132.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 47,
+                "vas": 5.7,
+                "ground_truth": 5.7,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010132.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 46,
+                "vas": 4.0,
+                "ground_truth": 4.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010132.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 45,
+                "vas": 0.5,
+                "ground_truth": 0.5,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010132.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 44,
+                "vas": 3.8,
+                "ground_truth": 3.8,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010132.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 43,
+                "vas": 0.3,
+                "ground_truth": 0.3,
+                "temp_cut": "low"
+            }
+        },
+        "GX010132.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 42,
+                "vas": 0.3,
+                "ground_truth": 0.3,
+                "temp_cut": "low"
+            }
+        },
+        "GX010132.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 41,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX010132.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 40,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010132.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 39,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010132.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 38,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010132.12.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 37,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX010132.13.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 36,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX020132.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 35,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX020132.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 34,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX020132.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 33,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX020132.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 7,
+                "sex": "Female",
+                "age": 77,
+                "temp": 32,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": NaN
+            }
+        },
+        "GX010140.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 40,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010140.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 41,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010140.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 42,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010140.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 43,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010140.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 44,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010140.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 45,
+                "vas": 0.9,
+                "ground_truth": 0.9,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010140.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 46,
+                "vas": 0.8,
+                "ground_truth": 0.8,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010140.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 47,
+                "vas": 2.2,
+                "ground_truth": 2.2,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010140.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 48,
+                "vas": 2.2,
+                "ground_truth": 2.2,
+                "temp_cut": "high"
+            }
+        },
+        "GX010140.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 49,
+                "vas": 7.6,
+                "ground_truth": 7.6,
+                "temp_cut": "high"
+            }
+        },
+        "GX010140.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 50,
+                "vas": 10.0,
+                "ground_truth": 10.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010143.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 50,
+                "vas": 10.0,
+                "ground_truth": 10.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010143.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 49,
+                "vas": 10.0,
+                "ground_truth": 10.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010143.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 48,
+                "vas": 6.9,
+                "ground_truth": 6.9,
+                "temp_cut": "high"
+            }
+        },
+        "GX010143.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 47,
+                "vas": 0.9,
+                "ground_truth": 0.9,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010143.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 46,
+                "vas": 1.0,
+                "ground_truth": 1.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010143.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 45,
+                "vas": 0.3,
+                "ground_truth": 0.3,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010143.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 44,
+                "vas": 0.8,
+                "ground_truth": 0.8,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010143.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 43,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010143.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 42,
+                "vas": 0.5,
+                "ground_truth": 0.5,
+                "temp_cut": "low"
+            }
+        },
+        "GX010143.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 41,
+                "vas": 0.3,
+                "ground_truth": 0.3,
+                "temp_cut": "low"
+            }
+        },
+        "GX010143.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 8,
+                "sex": "Female",
+                "age": 67,
+                "temp": 40,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010150.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 39,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX010150.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 40,
+                "vas": 0.3,
+                "ground_truth": 0.3,
+                "temp_cut": "low"
+            }
+        },
+        "GX010150.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 41,
+                "vas": 0.7,
+                "ground_truth": 0.7,
+                "temp_cut": "low"
+            }
+        },
+        "GX010150.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 42,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "low"
+            }
+        },
+        "GX010150.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 43,
+                "vas": 0.8,
+                "ground_truth": 0.8,
+                "temp_cut": "low"
+            }
+        },
+        "GX010150.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 44,
+                "vas": 0.9,
+                "ground_truth": 0.9,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010150.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 45,
+                "vas": 1.0,
+                "ground_truth": 1.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010150.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 46,
+                "vas": 1.5,
+                "ground_truth": 1.5,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010150.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 47,
+                "vas": 2.4,
+                "ground_truth": 2.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010150.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 48,
+                "vas": 6.0,
+                "ground_truth": 6.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010150.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 49,
+                "vas": 7.0,
+                "ground_truth": 7.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010150.12.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 50,
+                "vas": 9.6,
+                "ground_truth": 9.6,
+                "temp_cut": "high"
+            }
+        },
+        "GX010152.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 50,
+                "vas": 8.5,
+                "ground_truth": 8.5,
+                "temp_cut": "high"
+            }
+        },
+        "GX010152.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 49,
+                "vas": 5.2,
+                "ground_truth": 5.2,
+                "temp_cut": "high"
+            }
+        },
+        "GX010152.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 48,
+                "vas": 4.2,
+                "ground_truth": 4.2,
+                "temp_cut": "high"
+            }
+        },
+        "GX010152.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 47,
+                "vas": 3.7,
+                "ground_truth": 3.7,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010152.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 46,
+                "vas": 1.0,
+                "ground_truth": 1.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010152.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 45,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010152.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 44,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010152.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 43,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010152.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 42,
+                "vas": 0.3,
+                "ground_truth": 0.3,
+                "temp_cut": "low"
+            }
+        },
+        "GX010152.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 41,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010152.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 9,
+                "sex": "Male",
+                "age": 57,
+                "temp": 40,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010157.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 43,
+                "vas": 1.6,
+                "ground_truth": 1.6,
+                "temp_cut": "low"
+            }
+        },
+        "GX010157.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 44,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010157.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 45,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010157.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 46,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010157.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 47,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010157.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 48,
+                "vas": 1.0,
+                "ground_truth": 1.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010157.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 49,
+                "vas": 1.0,
+                "ground_truth": 1.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010157.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 50,
+                "vas": 1.4,
+                "ground_truth": 1.4,
+                "temp_cut": "high"
+            }
+        },
+        "GX010159.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 50,
+                "vas": 1.0,
+                "ground_truth": 1.0,
+                "temp_cut": "high"
+            }
+        },
+        "GX010159.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 49,
+                "vas": 0.7,
+                "ground_truth": 0.7,
+                "temp_cut": "high"
+            }
+        },
+        "GX010159.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 48,
+                "vas": 0.6,
+                "ground_truth": 0.6,
+                "temp_cut": "high"
+            }
+        },
+        "GX010159.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 47,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010159.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 46,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010159.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 45,
+                "vas": 0.1,
+                "ground_truth": 0.1,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010159.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 44,
+                "vas": 0.1,
+                "ground_truth": 0.1,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010159.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 10,
+                "sex": "Male",
+                "age": 74,
+                "temp": 43,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010166.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 39,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010166.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 40,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010166.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 41,
+                "vas": 0.1,
+                "ground_truth": 0.1,
+                "temp_cut": "low"
+            }
+        },
+        "GX010166.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 42,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010166.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 43,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010166.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 44,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010166.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 45,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010166.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 46,
+                "vas": 0.3,
+                "ground_truth": 0.3,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010166.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 47,
+                "vas": 0.3,
+                "ground_truth": 0.3,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010166.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 48,
+                "vas": 3.1,
+                "ground_truth": 3.1,
+                "temp_cut": "high"
+            }
+        },
+        "GX010166.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 49,
+                "vas": 6.1,
+                "ground_truth": 6.1,
+                "temp_cut": "high"
+            }
+        },
+        "GX010166.12.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 50,
+                "vas": 5.7,
+                "ground_truth": 5.7,
+                "temp_cut": "high"
+            }
+        },
+        "GX010168.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 50,
+                "vas": 6.4,
+                "ground_truth": 6.4,
+                "temp_cut": "high"
+            }
+        },
+        "GX010168.2 to 49.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 49,
+                "vas": 3.8,
+                "ground_truth": 3.8,
+                "temp_cut": "high"
+            }
+        },
+        "GX010169.1 from 44.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 48,
+                "vas": 1.4,
+                "ground_truth": 1.4,
+                "temp_cut": "high"
+            }
+        },
+        "GX010169.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 47,
+                "vas": 0.5,
+                "ground_truth": 0.5,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010169.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 46,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010169.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 45,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010169.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 44,
+                "vas": 0.1,
+                "ground_truth": 0.1,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010169.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 11,
+                "sex": "Male",
+                "age": 52,
+                "temp": 43,
+                "vas": 0.0,
+                "ground_truth": 0.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010173.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 37,
+                "vas": 0.1,
+                "ground_truth": 0.1,
+                "temp_cut": "low"
+            }
+        },
+        "GX010173.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 38,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010173.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 39,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010173.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 40,
+                "vas": 0.3,
+                "ground_truth": 0.3,
+                "temp_cut": "low"
+            }
+        },
+        "GX010173.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 41,
+                "vas": 0.4,
+                "ground_truth": 0.4,
+                "temp_cut": "low"
+            }
+        },
+        "GX010173.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 42,
+                "vas": 0.9,
+                "ground_truth": 0.9,
+                "temp_cut": "low"
+            }
+        },
+        "GX010173.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 43,
+                "vas": 1.6,
+                "ground_truth": 1.6,
+                "temp_cut": "low"
+            }
+        },
+        "GX010173.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 44,
+                "vas": 2.3,
+                "ground_truth": 2.3,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010173.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 45,
+                "vas": 2.2,
+                "ground_truth": 2.2,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010173.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 46,
+                "vas": 3.8,
+                "ground_truth": 3.8,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010173.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 2,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 47,
+                "vas": 4.6,
+                "ground_truth": 4.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010173.12.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 48,
+                "vas": 6.2,
+                "ground_truth": 6.2,
+                "temp_cut": "high"
+            }
+        },
+        "GX020173.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 49,
+                "vas": 7.4,
+                "ground_truth": 7.4,
+                "temp_cut": "high"
+            }
+        },
+        "GX020173.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 50,
+                "vas": 8.3,
+                "ground_truth": 8.3,
+                "temp_cut": "high"
+            }
+        },
+        "GX010175.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 4,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 50,
+                "vas": 8.3,
+                "ground_truth": 8.3,
+                "temp_cut": "high"
+            }
+        },
+        "GX010175.2.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 3,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 49,
+                "vas": 6.8,
+                "ground_truth": 6.8,
+                "temp_cut": "high"
+            }
+        },
+        "GX010175.3.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 1,
+                "multiclass": 2,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 48,
+                "vas": 5.6,
+                "ground_truth": 5.6,
+                "temp_cut": "high"
+            }
+        },
+        "GX010175.4.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 47,
+                "vas": 3.6,
+                "ground_truth": 3.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010175.5.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 46,
+                "vas": 2.2,
+                "ground_truth": 2.2,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010175.6.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 1,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 45,
+                "vas": 2.6,
+                "ground_truth": 2.6,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010175.7.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 44,
+                "vas": 1.7,
+                "ground_truth": 1.7,
+                "temp_cut": "moderate"
+            }
+        },
+        "GX010175.8.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 43,
+                "vas": 1.0,
+                "ground_truth": 1.0,
+                "temp_cut": "low"
+            }
+        },
+        "GX010175.9.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 42,
+                "vas": 0.9,
+                "ground_truth": 0.9,
+                "temp_cut": "low"
+            }
+        },
+        "GX010175.10.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 41,
+                "vas": 0.3,
+                "ground_truth": 0.3,
+                "temp_cut": "low"
+            }
+        },
+        "GX010175.11.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 40,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX010175.12.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 39,
+                "vas": 0.1,
+                "ground_truth": 0.1,
+                "temp_cut": "low"
+            }
+        },
+        "GX010175.13.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 38,
+                "vas": 0.2,
+                "ground_truth": 0.2,
+                "temp_cut": "low"
+            }
+        },
+        "GX020175.1.mp4": {
+            "attributes": {
+                "source": "mgh",
+                "binary": 0,
+                "multiclass": 0,
+                "subject_id": 12,
+                "sex": "Male",
+                "age": 23,
+                "temp": 37,
+                "vas": 0.1,
+                "ground_truth": 0.1,
+                "temp_cut": "low"
+            }
+        }
+    }
+}

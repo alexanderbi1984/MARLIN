@@ -1,0 +1,3004 @@
+{
+    "clips": {
+        "ll042t1aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "042-ll042",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ll042t1aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "042-ll042",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ll042t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "042-ll042",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ll042t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "042-ll042",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ll042t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "042-ll042",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ll042t1aiaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "042-ll042",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ll042t1aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "042-ll042",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ll042t2afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "042-ll042",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh043t1aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "043-jh043",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh043t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "043-jh043",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh043t2aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "043-jh043",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh043t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "043-jh043",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh043t2aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "043-jh043",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh043t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "043-jh043",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh043t2afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "043-jh043",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh043t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "043-jh043",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh043t2aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "043-jh043",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jl047t1aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.5
+                },
+                "subject_id": "047-jl047",
+                "sex": "",
+                "age": "",
+                "vas": "3.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jl047t1aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "047-jl047",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jl047t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "047-jl047",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jl047t1aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "047-jl047",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jl047t1aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "047-jl047",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jl047t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "047-jl047",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jl047t2afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "047-jl047",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "aa048t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "048-aa048",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "aa048t2aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "048-aa048",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "aa048t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "048-aa048",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "aa048t2afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "048-aa048",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "aa048t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "048-aa048",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "aa048t2aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "048-aa048",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "aa048t2aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "048-aa048",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bm049t1aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "049-bm049",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bm049t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "049-bm049",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bm049t2aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "049-bm049",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bm049t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "049-bm049",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bm049t2aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "049-bm049",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bm049t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "049-bm049",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bm049t2afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "049-bm049",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bm049t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "049-bm049",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dr052t1aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "052-dr052",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dr052t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "052-dr052",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dr052t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "052-dr052",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dr052t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "052-dr052",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dr052t1aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "052-dr052",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "5.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dr052t1aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "052-dr052",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dr052t2aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "052-dr052",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dr052t2aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "052-dr052",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dr052t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "052-dr052",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dr052t2aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "052-dr052",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "fn059t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "059-fn059",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "fn059t2aiaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "059-fn059",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ak064t1aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5,
+                    "5": 4.0
+                },
+                "subject_id": "064-ak064",
+                "sex": "",
+                "age": "",
+                "vas": "5.0",
+                "opr": "5.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ak064t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "064-ak064",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ak064t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "064-ak064",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ak064t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "064-ak064",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ak064t1aiaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "064-ak064",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "5.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ak064t1aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "064-ak064",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg066t1aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "066-mg066",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg066t1aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "066-mg066",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg066t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "066-mg066",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg066t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "066-mg066",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg066t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "066-mg066",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg066t2aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "066-mg066",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg066t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "066-mg066",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg066t2afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "066-mg066",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bn080t1aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "080-bn080",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bn080t1aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "080-bn080",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bn080t1aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "080-bn080",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bn080t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "080-bn080",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bn080t1afaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "080-bn080",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bn080t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "080-bn080",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bn080t1aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "080-bn080",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ch092t1aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "092-ch092",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ch092t2aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "092-ch092",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ch092t2aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "092-ch092",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ch092t2afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "092-ch092",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ch092t2aiaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.5
+                },
+                "subject_id": "092-ch092",
+                "sex": "",
+                "age": "",
+                "vas": "3.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "tv095t1afaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.5
+                },
+                "subject_id": "095-tv095",
+                "sex": "",
+                "age": "",
+                "vas": "3.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "tv095t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "095-tv095",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "tv095t2afaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "095-tv095",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bg096t1aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "096-bg096",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bg096t1aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.5
+                },
+                "subject_id": "096-bg096",
+                "sex": "",
+                "age": "",
+                "vas": "4.5",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bg096t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "096-bg096",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bg096t1afaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.5
+                },
+                "subject_id": "096-bg096",
+                "sex": "",
+                "age": "",
+                "vas": "4.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bg096t2aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "096-bg096",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bg096t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "096-bg096",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bg096t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "096-bg096",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bg096t2afaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.5
+                },
+                "subject_id": "096-bg096",
+                "sex": "",
+                "age": "",
+                "vas": "4.5",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "bg096t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "096-bg096",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t1aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t1aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t1aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t1aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t1aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t2afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t2aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "gf097t2aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "097-gf097",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg101t1aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "101-mg101",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg101t2aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "101-mg101",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg101t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "101-mg101",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg101t2aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "101-mg101",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg101t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "101-mg101",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg101t2afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "101-mg101",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg101t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "101-mg101",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg101t2aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "101-mg101",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "mg101t2aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "101-mg101",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t1aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.5
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "4.5",
+                "opr": "5.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t1aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t1aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t1aiaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t1aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t2aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.5
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "4.5",
+                "opr": "5.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t2aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t2afaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.5
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "4.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t2aiaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jk103t2aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "103-jk103",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t1aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t1aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t1aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t1aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t2aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t2aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t2aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "nm106t2aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "106-nm106",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "hs107t1aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "107-hs107",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "hs107t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "107-hs107",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "hs107t1afaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "107-hs107",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "hs107t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "107-hs107",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "hs107t2aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.5
+                },
+                "subject_id": "107-hs107",
+                "sex": "",
+                "age": "",
+                "vas": "3.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "hs107t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "107-hs107",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "hs107t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "107-hs107",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "hs107t2aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "107-hs107",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t1aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.5
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "3.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t1aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t1aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "5.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t1afaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t1aiaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.5
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "3.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t1aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t2aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5,
+                    "5": 4.0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "5.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t2afaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "5.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t2aiaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "th108t2aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "108-th108",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ib109t1aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "109-ib109",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ib109t1aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.5
+                },
+                "subject_id": "109-ib109",
+                "sex": "",
+                "age": "",
+                "vas": "4.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ib109t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "109-ib109",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ib109t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "109-ib109",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ib109t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "109-ib109",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ib109t1aiaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "109-ib109",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ib109t1aiunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "109-ib109",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "ib109t2aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "109-ib109",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jy115t1aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "115-jy115",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jy115t1aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "115-jy115",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jy115t1aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "115-jy115",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jy115t2aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.5
+                },
+                "subject_id": "115-jy115",
+                "sex": "",
+                "age": "",
+                "vas": "4.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jy115t2aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.5
+                },
+                "subject_id": "115-jy115",
+                "sex": "",
+                "age": "",
+                "vas": "4.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "kz120t1aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.5
+                },
+                "subject_id": "120-kz120",
+                "sex": "",
+                "age": "",
+                "vas": "4.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "kz120t1aeaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "120-kz120",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "kz120t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "120-kz120",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "kz120t2aaaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4,
+                    "5": 3.0
+                },
+                "subject_id": "120-kz120",
+                "sex": "",
+                "age": "",
+                "vas": "4.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "kz120t2aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "120-kz120",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "kz120t2aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "120-kz120",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "kz120t2aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "120-kz120",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "kz120t2afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "120-kz120",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "vw121t1aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0.5
+                },
+                "subject_id": "121-vw121",
+                "sex": "",
+                "age": "",
+                "vas": "1.5",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "vw121t1aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "121-vw121",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "vw121t1aiaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "121-vw121",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh123t1aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "123-jh123",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh123t1aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.0
+                },
+                "subject_id": "123-jh123",
+                "sex": "",
+                "age": "",
+                "vas": "2.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh123t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "123-jh123",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "1.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh123t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "123-jh123",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh123t2aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "123-jh123",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "jh123t2aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2,
+                    "5": 1.5
+                },
+                "subject_id": "123-jh123",
+                "sex": "",
+                "age": "",
+                "vas": "2.5",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dn124t1aaaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "124-dn124",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "2.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dn124t1aaunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "124-dn124",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dn124t1aeaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1,
+                    "5": 0
+                },
+                "subject_id": "124-dn124",
+                "sex": "",
+                "age": "",
+                "vas": "1.0",
+                "opr": "3.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dn124t1aeunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "124-dn124",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dn124t1afaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "124-dn124",
+                "sex": "",
+                "age": "",
+                "vas": "0.5",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dn124t1afunaff.mp4": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0,
+                    "5": 0
+                },
+                "subject_id": "124-dn124",
+                "sex": "",
+                "age": "",
+                "vas": "0.0",
+                "opr": "0.0",
+                "source": "ShoulderPain"
+            }
+        },
+        "dn124t1aiaff.mp4": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3,
+                    "5": 2.0
+                },
+                "subject_id": "124-dn124",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",
+                "opr": "4.0",
+                "source": "ShoulderPain"
+            }
+        }
+    }
+}
