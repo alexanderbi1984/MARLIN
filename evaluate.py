@@ -360,6 +360,7 @@ def evaluate_biovid(args, ckpt, dm, config):
         if task == "binary":
             # Convert tensors to numpy for sklearn metrics
             y_true = ys.cpu().numpy()
+            print(f"the true labels are {y_true}")
             y_pred = pred_classes.cpu().numpy()
             y_score = probability.cpu().numpy()
             # print(f"Shape of y_true: {y_true.shape}")

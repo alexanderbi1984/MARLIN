@@ -51,9 +51,13 @@ def create_subject_independent_splits(json_path, output_dir, train_ratio=0.7, va
 
     # Filter to only include samples with multiclass "5" value of 0 or 3
     filtered_clips = {}
+    # for clip_name, clip_info in data['clips'].items():
+    #     multiclass_value = clip_info['attributes']['multiclass'].get('5')
+    #     if multiclass_value in [0, 3.5, 4]:
+    #         filtered_clips[clip_name] = clip_info
     for clip_name, clip_info in data['clips'].items():
-        multiclass_value = clip_info['attributes']['multiclass'].get('5')
-        if multiclass_value in [0, 3.5, 4]:
+        vas_value = clip_info['attributes']['vas']
+        if vas_value in [0.0, 5.0,4.5,4.0]:
             filtered_clips[clip_name] = clip_info
 
     # Group clips by subject AND class
@@ -220,11 +224,22 @@ def create_balanced_dataset_splits(json_path, output_dir, train_ratio=0.7, val_r
     clips_by_class = defaultdict(list)
 
     for clip_name, clip_info in data['clips'].items():
-        multiclass_value = clip_info['attributes']['multiclass'].get('5')
+        # multiclass_value = clip_info['attributes']['multiclass'].get('5')
+        multiclass_value = clip_info['attributes']['multiclass']
 
         # Only include clips with multiclass "5" of 0 or 3
-        if multiclass_value in [0, 3]:
+        if True:
+        # if multiclass_value in [0, 3]:
             clips_by_class[multiclass_value].append(clip_name)
+
+
+        # vas_value = clip_info['attributes']['vas']
+        # vas_float = float(vas_value)
+        # # print(vas_value)
+        # # if vas_value>=4 or vas_value<=0:
+        # #     clips_by_class[clip_name].append(clip_info)
+        # if vas_value <1 or vas_value>8:
+        #     clips_by_class[vas_value].append(clip_name)
 
     # Print class distribution
     print("Class distribution:")
@@ -268,20 +283,20 @@ def create_balanced_dataset_splits(json_path, output_dir, train_ratio=0.7, val_r
     # Print split statistics
     print("\nSplit statistics:")
     print(f"Training set: {len(train_set)} samples")
-    for class_label in clips_by_class.keys():
-        class_count = sum(
-            1 for clip in train_set if data['clips'][clip]['attributes']['multiclass']['5'] == class_label)
-        print(f"  Class {class_label}: {class_count} samples")
-
-    print(f"Validation set: {len(val_set)} samples")
-    for class_label in clips_by_class.keys():
-        class_count = sum(1 for clip in val_set if data['clips'][clip]['attributes']['multiclass']['5'] == class_label)
-        print(f"  Class {class_label}: {class_count} samples")
-
-    print(f"Test set: {len(test_set)} samples")
-    for class_label in clips_by_class.keys():
-        class_count = sum(1 for clip in test_set if data['clips'][clip]['attributes']['multiclass']['5'] == class_label)
-        print(f"  Class {class_label}: {class_count} samples")
+    # for class_label in clips_by_class.keys():
+    #     class_count = sum(
+    #         1 for clip in train_set if data['clips'][clip]['attributes']['multiclass']['5'] == class_label)
+    #     print(f"  Class {class_label}: {class_count} samples")
+    #
+    # print(f"Validation set: {len(val_set)} samples")
+    # for class_label in clips_by_class.keys():
+    #     class_count = sum(1 for clip in val_set if data['clips'][clip]['attributes']['multiclass']['5'] == class_label)
+    #     print(f"  Class {class_label}: {class_count} samples")
+    #
+    # print(f"Test set: {len(test_set)} samples")
+    # for class_label in clips_by_class.keys():
+    #     class_count = sum(1 for clip in test_set if data['clips'][clip]['attributes']['multiclass']['5'] == class_label)
+    #     print(f"  Class {class_label}: {class_count} samples")
 
     # Write to output files
     with open(os.path.join(output_dir, 'train.txt'), 'w') as f:
