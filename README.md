@@ -367,6 +367,50 @@ The `distribution_test.py` script performs statistical analysis of features betw
 python distribution_test.py
 ```
 
+### Outcome-based Analysis
+
+The `outcome_based_analysis.py` script analyzes how features differ between successful and unsuccessful treatment outcomes. This helps understand which features might be predictive of treatment success.
+
+```bash
+python outcome_based_analysis.py \
+    --features_dir /path/to/features \
+    --meta_path /path/to/meta.xlsx \
+    --features 397 231 490 482 456 \
+    --output_dir outcome_analysis
+```
+
+Key parameters:
+- `--features_dir`: Directory containing feature files
+- `--meta_path`: Path to metadata Excel file with outcomes
+- `--features`: List of feature indices to analyze
+- `--output_dir`: Directory to save analysis results
+
+The script generates:
+1. Statistical Analysis
+   - Pre vs post changes within each outcome group
+   - Effect sizes and p-values
+   - Sample size information
+
+2. Visualizations
+   - Box plots comparing feature changes across outcome groups
+   - Pre vs post comparisons for each outcome category
+   - One plot per analyzed feature
+
+3. Summary Report
+   - CSV file with detailed statistics
+   - Console output with key findings
+   - Feature-by-feature outcome analysis
+
+The metadata Excel file should include:
+- `video_id`: Identifier matching feature files
+- `visit_type`: Type of visit (e.g., '1st-pre', '1st-post')
+- `outcome`: Treatment outcome category
+
+This analysis helps identify:
+- Features that change differently in successful vs unsuccessful treatments
+- Potential predictive markers of treatment success
+- Patterns specific to different outcome groups
+
 ### Output Files
 
 The visualization scripts generate several types of output files:
