@@ -367,49 +367,100 @@ The `distribution_test.py` script performs statistical analysis of features betw
 python distribution_test.py
 ```
 
-### Outcome-based Analysis
+### Outcome-Based Feature Analysis
 
-The `outcome_based_analysis.py` script analyzes how features differ between successful and unsuccessful treatment outcomes. This helps understand which features might be predictive of treatment success.
+This section presents the results of analyzing MARLIN features based on treatment outcomes. The analysis focuses on identifying features that significantly differ between successful and unsuccessful treatments.
+
+### Analysis Overview
+
+The analysis was performed at two levels:
+1. **Clip-level**: Analyzing individual video clips
+2. **Video-level**: Analyzing averaged features across all clips in a video
+
+### Statistical Results
+
+#### 1. Mann-Whitney U Test Results
+
+**Clip-level Analysis**:
+- 434 features (56.5%) showed significant differences (p < 0.05) before correction
+- 387 features (50.4%) remained significant after FDR correction
+- Top 5 most significant features:
+  - Feature 662: p-value = 0.0000, effect size = 1.113
+  - Feature 316: p-value = 0.0000, effect size = 1.089
+  - Feature 629: p-value = 0.0000, effect size = 1.087
+  - Feature 143: p-value = 0.0000, effect size = 1.085
+  - Feature 587: p-value = 0.0000, effect size = 1.082
+
+**Video-level Analysis**:
+- 22 features (2.9%) showed significance before correction
+- No features remained significant after FDR correction
+- Higher p-values (> 0.70) indicate less reliable differences
+
+#### 2. Effect Size Analysis (Cohen's d)
+
+**Clip-level Analysis**:
+- Large effect sizes (|d| > 0.8): 23 features (3.0%)
+- Medium effect sizes (0.5 < |d| ≤ 0.8): 87 features (11.3%)
+- Small effect sizes (|d| ≤ 0.5): 658 features (85.7%)
+
+**Video-level Analysis**:
+- Large effect sizes (|d| > 0.8): 33 features (4.3%)
+- Medium effect sizes (0.5 < |d| ≤ 0.8): 116 features (15.1%)
+- Small effect sizes (|d| ≤ 0.5): 619 features (80.6%)
+
+#### 3. MMD Test Results
+- Clip-level: MMD = -0.0012, p = 0.5240
+- Video-level: MMD = -0.0696, p = 0.9900
+
+### Key Findings
+
+1. **Feature Discrimination**:
+   - Individual features show stronger and more reliable differences at the clip level
+   - Feature 662 consistently shows the strongest effect size across both levels
+   - The top discriminative features are consistent between clip and video levels
+
+2. **Statistical Reliability**:
+   - Clip-level analysis provides more reliable statistical inference
+   - Video-level analysis shows larger effect sizes but lower statistical reliability
+   - The negative MMD values suggest similar overall distributions between outcomes
+
+3. **Feature Importance**:
+   - A small subset of features (top 5) shows very strong discrimination
+   - Most features show small effect sizes, suggesting complex interactions
+   - The consistent top features across levels indicate robust biomarkers
+
+### Recommendations
+
+1. **Analysis Level**:
+   - Focus on clip-level analysis for more reliable statistical inference
+   - Use video-level analysis for exploratory purposes or when sample size is limited
+
+2. **Feature Selection**:
+   - Prioritize the top 5 features (662, 316, 629, 143, 587) for further investigation
+   - Consider feature interactions and combinations for better discrimination
+
+3. **Methodological Improvements**:
+   - Consider using multiple clips per video to increase statistical power
+   - Implement multivariate analysis approaches to capture feature interactions
+   - Explore feature combinations for improved outcome prediction
+
+### Usage
+
+To run the outcome-based analysis:
 
 ```bash
 python outcome_based_analysis.py \
     --features_dir /path/to/features \
-    --meta_path /path/to/meta.xlsx \
-    --features 397 231 490 482 456 \
-    --output_dir outcome_analysis
+    --meta_path /path/to/metadata.xlsx \
+    --output_dir outcome_analysis_results
 ```
 
-Key parameters:
-- `--features_dir`: Directory containing feature files
-- `--meta_path`: Path to metadata Excel file with outcomes
-- `--features`: List of feature indices to analyze
-- `--output_dir`: Directory to save analysis results
-
-The script generates:
-1. Statistical Analysis
-   - Pre vs post changes within each outcome group
-   - Effect sizes and p-values
-   - Sample size information
-
-2. Visualizations
-   - Box plots comparing feature changes across outcome groups
-   - Pre vs post comparisons for each outcome category
-   - One plot per analyzed feature
-
-3. Summary Report
-   - CSV file with detailed statistics
-   - Console output with key findings
-   - Feature-by-feature outcome analysis
-
-The metadata Excel file should include:
-- `video_id`: Identifier matching feature files
-- `visit_type`: Type of visit (e.g., '1st-pre', '1st-post')
-- `outcome`: Treatment outcome category
-
-This analysis helps identify:
-- Features that change differently in successful vs unsuccessful treatments
-- Potential predictive markers of treatment success
-- Patterns specific to different outcome groups
+The analysis will generate:
+- Statistical test results
+- Feature importance visualizations
+- Distribution plots for top features
+- Heatmaps of feature changes
+- PCA and UMAP visualizations
 
 ### Output Files
 

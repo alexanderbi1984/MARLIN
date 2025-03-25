@@ -1,19 +1,62 @@
 """
 Outcome-based Feature Analysis
 
-This script analyzes MARLIN features considering treatment outcomes. It:
-1. Calculates pre-post differences in features for each subject
-2. Groups subjects by treatment outcome (success/failure)
-3. Analyzes feature differences between outcome groups
-4. Identifies features that change significantly with successful treatment
-5. Visualizes feature patterns specific to each outcome group
+This script analyzes MARLIN features considering treatment outcomes. It performs comprehensive statistical analysis
+to identify features that significantly differ between successful and unsuccessful treatments.
+
+Analysis Components:
+1. Feature Loading and Preprocessing
+   - Loads MARLIN features from .npy files
+   - Calculates pre-post differences for each subject
+   - Handles both clip-level and video-level analysis
+
+2. Statistical Analysis
+   - Mann-Whitney U test for feature differences
+   - Cohen's d effect size calculation
+   - False Discovery Rate (FDR) correction
+   - Kernel Maximum Mean Discrepancy (MMD) test
+
+3. Visualization
+   - Feature comparison box plots
+   - Feature change heatmaps
+   - PCA and UMAP dimensionality reduction plots
+   - Top feature distribution plots
 
 Outcome Definitions:
 - Positive (Success): Treatment led to improvement in pain symptoms (pain reduction ≥4)
 - Negative (Failure): Treatment did not lead to improvement in pain symptoms (pain reduction <4)
 
-The outcome should be specified in the metadata Excel file with a column 'outcome'
-containing values 'positive' or 'negative'.
+Input Requirements:
+1. Feature Files:
+   - Directory containing .npy files with MARLIN features
+   - Filename format: IMG_[ID]_clip_[N]_aligned.npy
+   - Features should be pre-computed using MARLIN model
+
+2. Metadata File (Excel):
+   - Required columns:
+     * video_id: Matching feature file identifiers
+     * visit_type: Visit type (e.g., '1st-pre', '1st-post')
+     * outcome: Treatment outcome ('positive' or 'negative')
+     * subject_id: Unique subject identifier
+
+Output Files:
+1. Statistical Results:
+   - [feature_type]_clip_outcome_analysis.csv: Clip-level analysis
+   - [feature_type]_video_outcome_analysis.csv: Video-level analysis
+   - [feature_type]_mmd_results.txt: MMD test results
+
+2. Visualizations:
+   - [feature_type]_clip/video_feature_changes_heatmap.html
+   - [feature_type]_clip/video_feature_[N]_changes.png
+   - [feature_type]_pca_visualization.html
+   - [feature_type]_umap_visualization.html
+   - [feature_type]_top_feature_distribution.html
+
+Usage:
+    python outcome_based_analysis.py \
+        --features_dir /path/to/features \
+        --meta_path /path/to/metadata.xlsx \
+        --output_dir outcome_analysis_results
 
 Author: Nan Bi
 Date: March 2024
@@ -74,8 +117,9 @@ def load_features_with_metadata(directory, metadata):
     features_list = []
     video_ids = []
     clip_nums = []
+    subject_ids = []
     outcomes = []
-    visit_types = []  # 'pre' or 'post'
+    visit_types = []
     
     # First, ensure we have video_id column in metadata
     if 'video_id' not in metadata.columns:
@@ -103,9 +147,9 @@ def load_features_with_metadata(directory, metadata):
                     features_list.append(feature)
                     video_ids.append(video_id)
                     clip_nums.append(clip_num)
+                    subject_ids.append(matching_row['subject_id'])
                     outcomes.append(matching_row['outcome'])
-                    # Determine if this is a pre or post visit
-                    visit_type = 'pre' if 'pre' in filename.lower() else 'post'
+                    visit_type = 'pre' if 'pre' in matching_row['visit_type'] else 'post'
                     visit_types.append(visit_type)
                 
             except Exception as e:
@@ -118,11 +162,11 @@ def load_features_with_metadata(directory, metadata):
     
     # Convert to numpy arrays
     features_array = np.array(features_list)
-    logging.info(f"\nLoaded features array shape: {features_array.shape}")
     
     # Create a DataFrame with features information
     features_df = pd.DataFrame({
         'video_id': video_ids,
+        'subject_id': subject_ids,
         'clip_num': clip_nums,
         'outcome': outcomes,
         'visit_type': visit_types
@@ -131,20 +175,15 @@ def load_features_with_metadata(directory, metadata):
     # Calculate pre-post differences for each subject
     subject_differences = {}
     for i, row in features_df.iterrows():
-        vid = row['video_id']
-        if vid not in subject_differences:
-            subject_differences[vid] = {'pre': [], 'post': [], 'outcome': row['outcome']}
-        subject_differences[vid][row['visit_type']].append(features_array[i])
+        subject_id = row['subject_id']
+        if subject_id not in subject_differences:
+            subject_differences[subject_id] = {'pre': [], 'post': [], 'outcome': row['outcome']}
+        subject_differences[subject_id][row['visit_type']].append(features_array[i])
     
     # Calculate differences and split by outcome
     clip_features_pos = []
     clip_features_neg = []
-    for vid, data in subject_differences.items():
-        logging.info(f"\nSubject {vid}:")
-        logging.info(f"Pre clips: {len(data['pre'])}")
-        logging.info(f"Post clips: {len(data['post'])}")
-        logging.info(f"Outcome: {data['outcome']}")
-        
+    for subject_id, data in subject_differences.items():
         if data['pre'] and data['post']:  # If we have both pre and post clips
             # Ensure we have equal numbers of pre and post clips
             n_pairs = min(len(data['pre']), len(data['post']))
@@ -152,10 +191,6 @@ def load_features_with_metadata(directory, metadata):
                 # Randomly select clips to pair
                 pre_indices = np.random.choice(len(data['pre']), n_pairs, replace=False)
                 post_indices = np.random.choice(len(data['post']), n_pairs, replace=False)
-                
-                # Add debug logging for feature shapes
-                logging.info(f"Pre feature shape: {np.array(data['pre']).shape}")
-                logging.info(f"Post feature shape: {np.array(data['post']).shape}")
                 
                 # Calculate differences for paired clips
                 for pre_idx, post_idx in zip(pre_indices, post_indices):
@@ -165,12 +200,6 @@ def load_features_with_metadata(directory, metadata):
                     else:
                         clip_features_neg.append(diff)
     
-    # Add debug logging for final arrays
-    if clip_features_pos:
-        logging.info(f"\nPositive features shape: {np.array(clip_features_pos).shape}")
-    if clip_features_neg:
-        logging.info(f"\nNegative features shape: {np.array(clip_features_neg).shape}")
-    
     # Convert to numpy arrays
     clip_features_pos = np.array(clip_features_pos)
     clip_features_neg = np.array(clip_features_neg)
@@ -178,7 +207,7 @@ def load_features_with_metadata(directory, metadata):
     # Video-level analysis: First average clips within each video, then calculate differences
     video_features_pos = []
     video_features_neg = []
-    for vid, data in subject_differences.items():
+    for subject_id, data in subject_differences.items():
         if data['pre'] and data['post']:  # If we have both pre and post clips
             # Average all clips within each visit
             pre_avg = np.mean(data['pre'], axis=0)
@@ -200,7 +229,6 @@ def load_features_with_metadata(directory, metadata):
     logging.info("\nVideo-level analysis (pre-post differences):")
     logging.info(f"Positive: {len(video_features_pos)} videos")
     logging.info(f"Negative: {len(video_features_neg)} videos")
-    logging.info(f"\nFeature dimensionality: {features_array.shape[1]}")
     
     return clip_features_pos, clip_features_neg, video_features_pos, video_features_neg
 
@@ -270,7 +298,8 @@ def plot_feature_comparison(feature_idx, pos_vals, neg_vals, results_df, output_
     sns.boxplot(x='Outcome', y='Feature Change (Post-Pre)', data=df_plot)
     
     # Add statistical annotations
-    result = results_df[results_df['feature_idx'] == feature_idx].iloc[0]
+    # Convert feature_idx to integer for DataFrame lookup
+    result = results_df[results_df['feature_idx'] == int(feature_idx)].iloc[0]
     plt.title(f"Feature {feature_idx} Pre-Post Changes by Outcome\n" + 
               f"Effect Size: {result['effect_size']:.2f}, " +
               f"p-value (FDR): {result['p_value_fdr']:.3f}")
@@ -588,10 +617,12 @@ def main():
             features_pos = clip_features_pos if level == 'clip' else video_features_pos
             features_neg = clip_features_neg if level == 'clip' else video_features_neg
             
-            # Plot top 5 features by absolute effect size
-            top_features = results.nlargest(5, 'effect_size', key=abs)
+            # Create absolute effect size column and get top features
+            results['abs_effect_size'] = results['effect_size'].abs()
+            top_features = results.nlargest(5, 'abs_effect_size')
+            
             for _, row in top_features.iterrows():
-                feature_idx = row['feature_idx']
+                feature_idx = int(row['feature_idx'])
                 plot_feature_comparison(
                     feature_idx,
                     features_pos[:, feature_idx],
@@ -605,9 +636,42 @@ def main():
         clip_mmd, clip_pval = kernel_mmd_test(clip_features_pos, clip_features_neg)
         video_mmd, video_pval = kernel_mmd_test(video_features_pos, video_features_neg)
         
-        logging.info(f"\n{feature_type} MMD Test Results:")
-        logging.info(f"Clip-level MMD: {clip_mmd:.6f}, p-value: {clip_pval:.6f}")
-        logging.info(f"Video-level MMD: {video_mmd:.6f}, p-value: {video_pval:.6f}")
+        # Print comprehensive test results
+        print("\n" + "="*80)
+        print(f"Statistical Analysis Results for {feature_type} Features")
+        print("="*80)
+        
+        print("\n1. Mann-Whitney U Test Results:")
+        print("-"*40)
+        for level in ['clip', 'video']:
+            results = clip_results if level == 'clip' else video_results
+            print(f"\n{level.title()}-level analysis:")
+            print(f"Number of significant features (p < 0.05): {sum(results['p_value'] < 0.05)}")
+            print(f"Number of significant features after FDR correction: {sum(results['p_value_fdr'] < 0.05)}")
+            print("\nTop 5 most significant features:")
+            top_sig = results.nsmallest(5, 'p_value_fdr')
+            for _, row in top_sig.iterrows():
+                print(f"Feature {row['feature_idx']}: p-value = {row['p_value_fdr']:.4f}, effect size = {row['effect_size']:.3f}")
+        
+        print("\n2. Effect Size Analysis:")
+        print("-"*40)
+        for level in ['clip', 'video']:
+            results = clip_results if level == 'clip' else video_results
+            print(f"\n{level.title()}-level analysis:")
+            print(f"Number of features with large effect size (|d| > 0.8): {sum(abs(results['effect_size']) > 0.8)}")
+            print(f"Number of features with medium effect size (0.5 < |d| ≤ 0.8): {sum((abs(results['effect_size']) > 0.5) & (abs(results['effect_size']) <= 0.8))}")
+            print(f"Number of features with small effect size (|d| ≤ 0.5): {sum(abs(results['effect_size']) <= 0.5)}")
+            print("\nTop 5 features by effect size:")
+            top_effect = results.nlargest(5, 'abs_effect_size')
+            for _, row in top_effect.iterrows():
+                print(f"Feature {row['feature_idx']}: effect size = {row['effect_size']:.3f}, p-value = {row['p_value_fdr']:.4f}")
+        
+        print("\n3. MMD Test Results:")
+        print("-"*40)
+        print(f"Clip-level MMD: {clip_mmd:.4f}, p-value: {clip_pval:.4f}")
+        print(f"Video-level MMD: {video_mmd:.4f}, p-value: {video_pval:.4f}")
+        
+        print("\n" + "="*80 + "\n")
         
         # Save MMD results
         with open(output_dir / f"{feature_type}_mmd_results.txt", 'w') as f:
