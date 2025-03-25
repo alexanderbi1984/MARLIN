@@ -35,6 +35,8 @@ import umap
 import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.preprocessing import StandardScaler
+import os
+import re
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -66,14 +68,96 @@ def load_metadata(meta_path):
         logging.error(f"Error loading metadata: {e}")
         raise
 
-def load_features(features_dir, filename, feature_type='marlin'):
-    """Load features for a given file"""
-    try:
-        feature_path = Path(features_dir) / f"{filename}_{feature_type}.npy"
-        return np.load(str(feature_path))
-    except Exception as e:
-        logging.error(f"Error loading features for {filename}: {e}")
-        return None
+def load_features_with_metadata(directory, metadata):
+    """Load features and combine with metadata information."""
+    features_list = []
+    video_ids = []
+    clip_nums = []
+    outcomes = []
+    
+    # First, ensure we have video_id column in metadata
+    if 'video_id' not in metadata.columns:
+        metadata['video_id'] = metadata['file_name'].str.replace('.MP4', '')
+    
+    # Only consider samples that have an outcome label
+    valid_metadata = metadata[metadata['outcome'].notna()]
+    
+    logging.info("\nLoading features...")
+    for filename in tqdm(os.listdir(directory)):
+        if filename.endswith('.npy'):
+            feature_path = os.path.join(directory, filename)
+            try:
+                feature = np.load(feature_path)
+                # If feature is 3D, take mean across temporal dimension
+                if len(feature.shape) == 3:
+                    feature = np.mean(feature, axis=1)
+                # If feature is still 2D, take mean across remaining temporal dimension
+                if len(feature.shape) == 2:
+                    feature = np.mean(feature, axis=0)
+                
+                video_id, clip_num = parse_filename(filename)
+                if video_id is not None and video_id in valid_metadata['video_id'].values:
+                    matching_row = valid_metadata[valid_metadata['video_id'] == video_id].iloc[0]
+                    features_list.append(feature)
+                    video_ids.append(video_id)
+                    clip_nums.append(clip_num)
+                    outcomes.append(matching_row['outcome'])
+                
+            except Exception as e:
+                logging.error(f"Error loading {filename}: {e}")
+                continue
+    
+    if not features_list:
+        logging.error("No features were loaded successfully")
+        return None, None, None, None
+    
+    # Convert to numpy arrays
+    features_array = np.array(features_list)
+    
+    # Clip-level analysis: Split all clips into positive and negative groups
+    clip_features_pos = []
+    clip_features_neg = []
+    for feat, outcome in zip(features_array, outcomes):
+        if outcome == 'positive':
+            clip_features_pos.append(feat)
+        else:
+            clip_features_neg.append(feat)
+    
+    clip_features_pos = np.array(clip_features_pos)
+    clip_features_neg = np.array(clip_features_neg)
+    
+    # Video-level analysis: Average clips for each video
+    video_features = {}
+    video_outcomes = {}
+    for feat, vid, outcome in zip(features_array, video_ids, outcomes):
+        if vid not in video_features:
+            video_features[vid] = []
+            video_outcomes[vid] = outcome
+        video_features[vid].append(feat)
+    
+    # Calculate mean features for each video
+    video_features_pos = []
+    video_features_neg = []
+    for vid, feats in video_features.items():
+        video_feat = np.mean(feats, axis=0)
+        if video_outcomes[vid] == 'positive':
+            video_features_pos.append(video_feat)
+        else:
+            video_features_neg.append(video_feat)
+    
+    video_features_pos = np.array(video_features_pos)
+    video_features_neg = np.array(video_features_neg)
+    
+    logging.info("\nData Loading Summary:")
+    logging.info("Clip-level analysis:")
+    logging.info(f"Positive: {len(clip_features_pos)} clips")
+    logging.info(f"Negative: {len(clip_features_neg)} clips")
+    logging.info("\nVideo-level analysis:")
+    logging.info(f"Positive: {len(video_features_pos)} videos")
+    logging.info(f"Negative: {len(video_features_neg)} videos")
+    logging.info(f"\nFeature dimensionality: {features_array.shape[1]}")
+    
+    return clip_features_pos, clip_features_neg, video_features_pos, video_features_neg
 
 def compute_effect_size(group1, group2):
     """Compute Cohen's d effect size"""
@@ -230,20 +314,20 @@ def visualize_distributions(X_pos, X_neg, output_dir, feature_type):
     logging.info(f"Second component: {pca.explained_variance_ratio_[1]:.3f}")
     logging.info(f"Total explained variance: {sum(pca.explained_variance_ratio_[:2]):.3f}")
 
-def analyze_feature_importance(X_pre, X_post, feature_type, output_dir):
+def analyze_feature_importance(X_pos, X_neg, feature_type, output_dir):
     """Analyze individual feature importance using effect size and statistical tests."""
-    n_features = X_pre.shape[1]
+    n_features = X_pos.shape[1]
     effect_sizes = []
     p_values = []
     
     logging.info("\nAnalyzing individual features...")
     for i in tqdm(range(n_features)):
-        # Calculate Cohen's d effect size
-        d = compute_cohens_d(X_pre[:, i], X_post[:, i])
+        # Calculate Cohen's d effect size for feature changes
+        d = compute_effect_size(X_pos[:, i], X_neg[:, i])
         effect_sizes.append(abs(d))
         
-        # Perform Mann-Whitney U test
-        stat, p = stats.mannwhitneyu(X_pre[:, i], X_post[:, i], alternative='two-sided')
+        # Perform Mann-Whitney U test on feature changes
+        stat, p = stats.mannwhitneyu(X_pos[:, i], X_neg[:, i], alternative='two-sided')
         p_values.append(p)
     
     # Convert to numpy arrays
@@ -276,7 +360,7 @@ def analyze_feature_importance(X_pre, X_post, feature_type, output_dir):
     
     # Add positive distribution
     fig.add_trace(go.Box(
-        y=X_pre[:, top_idx[-1]],
+        y=X_pos[:, top_idx[-1]],
         name='Positive',
         boxpoints='all',
         jitter=0.3,
@@ -287,7 +371,7 @@ def analyze_feature_importance(X_pre, X_post, feature_type, output_dir):
     
     # Add negative distribution
     fig.add_trace(go.Box(
-        y=X_post[:, top_idx[-1]],
+        y=X_neg[:, top_idx[-1]],
         name='Negative',
         boxpoints='all',
         jitter=0.3,
@@ -305,8 +389,8 @@ def analyze_feature_importance(X_pre, X_post, feature_type, output_dir):
     fig.write_html(Path(output_dir) / f"{feature_type}_top_feature_distribution.html")
     
     # Create heatmap of top features for positive outcomes
-    top_features_pos = X_pre[:, top_idx]
-    top_features_neg = X_post[:, top_idx]
+    top_features_pos = X_pos[:, top_idx]
+    top_features_neg = X_neg[:, top_idx]
     
     fig = go.Figure()
     
@@ -359,59 +443,67 @@ def analyze_feature_importance(X_pre, X_post, feature_type, output_dir):
     
     return effect_sizes, p_values, significant_features
 
+def parse_filename(filename):
+    """Parse video ID and clip number from a MARLIN feature filename."""
+    match = re.match(r'(IMG_\d+)_clip_(\d+)_aligned\.npy', filename)
+    if match:
+        video_id = match.group(1)
+        clip_num = int(match.group(2))
+        return video_id, clip_num
+    return None, None
+
 def main():
     args = parse_args()
-    
-    # Create output directory
     output_dir = Path(args.output_dir)
     output_dir.mkdir(exist_ok=True)
-    
-    # Load metadata
     metadata = load_metadata(args.meta_path)
     
-    # Process each feature type
     for feature_type in args.features:
         logging.info(f"\nAnalyzing {feature_type} features...")
         
-        # Load features for each group
-        features_pos = []
-        features_neg = []
+        # Load features for both clip and video levels
+        clip_pos, clip_neg, video_pos, video_neg = load_features_with_metadata(args.features_dir, metadata)
         
-        for _, row in metadata[metadata['outcome'].notna()].iterrows():
-            features = load_features(args.features_dir, row['file_name'], feature_type)
-            if features is not None:
-                if row['outcome'] == 'positive':
-                    features_pos.append(features)
-                else:
-                    features_neg.append(features)
+        if clip_pos is None:
+            logging.error("Failed to load features")
+            continue
         
-        features_pos = np.vstack(features_pos)
-        features_neg = np.vstack(features_neg)
+        # Process clip-level analysis
+        logging.info("\n=== Clip-level Analysis ===")
         
-        logging.info(f"Loaded {len(features_pos)} positive and {len(features_neg)} negative samples")
+        # Standardize clip features
+        scaler_clip = StandardScaler()
+        clip_pos_scaled = scaler_clip.fit_transform(clip_pos)
+        clip_neg_scaled = scaler_clip.transform(clip_neg)
         
-        # Standardize features
-        scaler = StandardScaler()
-        features_pos_scaled = scaler.fit_transform(features_pos)
-        features_neg_scaled = scaler.transform(features_neg)
+        # Clip-level MMD test
+        mmd_value_clip, p_value_clip = kernel_mmd_test(clip_pos_scaled, clip_neg_scaled)
+        logging.info(f"Clip-level MMD value: {mmd_value_clip:.6f}")
+        logging.info(f"Clip-level p-value: {p_value_clip:.6f}")
         
-        # Perform MMD test
-        logging.info("\nPerforming Kernel MMD test...")
-        mmd_value, p_value = kernel_mmd_test(features_pos_scaled, features_neg_scaled)
-        logging.info(f"MMD value: {mmd_value:.6f}")
-        logging.info(f"p-value: {p_value:.6f}")
-        logging.info(f"Statistically significant difference: {p_value < 0.05}")
+        # Clip-level visualizations and importance analysis
+        visualize_distributions(clip_pos_scaled, clip_neg_scaled, output_dir, f"{feature_type}_clip")
+        clip_effects, clip_pvals, clip_sig = analyze_feature_importance(
+            clip_pos_scaled, clip_neg_scaled, f"{feature_type}_clip", output_dir
+        )
         
-        # Create distribution visualizations
-        logging.info("\nCreating distribution visualizations...")
-        visualize_distributions(features_pos_scaled, features_neg_scaled, output_dir, feature_type)
+        # Process video-level analysis
+        logging.info("\n=== Video-level Analysis ===")
         
-        # Analyze feature importance
-        effect_sizes, p_values, significant_features = analyze_feature_importance(
-            features_pos_scaled, 
-            features_neg_scaled, 
-            feature_type,
-            output_dir
+        # Standardize video features
+        scaler_video = StandardScaler()
+        video_pos_scaled = scaler_video.fit_transform(video_pos)
+        video_neg_scaled = scaler_video.transform(video_neg)
+        
+        # Video-level MMD test
+        mmd_value_video, p_value_video = kernel_mmd_test(video_pos_scaled, video_neg_scaled)
+        logging.info(f"Video-level MMD value: {mmd_value_video:.6f}")
+        logging.info(f"Video-level p-value: {p_value_video:.6f}")
+        
+        # Video-level visualizations and importance analysis
+        visualize_distributions(video_pos_scaled, video_neg_scaled, output_dir, f"{feature_type}_video")
+        video_effects, video_pvals, video_sig = analyze_feature_importance(
+            video_pos_scaled, video_neg_scaled, f"{feature_type}_video", output_dir
         )
 
 if __name__ == "__main__":
