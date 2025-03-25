@@ -1,3 +1,29 @@
+"""
+Compare Pre and Post Treatment Feature Visualizations
+
+This script creates side-by-side comparisons of how MARLIN features differ between pre and post
+treatment videos. For each specified feature, it generates a visualization showing:
+- Pre-treatment original frames
+- Pre-treatment feature activation heatmaps
+- Post-treatment original frames
+- Post-treatment feature activation heatmaps
+
+The script uses gradient-based class activation mapping (Grad-CAM) to highlight which parts
+of the video are most important for each feature. This helps understand how the model's
+feature representations change between pre and post treatment conditions.
+
+Example usage:
+    python compare_pre_post_features.py \
+        --checkpoint_path /path/to/model.ckpt \
+        --pre_video /path/to/pre_treatment.mp4 \
+        --post_video /path/to/post_treatment.mp4 \
+        --features 397 231 490 482 456 \
+        --output_dir pre_post_comparisons
+
+Author: Nan Bi
+Date: March 2024
+"""
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -12,14 +38,32 @@ from marlin_pytorch.util import read_video, padding_video
 
 
 class PrePostFeatureComparison:
+    """
+    A class for comparing how MARLIN features respond to pre and post treatment videos.
+    
+    This class provides tools to:
+    1. Load pre and post treatment videos
+    2. Extract and visualize specific MARLIN features
+    3. Create side-by-side comparisons of feature activations
+    4. Generate high-quality visualizations for analysis
+    
+    Attributes:
+        model: The pretrained MARLIN model
+        feature_indices: List of feature indices to visualize
+        device: Device to run the model on (cuda/cpu)
+        encoder: The encoder part of the MARLIN model
+        gradients: Storage for computed gradients
+        activations: Storage for layer activations
+    """
+    
     def __init__(self, model, feature_indices, device='cuda' if torch.cuda.is_available() else 'cpu'):
         """
-        Initializes the feature comparator.
+        Initialize the feature comparator.
         
         Args:
             model: The pretrained MARLIN model
             feature_indices: List of feature indices to visualize (e.g., [397, 231, 490, 482, 456])
-            device: Device to run the model on
+            device: Device to run the model on (default: cuda if available, else cpu)
         """
         self.model = model.to(device)
         self.model.eval()
@@ -35,6 +79,14 @@ class PrePostFeatureComparison:
         self._register_hooks()
     
     def _register_hooks(self):
+        """
+        Register forward and backward hooks on the model's encoder.
+        
+        These hooks are used to:
+        1. Capture intermediate activations during forward pass
+        2. Capture gradients during backward pass
+        Both are needed for Grad-CAM visualization.
+        """
         def forward_hook(module, input, output):
             self.activations = output
             
@@ -51,14 +103,22 @@ class PrePostFeatureComparison:
     
     def get_feature_visualization(self, video_tensor, feature_idx):
         """
-        Gets visualization for a specific feature.
+        Generate visualization for a specific feature.
+        
+        This method:
+        1. Runs the video through the model
+        2. Computes gradients with respect to the target feature
+        3. Generates class activation maps
+        4. Creates frame-by-frame visualizations
         
         Args:
             video_tensor: Input video tensor of shape [1, C, T, H, W]
             feature_idx: Index of the feature to visualize
             
         Returns:
-            Tuple of (frames, heatmaps): Original frames and corresponding heatmaps
+            Tuple of (frames, heatmaps):
+                frames: Original video frames
+                heatmaps: Corresponding feature activation heatmaps
         """
         video_tensor = video_tensor.to(self.device)
         video_tensor.requires_grad_()
@@ -145,11 +205,17 @@ class PrePostFeatureComparison:
     
     def create_comparison(self, pre_video, post_video, output_dir):
         """
-        Creates comparison visualizations for pre and post videos.
+        Create comparison visualizations for pre and post videos.
+        
+        For each feature, generates a figure with 4 rows:
+        1. Pre-treatment original frames
+        2. Pre-treatment feature heatmaps
+        3. Post-treatment original frames
+        4. Post-treatment feature heatmaps
         
         Args:
-            pre_video: Pre-treatment video tensor
-            post_video: Post-treatment video tensor
+            pre_video: Pre-treatment video tensor [1, C, T, H, W]
+            post_video: Post-treatment video tensor [1, C, T, H, W]
             output_dir: Directory to save visualizations
         """
         os.makedirs(output_dir, exist_ok=True)
@@ -196,6 +262,16 @@ class PrePostFeatureComparison:
 
 
 def main():
+    """
+    Main function to run the pre vs post treatment feature comparison.
+    
+    This function:
+    1. Parses command line arguments
+    2. Loads the MARLIN model
+    3. Processes pre and post treatment videos
+    4. Generates comparison visualizations
+    5. Saves results to the specified output directory
+    """
     import argparse
     
     parser = argparse.ArgumentParser(description='Compare pre and post treatment feature visualizations.')
