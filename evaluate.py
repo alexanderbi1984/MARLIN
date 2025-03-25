@@ -22,6 +22,8 @@ from torch.nn.functional import softmax
 from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report, mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
 from tqdm import tqdm
+import os
+import glob
 
 
 
@@ -592,6 +594,102 @@ def evaluate_biovid(args, ckpt, dm, config):
 
     return results
 
+def predict_from_features(args, config):
+    """
+    Make predictions using pre-extracted MARLIN features.
+    
+    Args:
+        args: Command line arguments containing:
+            - feature_dir: Directory containing .npy feature files
+            - checkpoint_path: Path to the trained model checkpoint
+            - output_path: Path to save the predictions CSV
+            - batch_size: Batch size for predictions
+            - n_gpus: Number of GPUs to use
+        config: Model configuration dictionary
+    """
+    print("Loading checkpoint", args.checkpoint_path)
+    model = Classifier.load_from_checkpoint(args.checkpoint_path)
+    model.eval()
+    
+    # Setup device
+    device = "cuda" if args.n_gpus > 0 else "cpu"
+    model = model.to(device)
+    
+    # Get list of all .npy files in feature directory
+    feature_files = glob.glob(os.path.join(args.feature_dir, "*.npy"))
+    print(f"Found {len(feature_files)} feature files")
+    
+    # Initialize lists to store results
+    filenames = []
+    predictions = []
+    probabilities = []
+    
+    # Process features in batches
+    batch_features = []
+    batch_files = []
+    
+    # Get temporal reduction method from config
+    temporal_reduction = config.get("temporal_reduction", "mean")
+    
+    for feature_file in tqdm(feature_files, desc="Processing features"):
+        try:
+            # Load feature
+            feature = np.load(feature_file)
+            feature = torch.from_numpy(feature).float()
+            
+            # Apply temporal reduction
+            if temporal_reduction == "mean":
+                feature = feature.mean(dim=0, keepdim=True)  # [T, D] -> [1, D]
+            elif temporal_reduction == "max":
+                feature = feature.max(dim=0, keepdim=True)[0]  # [T, D] -> [1, D]
+            else:
+                raise ValueError(f"Unsupported temporal reduction method: {temporal_reduction}")
+            
+            batch_features.append(feature)
+            batch_files.append(os.path.basename(feature_file))
+            
+            # Process when batch is full or on last item
+            if len(batch_features) == args.batch_size or feature_file == feature_files[-1]:
+                # Stack features into a batch
+                batch_tensor = torch.stack(batch_features).to(device)
+                batch_tensor = batch_tensor.squeeze(1)  # Remove temporal dimension after reduction
+                
+                # Get predictions
+                with torch.no_grad():
+                    batch_preds = model(batch_tensor)
+                    
+                    if config["task"] == "binary":
+                        batch_probs = torch.sigmoid(batch_preds)
+                        batch_pred_classes = (batch_probs > 0.5).int()
+                    else:  # multiclass
+                        batch_probs = softmax(batch_preds, dim=1)
+                        batch_pred_classes = torch.argmax(batch_probs, dim=1)
+                
+                # Store results
+                filenames.extend(batch_files)
+                predictions.extend(batch_pred_classes.cpu().numpy())
+                probabilities.extend(batch_probs.cpu().numpy())
+                
+                # Clear batch
+                batch_features = []
+                batch_files = []
+                
+        except Exception as e:
+            print(f"Error processing file {feature_file}: {str(e)}")
+            continue
+    
+    # Create DataFrame with results
+    results_df = pd.DataFrame({
+        'filename': filenames,
+        'predicted_label': predictions,
+        'probabilities': probabilities
+    })
+    
+    # Save to CSV
+    results_df.to_csv(args.output_path, index=False)
+    print(f"Predictions saved to {args.output_path}")
+    
+    return results_df
 
 def evaluate(args):
     config = read_yaml(args.config)
@@ -627,9 +725,18 @@ if __name__ == '__main__':
     parser.add_argument("--predict_only", action="store_true", default=False,
                         help="Skip evaluation. Save prediction results only.")
     parser.add_argument("--augmentation", action="store_true", default=False,)
+    parser.add_argument("--feature_dir", type=str, help="Directory containing pre-extracted MARLIN features")
+    parser.add_argument("--checkpoint_path", type=str, help="Path to the trained model checkpoint")
+    parser.add_argument("--output_path", type=str, help="Path to save the predictions CSV")
 
     args = parser.parse_args()
     if args.skip_train:
         assert args.resume is not None
 
-    evaluate(args)
+    if args.feature_dir and args.checkpoint_path and args.output_path:
+        # If feature_dir is provided, run prediction on pre-extracted features
+        config = read_yaml(args.config)
+        predict_from_features(args, config)
+    else:
+        # Regular evaluation flow
+        evaluate(args)
