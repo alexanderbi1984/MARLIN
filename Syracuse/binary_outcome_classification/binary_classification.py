@@ -81,7 +81,6 @@ def load_features(subject_id, file_name, visit_type):
                 feature = np.mean(feature, axis=0)
             features_list.append(feature)
         except Exception as e:
-            print(f"Error loading {f}: {e}")
             continue
     
     if not features_list:
@@ -120,39 +119,28 @@ def prepare_data(metadata_df):
         pre_visit = subject_data[subject_data['visit_type'].str.contains('-pre')]
         post_visit = subject_data[subject_data['visit_type'].str.contains('-post')]
         
-        if not pre_visit.empty and not post_visit.empty:
-            pre_file = pre_visit['file_name'].iloc[0]
-            post_file = post_visit['file_name'].iloc[0]
+        if pre_visit.empty or post_visit.empty:
+            continue
             
-            # Load features
-            pre_features = load_features(subject_id, pre_file, 'pre')
-            post_features = load_features(subject_id, post_file, 'post')
+        pre_file = pre_visit['file_name'].iloc[0]
+        post_file = post_visit['file_name'].iloc[0]
+        
+        # Load features
+        pre_features = load_features(subject_id, pre_file, 'pre')
+        post_features = load_features(subject_id, post_file, 'post')
+        
+        if pre_features is not None and post_features is not None:
+            # Calculate pre-post differences for selected features
+            for j, (feature_idx, _, _) in enumerate(SELECTED_FEATURES):
+                X[i, j] = post_features[feature_idx] - pre_features[feature_idx]
             
-            if pre_features is not None and post_features is not None:
-                # Calculate pre-post differences for selected features
-                for j, (feature_idx, _, _) in enumerate(SELECTED_FEATURES):
-                    X[i, j] = post_features[feature_idx] - pre_features[feature_idx]
-                
-                # Get outcome (1 for positive, 0 for negative)
-                y[i] = 1 if outcome == 'positive' else 0
-                print(f"Subject {subject_id}: outcome={outcome}")
+            # Get outcome (1 for positive, 0 for negative)
+            y[i] = 1 if outcome == 'positive' else 0
     
     # Remove samples with missing features
     valid_mask = ~np.isnan(X).any(axis=1)
     X = X[valid_mask]
     y = y[valid_mask]
-    
-    # Print diagnostic information about features
-    print("\nFeature Statistics (before standardization):")
-    print("Feature Index | Mean Diff | Std Dev | Min | Max | Zero Diffs | Missing")
-    print("-" * 75)
-    for j, (feature_idx, effect_size, p_value) in enumerate(SELECTED_FEATURES):
-        feature_diffs = X[:, j]
-        n_zeros = np.sum(feature_diffs == 0)
-        n_missing = np.sum(np.isnan(feature_diffs))
-        print(f"Feature {feature_idx:4d} | {np.mean(feature_diffs):9.3f} | {np.std(feature_diffs):7.3f} | "
-              f"{np.min(feature_diffs):5.3f} | {np.max(feature_diffs):5.3f} | {n_zeros:10d} | {n_missing:7d}")
-        print(f"Expected effect size: {effect_size:6.3f}, p-value: {p_value:.6f}")
     
     # Print class distribution
     y_int = y.astype(int)
