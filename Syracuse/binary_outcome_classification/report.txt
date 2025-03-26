@@ -1,0 +1,114 @@
+python syracuse\binary_outcome_classification\binary_classification.py --num_features 10
+
+Selected top 10 features:
+Feature 662: effect_size = 1.613, p_value = 0.000921
+Feature 316: effect_size = -1.372, p_value = 0.003643
+Feature 587: effect_size = 1.318, p_value = 0.004919
+Feature 629: effect_size = -1.293, p_value = 0.005661
+Feature 143: effect_size = -1.281, p_value = 0.006031
+Feature 536: effect_size = -1.224, p_value = 0.008238
+Feature 480: effect_size = -1.180, p_value = 0.010451
+Feature 279: effect_size = -1.042, p_value = 0.021679
+Feature 122: effect_size = 0.967, p_value = 0.031824
+Feature 496: effect_size = -0.960, p_value = 0.032920
+Loading metadata...
+
+Outcome distribution in metadata:
+outcome
+negative    34
+positive    18
+Name: count, dtype: int64
+Loaded 52 samples with outcomes
+Preparing feature data...
+
+Loading and computing feature differences...
+
+Class distribution:
+Negative (0): 17 samples
+Positive (1): 9 samples
+
+Features have been standardized (mean=0, std=1)
+Prepared 26 samples with 10 features
+
+Running 3-fold stratified cross-validation...
+
+Fold 1/3
+Training set: 17 samples
+Test set: 9 samples
+Training set distribution - Negative: 11, Positive: 6
+Test set distribution - Negative: 6, Positive: 3
+Fold 1 - Accuracy: 0.778, AUC: 0.722
+
+Fold 2/3
+Training set: 17 samples
+Test set: 9 samples
+Training set distribution - Negative: 11, Positive: 6
+Test set distribution - Negative: 6, Positive: 3
+Fold 2 - Accuracy: 0.778, AUC: 0.944
+
+Fold 3/3
+Training set: 18 samples
+Test set: 8 samples
+Training set distribution - Negative: 12, Positive: 6
+Test set distribution - Negative: 5, Positive: 3
+Fold 3 - Accuracy: 0.875, AUC: 1.000
+
+Classification Results:
+Mean Accuracy: 0.810 ± 0.046
+Mean AUC: 0.889 ± 0.120
+
+
+python syracuse\binary_outcome_classification\binary_classification.py
+
+Selected top 5 features:
+Feature 662: effect_size = 1.613, p_value = 0.000921 
+Feature 316: effect_size = -1.372, p_value = 0.003643
+Feature 587: effect_size = 1.318, p_value = 0.004919 
+Feature 629: effect_size = -1.293, p_value = 0.005661
+Feature 143: effect_size = -1.281, p_value = 0.006031
+Loading metadata...
+
+Outcome distribution in metadata:
+outcome
+negative    34
+positive    18
+Name: count, dtype: int64      
+Loaded 52 samples with outcomes
+Preparing feature data...      
+
+Loading and computing feature differences...
+
+Class distribution:
+Negative (0): 17 samples
+Positive (1): 9 samples
+
+Features have been standardized (mean=0, std=1)
+Prepared 26 samples with 5 features
+
+Running 3-fold stratified cross-validation...
+
+Fold 1/3
+Training set: 17 samples
+Test set: 9 samples
+Training set distribution - Negative: 11, Positive: 6
+Test set distribution - Negative: 6, Positive: 3
+Fold 1 - Accuracy: 0.667, AUC: 0.722
+
+Fold 2/3
+Training set: 17 samples
+Test set: 9 samples
+Training set distribution - Negative: 11, Positive: 6
+Test set distribution - Negative: 6, Positive: 3
+Fold 2 - Accuracy: 0.889, AUC: 0.944
+
+Fold 3/3
+Training set: 18 samples
+Test set: 8 samples
+Training set distribution - Negative: 12, Positive: 6
+Test set distribution - Negative: 5, Positive: 3
+Fold 3 - Accuracy: 1.000, AUC: 1.000
+
+Classification Results:
+Mean Accuracy: 0.852 ± 0.139
+Mean AUC: 0.889 ± 0.120
+

@@ -1,10 +1,61 @@
 """
-Binary classification script for predicting treatment outcomes using MARLIN features.
-This script implements Leave-One-Out-Video (LOOV) cross-validation with logistic regression
-to classify positive vs negative treatment outcomes.
+Binary Classification for Treatment Outcome Prediction
 
-Author: [Your Name]
-Date: 2024
+This script implements a binary classification model to predict treatment outcomes using MARLIN features.
+It performs 3-fold stratified cross-validation with logistic regression to classify patients
+into positive (improved) or negative (not improved) outcomes.
+
+Key Features:
+1. Dynamic Feature Selection
+   - Selects top N features based on effect size from video-level analysis
+   - Features are chosen based on absolute effect size in pre-post treatment differences
+   - N is specified via command line argument (default: 5)
+
+2. Data Processing
+   - Loads MARLIN features from pre and post treatment videos
+   - Computes pre-post differences for selected features
+   - Handles missing values and standardizes features
+
+3. Model Training
+   - Uses logistic regression with balanced class weights
+   - Implements 3-fold stratified cross-validation
+   - Evaluates performance using accuracy and AUC metrics
+
+4. Visualization
+   - Generates accuracy and AUC distribution plots
+   - Creates ROC curve visualization
+   - Saves results and plots to specified output directory
+
+Usage:
+    python binary_classification.py [--num_features N]
+
+Arguments:
+    --num_features: Number of top features to select based on effect size (default: 5)
+
+Input Requirements:
+1. Feature Files:
+   - Directory containing .npy files with MARLIN features
+   - Filename format: IMG_[ID]_clip_[N]_aligned.npy
+   - Features should be pre-computed using MARLIN model
+
+2. Metadata File (Excel):
+   - Required columns:
+     * subject_id: Unique subject identifier
+     * file_name: Video file name
+     * visit_type: Visit type (e.g., '1st-pre', '1st-post')
+     * outcome: Treatment outcome ('positive' or 'negative')
+
+3. Analysis Results:
+   - outcome_analysis_results/marlin_video_outcome_analysis.csv
+   - Contains effect sizes and p-values for feature selection
+
+Output:
+1. Classification Results:
+   - classification_results.csv: Summary of model performance
+   - classification_results.png: Visualization of results
+
+Author:Nan Bi
+Date: 2025
 """
 
 import os
@@ -17,21 +68,21 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_curve, auc
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Binary classification for treatment outcomes')
+    parser.add_argument('--num_features', type=int, default=5,
+                      help='Number of top features to select based on effect size')
+    return parser.parse_args()
 
 # Constants
 FEATURES_DIR = r"C:\pain\syracus\openface_clips\clips\multimodal_marlin_base"
 META_PATH = os.path.join(FEATURES_DIR, "meta_with_outcomes.xlsx")
 OUTPUT_DIR = "Syracuse/classification_results"
 
-# Features selected based on effect size from video-level analysis
-# Format: (feature_idx, effect_size, p_value)
-SELECTED_FEATURES = [
-    (662, 1.613, 0.000921),  # Largest effect size
-    (316, 1.372, 0.003643),  # Second largest effect size
-    (587, 1.318, 0.004919),  # Third largest effect size
-    (629, -1.293, 0.005661),  # Fourth largest effect size
-    (143, -1.281, 0.006031)   # Fifth largest effect size
-]
+# Global variable for selected features
+SELECTED_FEATURES = None
 
 def load_metadata():
     """Load and preprocess metadata file."""
@@ -44,6 +95,34 @@ def load_metadata():
     print(df['outcome'].value_counts())
     
     return df
+
+def get_selected_features(num_features):
+    """Get top features based on effect size from video-level analysis."""
+    # Read the video-level analysis results
+    analysis_path = os.path.join('outcome_analysis_results', 'marlin_video_outcome_analysis.csv')
+    df = pd.read_csv(analysis_path)
+    
+    # Sort by absolute effect size
+    df['abs_effect_size'] = df['effect_size'].abs()
+    df_sorted = df.sort_values('abs_effect_size', ascending=False)
+    
+    # Get top num_features
+    top_features = df_sorted.head(num_features)
+    
+    # Convert to list of tuples (feature_idx, effect_size, p_value)
+    selected_features = []
+    for _, row in top_features.iterrows():
+        selected_features.append((
+            int(row['feature_idx']),
+            float(row['effect_size']),
+            float(row['p_value'])
+        ))
+    
+    print(f"\nSelected top {num_features} features:")
+    for idx, effect_size, p_value in selected_features:
+        print(f"Feature {idx}: effect_size = {effect_size:.3f}, p_value = {p_value:.6f}")
+    
+    return selected_features
 
 def load_features(subject_id, file_name, visit_type):
     """Load features for a specific subject and visit type.
@@ -269,6 +348,13 @@ def main():
     try:
         # Create output directory
         os.makedirs(OUTPUT_DIR, exist_ok=True)
+        
+        # Parse command line arguments
+        args = parse_args()
+        
+        # Get selected features based on command line argument
+        global SELECTED_FEATURES
+        SELECTED_FEATURES = get_selected_features(args.num_features)
         
         # Load metadata
         print("Loading metadata...")

@@ -1,0 +1,2 @@
+mean_accuracy,std_accuracy,mean_auc,std_auc,n_samples,n_features,selected_features
+0.8148148148148149,0.1385799032138497,0.9074074074074074,0.09442628728875527,26,3,"[662, 316, 587]"
