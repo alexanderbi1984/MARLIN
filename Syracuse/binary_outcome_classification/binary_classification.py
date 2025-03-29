@@ -13,6 +13,8 @@ Key Features:
 
 2. Data Processing
    - Loads MARLIN features from pre and post treatment videos
+   - Handles 3D features by taking means across temporal dimensions
+   - Averages features across multiple clips for each video
    - Computes pre-post differences for selected features
    - Handles missing values and standardizes features
 
@@ -37,11 +39,12 @@ Input Requirements:
    - Directory containing .npy files with MARLIN features
    - Filename format: IMG_[ID]_clip_[N]_aligned.npy
    - Features should be pre-computed using MARLIN model
+   - Multiple clips per video are supported and averaged
 
 2. Metadata File (Excel):
    - Required columns:
      * subject_id: Unique subject identifier
-     * file_name: Video file name
+     * file_name: Video file name (e.g., "IMG_123.MP4")
      * visit_type: Visit type (e.g., '1st-pre', '1st-post')
      * outcome: Treatment outcome ('positive' or 'negative')
 
@@ -54,7 +57,7 @@ Output:
    - classification_results.csv: Summary of model performance
    - classification_results.png: Visualization of results
 
-Author:Nan Bi
+Author: Nan Bi
 Date: 2025
 """
 
