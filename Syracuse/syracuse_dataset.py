@@ -41,8 +41,8 @@ class SyracuseDataset:
             subject_data = self.meta_df[self.meta_df['subject_id'] == subj]
             
             # Analyze 1st visit
-            first_pre = subject_data[subject_data['visit_type'] == 'pre']
-            first_post = subject_data[subject_data['visit_type'] == 'post']
+            first_pre = subject_data[(subject_data['visit_type'] == 'pre') & (subject_data['visit_number'] == '1')]
+            first_post = subject_data[(subject_data['visit_type'] == 'post') & (subject_data['visit_number'] == '1')]
             
             if len(first_pre) > 0 and len(first_post) > 0:
                 pre_pain = first_pre['pain_level'].iloc[0] if not first_pre['pain_level'].isna().all() else None
@@ -62,8 +62,8 @@ class SyracuseDataset:
                         })
             
             # Analyze 2nd visit
-            second_pre = subject_data[subject_data['visit_type'] == 'pre']
-            second_post = subject_data[subject_data['visit_type'] == 'post']
+            second_pre = subject_data[(subject_data['visit_type'] == 'pre') & (subject_data['visit_number'] == '2')]
+            second_post = subject_data[(subject_data['visit_type'] == 'post') & (subject_data['visit_number'] == '2')]
             
             if len(second_pre) > 0 and len(second_post) > 0:
                 pre_pain = second_pre['pain_level'].iloc[0] if not second_pre['pain_level'].isna().all() else None
@@ -87,6 +87,8 @@ class SyracuseDataset:
     def load_features_for_pair(self, pair: Dict) -> Tuple[np.ndarray, np.ndarray]:
         """
         Load features for a pre-post pair, using exactly 14 clips.
+        For clips with different temporal dimensions (e.g., 5,768 or 3,768),
+        we average them to match the expected shape (4,768).
         
         Args:
             pair: Dictionary containing pair information
@@ -110,16 +112,68 @@ class SyracuseDataset:
         pre_features = []
         for clip in pre_clips:
             clip_path = os.path.join(self.feature_dir, clip)
-            features = np.load(clip_path)  # Shape: (4, 768)
+            features = np.load(clip_path)  # Shape: (N, 768) where N might be 3, 4, or 5
+            if features.shape[1] != 768:
+                print(f"Warning: Pre clip {clip} has unexpected feature dimension {features.shape[1]}, expected 768")
+                continue
+                
+            # If temporal dimension is not 4, average to get 4 frames
+            if features.shape[0] != 4:
+                print(f"Info: Pre clip {clip} has {features.shape[0]} frames, averaging to 4")
+                # Reshape to get 4 frames by averaging
+                if features.shape[0] > 4:
+                    # If more than 4 frames, average consecutive frames
+                    n_frames = features.shape[0]
+                    indices = np.linspace(0, n_frames-1, 4, dtype=int)
+                    features = features[indices]
+                else:
+                    # If less than 4 frames, interpolate each feature dimension separately
+                    n_frames = features.shape[0]
+                    indices = np.linspace(0, n_frames-1, 4)
+                    interpolated_features = np.zeros((4, features.shape[1]))
+                    for j in range(features.shape[1]):
+                        interpolated_features[:, j] = np.interp(indices, np.arange(n_frames), features[:, j])
+                    features = interpolated_features
+            
             pre_features.append(features)
+        
+        if not pre_features:
+            raise ValueError(f"No valid pre clips found for pair: Subject {pair['subject']}, Visit {pair['visit_number']}")
+        
         pre_features = np.stack(pre_features)  # Shape: (14, 4, 768)
         
         # Load and stack features for post video
         post_features = []
         for clip in post_clips:
             clip_path = os.path.join(self.feature_dir, clip)
-            features = np.load(clip_path)  # Shape: (4, 768)
+            features = np.load(clip_path)  # Shape: (N, 768) where N might be 3, 4, or 5
+            if features.shape[1] != 768:
+                print(f"Warning: Post clip {clip} has unexpected feature dimension {features.shape[1]}, expected 768")
+                continue
+                
+            # If temporal dimension is not 4, average to get 4 frames
+            if features.shape[0] != 4:
+                print(f"Info: Post clip {clip} has {features.shape[0]} frames, averaging to 4")
+                # Reshape to get 4 frames by averaging
+                if features.shape[0] > 4:
+                    # If more than 4 frames, average consecutive frames
+                    n_frames = features.shape[0]
+                    indices = np.linspace(0, n_frames-1, 4, dtype=int)
+                    features = features[indices]
+                else:
+                    # If less than 4 frames, interpolate each feature dimension separately
+                    n_frames = features.shape[0]
+                    indices = np.linspace(0, n_frames-1, 4)
+                    interpolated_features = np.zeros((4, features.shape[1]))
+                    for j in range(features.shape[1]):
+                        interpolated_features[:, j] = np.interp(indices, np.arange(n_frames), features[:, j])
+                    features = interpolated_features
+            
             post_features.append(features)
+        
+        if not post_features:
+            raise ValueError(f"No valid post clips found for pair: Subject {pair['subject']}, Visit {pair['visit_number']}")
+        
         post_features = np.stack(post_features)  # Shape: (14, 4, 768)
         
         return pre_features, post_features

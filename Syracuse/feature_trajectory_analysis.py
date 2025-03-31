@@ -42,6 +42,39 @@ def compute_pre_post_changes(pre_features: np.ndarray, post_features: np.ndarray
     
     return metrics
 
+def analyze_within_video_variability(pre_features: np.ndarray, post_features: np.ndarray) -> Dict[str, np.ndarray]:
+    """
+    Analyze how much features vary within each video.
+    
+    Args:
+        pre_features: Array of shape (14, 4, 768) for pre-treatment
+        post_features: Array of shape (14, 4, 768) for post-treatment
+        
+    Returns:
+        Dictionary containing variability metrics
+    """
+    # Average across frames in each clip
+    pre_clip_features = np.mean(pre_features, axis=1)  # Shape: (14, 768)
+    post_clip_features = np.mean(post_features, axis=1)  # Shape: (14, 768)
+    
+    metrics = {}
+    
+    # 1. Standard deviation across clips
+    metrics['pre_std'] = np.std(pre_clip_features, axis=0)
+    metrics['post_std'] = np.std(post_clip_features, axis=0)
+    
+    # 2. Coefficient of variation (std/mean)
+    metrics['pre_cv'] = np.std(pre_clip_features, axis=0) / (np.abs(np.mean(pre_clip_features, axis=0)) + 1e-6)
+    metrics['post_cv'] = np.std(post_clip_features, axis=0) / (np.abs(np.mean(post_clip_features, axis=0)) + 1e-6)
+    
+    # 3. Maximum difference between consecutive clips
+    pre_diffs = np.diff(pre_clip_features, axis=0)
+    post_diffs = np.diff(post_clip_features, axis=0)
+    metrics['pre_max_diff'] = np.max(np.abs(pre_diffs), axis=0)
+    metrics['post_max_diff'] = np.max(np.abs(post_diffs), axis=0)
+    
+    return metrics
+
 def analyze_pre_post_changes():
     """
     Analyze changes between pre and post treatment videos.
@@ -53,6 +86,7 @@ def analyze_pre_post_changes():
     
     # Store changes for all pairs
     all_changes = []
+    all_variability = []
     subjects = []
     pain_changes = []
     
@@ -63,8 +97,10 @@ def analyze_pre_post_changes():
             
             # Compute changes
             changes = compute_pre_post_changes(pre_features, post_features)
+            variability = analyze_within_video_variability(pre_features, post_features)
             
             all_changes.append(changes)
+            all_variability.append(variability)
             subjects.append(pair['subject'])
             pain_changes.append(pair['change'])
             
@@ -74,6 +110,9 @@ def analyze_pre_post_changes():
     
     # Analyze changes
     analyze_changes_with_pain(all_changes, subjects, pain_changes)
+    
+    # Analyze within-video variability
+    analyze_within_video_stats(all_variability, subjects, pain_changes)
     
     # Visualize changes
     visualize_changes(all_changes, subjects, pain_changes)
@@ -126,6 +165,58 @@ def analyze_changes_with_pain(changes: List[Dict], subjects: List[int], pain_cha
         except Exception as e:
             print(f"Error processing {change_type}: {str(e)}")
             continue
+
+def analyze_within_video_stats(variability: List[Dict], subjects: List[int], pain_changes: List[float]):
+    """
+    Analyze statistics about feature variability within videos.
+    """
+    print("\nAnalyzing within-video feature variability:")
+    
+    # Convert to arrays
+    pre_std = np.array([v['pre_std'] for v in variability])
+    post_std = np.array([v['post_std'] for v in variability])
+    pre_cv = np.array([v['pre_cv'] for v in variability])
+    post_cv = np.array([v['post_cv'] for v in variability])
+    
+    # Calculate overall statistics
+    print("\nOverall statistics:")
+    print(f"Pre-treatment:")
+    print(f"  Mean std: {np.mean(pre_std):.4f}")
+    print(f"  Median std: {np.median(pre_std):.4f}")
+    print(f"  Mean CV: {np.mean(pre_cv):.4f}")
+    print(f"  Median CV: {np.median(pre_cv):.4f}")
+    
+    print(f"\nPost-treatment:")
+    print(f"  Mean std: {np.mean(post_std):.4f}")
+    print(f"  Median std: {np.median(post_std):.4f}")
+    print(f"  Mean CV: {np.mean(post_cv):.4f}")
+    print(f"  Median CV: {np.median(post_cv):.4f}")
+    
+    # Find features with highest variability
+    mean_pre_std = np.mean(pre_std, axis=0)
+    mean_post_std = np.mean(post_std, axis=0)
+    
+    print("\nTop 5 most variable features (pre-treatment):")
+    top_pre = np.argsort(mean_pre_std)[-5:]
+    for feat_idx in top_pre:
+        print(f"Feature {feat_idx}:")
+        print(f"  Mean std: {mean_pre_std[feat_idx]:.4f}")
+        print(f"  Mean CV: {np.mean(pre_cv[:, feat_idx]):.4f}")
+    
+    print("\nTop 5 most variable features (post-treatment):")
+    top_post = np.argsort(mean_post_std)[-5:]
+    for feat_idx in top_post:
+        print(f"Feature {feat_idx}:")
+        print(f"  Mean std: {mean_post_std[feat_idx]:.4f}")
+        print(f"  Mean CV: {np.mean(post_cv[:, feat_idx]):.4f}")
+    
+    # Check correlation between variability and pain change
+    pre_std_corr, pre_std_p = stats.spearmanr(np.mean(pre_std, axis=1), pain_changes)
+    post_std_corr, post_std_p = stats.spearmanr(np.mean(post_std, axis=1), pain_changes)
+    
+    print("\nCorrelation between variability and pain change:")
+    print(f"Pre-treatment std correlation: {pre_std_corr:.3f} (p={pre_std_p:.3f})")
+    print(f"Post-treatment std correlation: {post_std_corr:.3f} (p={post_std_p:.3f})")
 
 def visualize_changes(changes: List[Dict], subjects: List[int], pain_changes: List[float]):
     """

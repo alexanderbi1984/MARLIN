@@ -80,8 +80,10 @@ def parse_args():
     return parser.parse_args()
 
 # Constants
-FEATURES_DIR = r"C:\pain\syracus\openface_clips\clips\multimodal_marlin_base"
-META_PATH = os.path.join(FEATURES_DIR, "meta_with_outcomes.xlsx")
+# FEATURES_DIR = r"C:\pain\syracus\openface_clips\clips\multimodal_marlin_base"
+FEATURES_DIR = '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2'
+# META_PATH = os.path.join(FEATURES_DIR, "meta_with_outcomes.xlsx")
+META_PATH = '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2/meta_with_outcomes.xlsx'
 OUTPUT_DIR = "Syracuse/classification_results"
 
 # Global variable for selected features
@@ -148,6 +150,7 @@ def load_features(subject_id, file_name, visit_type):
             feature_files.append(f)
     
     if not feature_files:
+        print(f"No feature files found for {video_id}")
         return None
     
     # Load and average features across clips
@@ -155,21 +158,40 @@ def load_features(subject_id, file_name, visit_type):
     for f in feature_files:
         try:
             feature = np.load(os.path.join(FEATURES_DIR, f))
-            # If feature is 3D, take mean across temporal dimension
+            # If feature is 3D (clips, frames, features), take mean across clips and frames
             if len(feature.shape) == 3:
-                feature = np.mean(feature, axis=1)
-            # If feature is still 2D, take mean across remaining temporal dimension
-            if len(feature.shape) == 2:
+                feature = np.mean(feature, axis=(0, 1))
+            # If feature is 2D (frames, features), take mean across frames
+            elif len(feature.shape) == 2:
                 feature = np.mean(feature, axis=0)
+            # If feature is 1D (features), use as is
+            elif len(feature.shape) == 1:
+                pass
+            else:
+                print(f"Unexpected feature shape for {f}: {feature.shape}")
+                continue
+                
+            if np.any(np.isnan(feature)):
+                print(f"NaN values found in features for {f}")
+                continue
+                
             features_list.append(feature)
         except Exception as e:
+            print(f"Error loading {f}: {str(e)}")
             continue
     
     if not features_list:
+        print(f"No valid features found for {video_id}")
         return None
     
     # Average across all clips
-    return np.mean(features_list, axis=0)
+    features = np.mean(features_list, axis=0)
+    
+    if np.any(np.isnan(features)):
+        print(f"NaN values in final features for {video_id}")
+        return None
+        
+    return features
 
 def prepare_data(metadata_df):
     """Prepare feature data and labels for classification.
@@ -183,46 +205,66 @@ def prepare_data(metadata_df):
     """
     # First, get unique subjects with outcomes
     subjects_with_outcomes = metadata_df[metadata_df['outcome'].notna()]['subject_id'].unique()
-    n_samples = len(subjects_with_outcomes)
-    n_features = len(SELECTED_FEATURES)
-    X = np.zeros((n_samples, n_features))
-    y = np.zeros(n_samples)
+    
+    # Lists to store valid samples
+    feature_list = []
+    label_list = []
     
     print("\nLoading and computing feature differences...")
-    # Process each subject
-    for i, subject_id in enumerate(subjects_with_outcomes):
-        # Get pre and post visits for this subject
-        subject_data = metadata_df[metadata_df['subject_id'] == subject_id]
-        
-        # Get the outcome (should be the same for both visits)
-        outcome = subject_data['outcome'].iloc[0]
-        
-        # Find pre and post visits
-        pre_visit = subject_data[subject_data['visit_type'].str.contains('-pre')]
-        post_visit = subject_data[subject_data['visit_type'].str.contains('-post')]
-        
-        if pre_visit.empty or post_visit.empty:
-            continue
-            
-        pre_file = pre_visit['file_name'].iloc[0]
-        post_file = post_visit['file_name'].iloc[0]
-        
-        # Load features
-        pre_features = load_features(subject_id, pre_file, 'pre')
-        post_features = load_features(subject_id, post_file, 'post')
-        
-        if pre_features is not None and post_features is not None:
-            # Calculate pre-post differences for selected features
-            for j, (feature_idx, _, _) in enumerate(SELECTED_FEATURES):
-                X[i, j] = post_features[feature_idx] - pre_features[feature_idx]
-            
-            # Get outcome (1 for positive, 0 for negative)
-            y[i] = 1 if outcome == 'positive' else 0
     
-    # Remove samples with missing features
-    valid_mask = ~np.isnan(X).any(axis=1)
-    X = X[valid_mask]
-    y = y[valid_mask]
+    # Process each subject
+    for subject_id in subjects_with_outcomes:
+        try:
+            # Get pre and post visits for this subject
+            subject_data = metadata_df[metadata_df['subject_id'] == subject_id]
+            
+            # Get the outcome (should be the same for both visits)
+            outcome = subject_data['outcome'].iloc[0]
+            
+            # Find pre and post visits
+            pre_visit = subject_data[subject_data['visit_type'].str.contains('-pre')]
+            post_visit = subject_data[subject_data['visit_type'].str.contains('-post')]
+            
+            if pre_visit.empty or post_visit.empty:
+                print(f"Skipping subject {subject_id}: Missing pre or post visit")
+                continue
+                
+            pre_file = pre_visit['file_name'].iloc[0]
+            post_file = post_visit['file_name'].iloc[0]
+            
+            # Load features
+            pre_features = load_features(subject_id, pre_file, 'pre')
+            post_features = load_features(subject_id, post_file, 'post')
+            
+            if pre_features is None or post_features is None:
+                print(f"Skipping subject {subject_id}: Missing feature files")
+                continue
+            
+            # Calculate pre-post differences for selected features
+            feature_diffs = []
+            for feature_idx, _, _ in SELECTED_FEATURES:
+                diff = post_features[feature_idx] - pre_features[feature_idx]
+                feature_diffs.append(diff)
+            
+            # Only add if we have all features
+            if len(feature_diffs) == len(SELECTED_FEATURES):
+                feature_list.append(feature_diffs)
+                label_list.append(1 if outcome == 'positive' else 0)
+            else:
+                print(f"Skipping subject {subject_id}: Incomplete feature differences")
+                
+        except Exception as e:
+            print(f"Error processing subject {subject_id}: {str(e)}")
+            continue
+    
+    if not feature_list:
+        raise ValueError("No valid samples found after processing")
+    
+    # Convert lists to numpy arrays
+    X = np.array(feature_list)
+    y = np.array(label_list)
+    
+    print(f"\nProcessed data shape: X={X.shape}, y={y.shape}")
     
     # Print class distribution
     y_int = y.astype(int)
@@ -306,11 +348,11 @@ def stratified_cross_validation(X, y, n_splits=3):
     
     return mean_acc, std_acc, mean_auc, std_auc, all_probs, all_true
 
-def plot_results(accuracies, aucs, all_probs, all_true, output_dir):
+def plot_results(accuracies, aucs, all_probs, all_true, output_dir, X=None, y=None, feature_indices=None):
     """Plot and save classification results."""
     os.makedirs(output_dir, exist_ok=True)
     
-    # Create figure with 3 subplots
+    # Create static plots
     plt.figure(figsize=(15, 5))
     
     # Plot 1: Accuracy distribution
@@ -345,6 +387,103 @@ def plot_results(accuracies, aucs, all_probs, all_true, output_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'classification_results.png'))
     plt.close()
+    
+    # Create feature coefficients plot
+    if X is not None and y is not None and feature_indices is not None:
+        model = LogisticRegression(random_state=42)
+        model.fit(X, y)
+        coefficients = model.coef_[0]
+        
+        plt.figure(figsize=(10, 6))
+        plt.bar([f'Feature {idx}' for idx in feature_indices], coefficients,
+                color=['red' if coef < 0 else 'blue' for coef in coefficients])
+        plt.title('Feature Coefficients')
+        plt.xlabel('Features')
+        plt.ylabel('Coefficient')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'feature_coefficients.png'))
+        plt.close()
+    
+    # Create interactive 3D visualization if we have 3 features
+    if X is not None and y is not None and feature_indices is not None and len(feature_indices) == 3:
+        import plotly.graph_objects as go
+        
+        # Train logistic regression model
+        model = LogisticRegression(random_state=42)
+        model.fit(X, y)
+        
+        # Create mesh grid for the decision boundary
+        x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+        y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+        z_min, z_max = X[:, 2].min() - 1, X[:, 2].max() + 1
+        
+        xx, yy, zz = np.meshgrid(
+            np.linspace(x_min, x_max, 50),
+            np.linspace(y_min, y_max, 50),
+            np.linspace(z_min, z_max, 50)
+        )
+        
+        # Create 3D scatter plot with decision boundary
+        fig = go.Figure()
+        
+        # Add scatter points
+        scatter = go.Scatter3d(
+            x=X[:, 0],
+            y=X[:, 1],
+            z=X[:, 2],
+            mode='markers',
+            marker=dict(
+                size=8,
+                color=y,
+                colorscale='RdYlBu',
+                showscale=True,
+                colorbar=dict(title='Outcome')
+            ),
+            text=[f'Subject {i}<br>Outcome: {"Positive" if yi == 1 else "Negative"}' 
+                  for i, yi in enumerate(y)],
+            hoverinfo='text',
+            name='Subjects'
+        )
+        fig.add_trace(scatter)
+        
+        # Add decision boundary surface
+        Z = model.predict_proba(np.c_[xx.ravel(), yy.ravel(), zz.ravel()])[:, 1]
+        Z = Z.reshape(xx.shape)
+        
+        # Create isosurface for decision boundary (probability = 0.5)
+        fig.add_trace(
+            go.Volume(
+                x=xx.flatten(),
+                y=yy.flatten(),
+                z=zz.flatten(),
+                value=Z.flatten(),
+                isomin=0.45,
+                isomax=0.55,
+                opacity=0.1,
+                surface_count=1,
+                colorscale='RdBu',
+                name='Decision Boundary'
+            )
+        )
+        
+        # Update layout
+        fig.update_layout(
+            height=800,
+            width=1000,
+            showlegend=True,
+            title_text='3D Feature Visualization with Decision Boundary',
+            scene=dict(
+                xaxis_title=f'Feature {feature_indices[0]}',
+                yaxis_title=f'Feature {feature_indices[1]}',
+                zaxis_title=f'Feature {feature_indices[2]}'
+            )
+        )
+        
+        # Save the interactive plot
+        fig.write_html(os.path.join(output_dir, 'interactive_3d_visualization.html'))
+        print(f"\nInteractive 3D visualization saved to {os.path.join(output_dir, 'interactive_3d_visualization.html')}")
+        print(f"Static plots saved to {output_dir}")
 
 def main():
     """Main function to run the classification pipeline."""
@@ -395,7 +534,8 @@ def main():
         # Create arrays of repeated values for plotting
         accuracies = np.repeat(mean_acc, 3)  # 3 folds
         aucs = np.repeat(mean_auc, 3)        # 3 folds
-        plot_results(accuracies, aucs, all_probs, all_true, OUTPUT_DIR)
+        plot_results(accuracies, aucs, all_probs, all_true, OUTPUT_DIR, X, y, 
+                    [feature_idx for feature_idx, _, _ in SELECTED_FEATURES])
         print(f"Results saved to {OUTPUT_DIR}")
         
     except FileNotFoundError as e:

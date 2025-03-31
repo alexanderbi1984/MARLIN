@@ -1,6 +1,8 @@
 from syracuse_dataset import SyracuseDataset
 import numpy as np
 import os
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def test_dataset():
     # Initialize dataset
@@ -15,6 +17,31 @@ def test_dataset():
     print(f"Total number of pairs: {len(pairs_df)}")
     print("\nPair statistics:")
     print(pairs_df.describe())
+    
+    # Analyze pain reduction distribution
+    print("\n=== Pain Reduction Analysis ===")
+    pain_changes = pairs_df['change'].values
+    print("\nPain reduction statistics:")
+    print(f"Mean reduction: {np.mean(pain_changes):.2f}")
+    print(f"Median reduction: {np.median(pain_changes):.2f}")
+    print(f"Standard deviation: {np.std(pain_changes):.2f}")
+    print(f"Min reduction: {np.min(pain_changes):.2f}")
+    print(f"Max reduction: {np.max(pain_changes):.2f}")
+    
+    # Create visualization
+    plt.figure(figsize=(10, 6))
+    sns.histplot(data=pain_changes, bins=20)
+    plt.axvline(x=np.mean(pain_changes), color='r', linestyle='--', label='Mean')
+    plt.axvline(x=np.median(pain_changes), color='g', linestyle='--', label='Median')
+    plt.xlabel('Pain Reduction')
+    plt.ylabel('Count')
+    plt.title('Distribution of Pain Reduction')
+    plt.legend()
+    
+    # Save the plot
+    os.makedirs('analysis_results', exist_ok=True)
+    plt.savefig('analysis_results/pain_reduction_distribution.png', dpi=300, bbox_inches='tight')
+    plt.close()
     
     # Test feature loading for one pair
     print("\n=== Testing Feature Loading ===")
