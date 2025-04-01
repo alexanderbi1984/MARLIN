@@ -1,3 +1,44 @@
+"""
+MARLIN Feature Visualization Script
+
+This script provides functionality to visualize and analyze features learned by the MARLIN (Multimodal Action Recognition with Language INtegration) model.
+It generates heatmaps and visualizations that show which parts of a video contribute most to specific learned features in the model.
+
+Key Features:
+- Visualizes individual features through heatmap overlays on video frames
+- Supports multiple feature visualization in a single run
+- Generates both static visualizations and comparison videos
+- Works with both standard MARLIN and MultiModalMarlin models
+- Provides command-line interface for easy usage
+
+Usage:
+    python marlin_feature_visualization.py --checkpoint_path <path_to_checkpoint> --video_path <path_to_video> [options]
+
+Required Arguments:
+    --checkpoint_path: Path to the model checkpoint file (.ckpt)
+    --video_path: Path to the video file to visualize
+
+Optional Arguments:
+    --model_name: MARLIN model name (default: multimodal_marlin_base)
+    --features: Feature indices to visualize (default: 397 231 490 482 593)
+    --output_dir: Directory to save visualizations (default: feature_visualizations)
+    --fps: Frame rate for output comparison video (default: 30)
+    --skip_comparison_video: Skip creating the feature comparison video
+    --use_standard_marlin: Use standard MARLIN instead of MultiModalMarlin
+
+Output:
+    - Individual feature visualizations saved as PNG files
+    - Optional comparison video showing original frames and feature heatmaps
+    - All outputs are saved in the specified output directory
+
+Dependencies:
+    - torch
+    - numpy
+    - matplotlib
+    - opencv-python
+    - marlin_pytorch
+"""
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -55,142 +96,124 @@ class FeatureVisualizer:
     def visualize_feature(self, video_tensor, feature_idx, output_path=None):
         """
         Visualizes which parts of the video contribute most to a specific feature.
-        
-        Args:
-            video_tensor: Input video tensor of shape [1, C, T, H, W]
-            feature_idx: Index of the feature to visualize
-            output_path: Path to save visualization, if None will just return the heatmap
-            
-        Returns:
-            Tuple of (frames, heatmaps): Original frames and corresponding heatmaps
+        Processes the video frame by frame to handle arbitrary length videos.
         """
-        video_tensor = video_tensor.to(self.device)
-        video_tensor.requires_grad_()
+        frames_list = []
+        heatmaps_list = []
         
-        # Forward pass to get features
-        with torch.no_grad():
-            # Create a dummy mask (all True = visible)
-            batch_size = video_tensor.shape[0]
-            height, width = video_tensor.shape[3], video_tensor.shape[4]
-            patch_size = self.model.patch_size
-            tubelet_size = self.model.tubelet_size
-            n_patch_h = height // patch_size
-            n_patch_w = width // patch_size
-            n_frames = video_tensor.shape[2] // tubelet_size
+        # Process each frame individually
+        num_frames = video_tensor.shape[2]
+        for frame_idx in tqdm(range(num_frames), desc="Processing frames"):
+            # Extract single frame and pad to clip_frames length
+            frame = video_tensor[:, :, frame_idx:frame_idx+1, :, :]  # [1, C, 1, H, W]
+            padded_frame = torch.repeat_interleave(frame, self.model.clip_frames, dim=2)  # [1, C, clip_frames, H, W]
             
-            num_patches = n_patch_h * n_patch_w * n_frames
-            mask = torch.ones(batch_size, num_patches, dtype=torch.bool, device=self.device)
-        
-        self.model.zero_grad()
-        
-        # Get model features with gradients enabled
-        features = self.model.encoder.extract_features(video_tensor, seq_mean_pool=True)
-        
-        # Clear previous gradients
-        if video_tensor.grad is not None:
-            video_tensor.grad.zero_()
+            # Process the padded frame
+            padded_frame = padded_frame.to(self.device)
+            padded_frame.requires_grad_()
             
-        # Set up a hook for backpropagation
-        # Create a zero tensor with a 1 at the target feature position
-        target = torch.zeros_like(features)
-        target[0, feature_idx] = 1.0
-        
-        # Backpropagate to get gradients
-        features.backward(gradient=target)
-        
-        # Get gradients and activations
-        gradients = self.gradients
-        activations = self.activations
-        
-        # Calculate weights based on gradients
-        weights = torch.mean(gradients, dim=[0, 1])
-        
-        # Create class activation map
-        cam = torch.matmul(activations, weights.unsqueeze(-1)).squeeze(-1)
-        
-        # Reshape CAM to match temporal structure
-        # Assuming activations are [B, N, D] where N is the number of patches
-        # We need to reshape to [B, T, H, W]
-        cam = cam.reshape(batch_size, n_frames, n_patch_h, n_patch_w)
-        
-        # Normalize CAM
-        cam = cam - cam.min()
-        cam = cam / (cam.max() + 1e-8)
-        
-        # Interpolate to original resolution
-        cam = cam.unsqueeze(1)  # [B, 1, T, H, W]
-        cam = nn.functional.interpolate(
-            cam, 
-            size=(video_tensor.shape[2], video_tensor.shape[3], video_tensor.shape[4]),
-            mode='trilinear',
-            align_corners=False
-        )
-        cam = cam.squeeze(1)  # [B, T, H, W]
-        
-        # Convert to numpy
-        cam = cam.detach().cpu().numpy()[0]  # [T, H, W]
-        
-        # Get original frames
-        frames = video_tensor.detach().cpu().numpy()[0]  # [C, T, H, W]
-        frames = np.transpose(frames, (1, 2, 3, 0))  # [T, H, W, C]
-        
-        # Create heatmaps
-        heatmaps = []
-        for t in range(frames.shape[0]):
-            # Normalize the frame to [0, 255]
-            frame = frames[t]
-            frame = (frame - frame.min()) / (frame.max() - frame.min() + 1e-8) * 255
-            frame = frame.astype(np.uint8)
+            # Forward pass to get features
+            self.model.zero_grad()
+            features = self.model.encoder.extract_features(padded_frame, seq_mean_pool=False)
             
-            # Convert CAM to heatmap
-            heatmap = cam[t]
-            heatmap = (heatmap * 255).astype(np.uint8)
+            # Set up gradient target
+            target = torch.zeros_like(features)
+            target[:, :, feature_idx] = 1.0
+            
+            # Backpropagate
+            features.backward(gradient=target)
+            
+            # Get gradients and activations
+            gradients = self.gradients
+            activations = self.activations
+            
+            # Calculate weights and CAM
+            weights = torch.mean(gradients, dim=0)
+            activations_squeezed = activations.squeeze(0)
+            cam = activations_squeezed @ weights.T
+            cam = cam[:, feature_idx]
+            
+            # Reshape CAM to spatial dimensions (take middle frame from padded sequence)
+            n_patch_h = padded_frame.shape[3] // self.model.patch_size
+            n_patch_w = padded_frame.shape[4] // self.model.patch_size
+            cam = cam.reshape(-1, n_patch_h, n_patch_w)  # [-1, H, W]
+            cam = cam[cam.shape[0]//2]  # Take middle frame [H, W]
+            
+            # Normalize and upscale
+            cam = cam - cam.min()
+            cam = cam / (cam.max() + 1e-8)
+            cam = cam.unsqueeze(0).unsqueeze(0)  # [1, 1, H, W]
+            cam = nn.functional.interpolate(
+                cam, 
+                size=(padded_frame.shape[3], padded_frame.shape[4]),
+                mode='bilinear',
+                align_corners=False
+            ).squeeze(0).squeeze(0)  # [H, W]
+            
+            # Convert to numpy
+            frame_np = frame.squeeze(2).permute(0, 2, 3, 1).detach().cpu().numpy()[0]  # [H, W, C]
+            cam_np = cam.detach().cpu().numpy()  # [H, W]
+            
+            # Convert frame to uint8 without renormalizing
+            frame_np = (frame_np * 255).astype(np.uint8)
+            
+            # Create heatmap
+            heatmap = (cam_np * 255).astype(np.uint8)
             heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
             
-            # Overlay heatmap on frame
-            overlay = cv2.addWeighted(frame, 0.7, heatmap, 0.3, 0)
-            heatmaps.append(overlay)
+            # Overlay with adjusted weights to preserve original colors better
+            overlay = cv2.addWeighted(frame_np, 0.8, heatmap, 0.2, 0)
+            
+            frames_list.append(frame_np)
+            heatmaps_list.append(overlay)
         
-        # Save visualizations if output path is provided
+        # Save visualization if output path provided
         if output_path:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             
-            # Create a grid of frames and heatmaps
-            fig, axs = plt.subplots(2, min(8, frames.shape[0]), figsize=(16, 4))
-            for i in range(min(8, frames.shape[0])):
-                axs[0, i].imshow(frames[i])
-                axs[0, i].set_title(f"Frame {i}")
+            # Create a grid showing sample frames
+            n_frames_to_show = min(16, len(frames_list))
+            stride = len(frames_list) // n_frames_to_show
+            fig, axs = plt.subplots(2, n_frames_to_show, figsize=(32, 4))
+            
+            for i in range(n_frames_to_show):
+                idx = i * stride
+                axs[0, i].imshow(frames_list[idx])
+                axs[0, i].set_title(f"Frame {idx}")
                 axs[0, i].axis('off')
                 
-                axs[1, i].imshow(heatmaps[i])
-                axs[1, i].set_title(f"Heatmap {i}")
+                axs[1, i].imshow(heatmaps_list[idx])
+                axs[1, i].set_title(f"Heatmap {idx}")
                 axs[1, i].axis('off')
             
             plt.suptitle(f"Feature {feature_idx} Visualization")
             plt.tight_layout()
             plt.savefig(output_path)
             plt.close()
-            
-        return frames, heatmaps
+        
+        return frames_list, heatmaps_list
     
-    def visualize_multiple_features(self, video_tensor, output_dir):
+    def visualize_multiple_features(self, video_tensor, output_dir, video_name, clip_name):
         """
         Visualizes multiple features for a video.
         
         Args:
             video_tensor: Input video tensor of shape [1, C, T, H, W]
             output_dir: Directory to save visualizations
+            video_name: Name of the input video
+            clip_name: Name of the clip
         """
         os.makedirs(output_dir, exist_ok=True)
         
         for feature_idx in self.feature_indices:
-            output_path = os.path.join(output_dir, f"feature_{feature_idx}.png")
+            output_path = os.path.join(output_dir, f"{video_name}_{clip_name}_feature_{feature_idx}.png")
             self.visualize_feature(video_tensor, feature_idx, output_path)
             print(f"Saved visualization for feature {feature_idx} to {output_path}")
     
     def create_feature_comparison_video(self, video_tensor, output_path, fps=30):
         """
         Creates a video comparing the original video with heatmaps for each feature.
+        Layout: Original video on the left, heatmaps side by side on the right.
         
         Args:
             video_tensor: Input video tensor of shape [1, C, T, H, W]
@@ -203,9 +226,8 @@ class FeatureVisualizer:
         frames = video_tensor.detach().cpu().numpy()[0]  # [C, T, H, W]
         frames = np.transpose(frames, (1, 2, 3, 0))  # [T, H, W, C]
         
-        # Normalize frames to [0, 255]
-        frames = (frames - frames.min()) / (frames.max() - frames.min() + 1e-8) * 255
-        frames = frames.astype(np.uint8)
+        # Convert frames to uint8 without renormalizing
+        frames = (frames * 255).astype(np.uint8)
         
         # Get heatmaps for each feature
         all_heatmaps = []
@@ -217,12 +239,12 @@ class FeatureVisualizer:
         num_features = len(self.feature_indices)
         num_frames = frames.shape[0]
         
-        # Size of each frame in the grid
+        # Size of each frame
         frame_height, frame_width = frames.shape[1], frames.shape[2]
         
-        # Create grid layout: original video + one row for each feature
-        grid_height = frame_height * (num_features + 1)
-        grid_width = frame_width
+        # Create grid layout: original video on left, heatmaps side by side on right
+        grid_height = frame_height
+        grid_width = frame_width * (num_features + 1)  # Original + one for each feature
         
         # Create the video writer
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -233,21 +255,21 @@ class FeatureVisualizer:
             # Create a blank grid
             grid = np.zeros((grid_height, grid_width, 3), dtype=np.uint8)
             
-            # Add the original frame
-            grid[:frame_height, :, :] = frames[t]
+            # Add the original frame on the left
+            grid[:, :frame_width, :] = frames[t]
             
-            # Add heatmaps for each feature
+            # Add heatmaps for each feature side by side
             for i, feature_idx in enumerate(self.feature_indices):
                 heatmap = all_heatmaps[i][t]
-                start_y = (i + 1) * frame_height
-                end_y = start_y + frame_height
-                grid[start_y:end_y, :, :] = heatmap
+                start_x = (i + 1) * frame_width
+                end_x = start_x + frame_width
+                grid[:, start_x:end_x, :] = heatmap
                 
                 # Add feature label
                 cv2.putText(
                     grid, 
                     f"Feature {feature_idx}", 
-                    (10, start_y + 20), 
+                    (start_x + 10, 20), 
                     cv2.FONT_HERSHEY_SIMPLEX, 
                     0.5, 
                     (255, 255, 255), 
@@ -296,6 +318,11 @@ def main():
     
     args = parser.parse_args()
     
+    # Extract video name and clip name from the video path
+    video_path = Path(args.video_path)
+    video_name = video_path.stem.split('_')[0]  # Get the base video name (e.g., 'IMG_0003')
+    clip_name = video_path.stem.split('_')[-1]  # Get the clip name (e.g., 'clip_006')
+    
     # Print parameters
     print(f"Model: {args.model_name}")
     print(f"Checkpoint: {args.checkpoint_path}")
@@ -317,25 +344,21 @@ def main():
     # Load video
     from marlin_pytorch.util import read_video, padding_video
     print(f"Loading video from {args.video_path}")
-    video = read_video(args.video_path, channel_first=True) / 255.0  # [T, C, H, W]
+    video = read_video(args.video_path, channel_first=True)  # [T, C, H, W]
     
-    # Make sure the video has the right number of frames
-    clip_frames = model.clip_frames
-    if video.shape[0] < clip_frames:
-        video = padding_video(video, clip_frames, "same")
-    elif video.shape[0] > clip_frames:
-        video = video[:clip_frames]
+    # Convert to float and normalize to [0, 1]
+    video = video.float() / 255.0
     
-    # Convert to the right format
+    # Convert to the right format without limiting frames
     video = video.permute(1, 0, 2, 3).unsqueeze(0)  # [1, C, T, H, W]
     
     # Visualize features
     print("Visualizing features...")
-    visualizer.visualize_multiple_features(video, args.output_dir)
+    visualizer.visualize_multiple_features(video, args.output_dir, video_name, clip_name)
     
     # Create comparison video
     if not args.skip_comparison_video:
-        comparison_video_path = os.path.join(args.output_dir, "feature_comparison.mp4")
+        comparison_video_path = os.path.join(args.output_dir, f"{video_name}_{clip_name}_feature_comparison.mp4")
         print("Creating feature comparison video...")
         visualizer.create_feature_comparison_video(video, comparison_video_path, fps=args.fps)
     
