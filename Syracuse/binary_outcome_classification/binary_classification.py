@@ -72,6 +72,7 @@ from pathlib import Path
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_curve, auc
 import argparse
+import plotly.graph_objects as go
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Binary classification for treatment outcomes')
@@ -407,8 +408,6 @@ def plot_results(accuracies, aucs, all_probs, all_true, output_dir, X=None, y=No
     
     # Create interactive 3D visualization if we have 3 features
     if X is not None and y is not None and feature_indices is not None and len(feature_indices) == 3:
-        import plotly.graph_objects as go
-        
         # Train logistic regression model
         model = LogisticRegression(random_state=42)
         model.fit(X, y)
@@ -436,18 +435,55 @@ def plot_results(accuracies, aucs, all_probs, all_true, output_dir, X=None, y=No
             marker=dict(
                 size=8,
                 color=y,
-                colorscale='RdYlBu',
-                showscale=True,
-                colorbar=dict(title='Outcome')
+                colorscale=[[0, 'red'], [1, 'blue']],
+                showscale=False  # Hide the colorbar
             ),
             text=[f'Subject {i}<br>Outcome: {"Positive" if yi == 1 else "Negative"}' 
                   for i, yi in enumerate(y)],
             hoverinfo='text',
             name='Subjects'
         )
-        fig.add_trace(scatter)
         
-        # Add decision boundary surface
+        # Split into two traces for better legend
+        pos_mask = y == 1
+        neg_mask = y == 0
+        
+        # Positive class points
+        pos_scatter = go.Scatter3d(
+            x=X[pos_mask, 0],
+            y=X[pos_mask, 1],
+            z=X[pos_mask, 2],
+            mode='markers',
+            marker=dict(
+                size=8,
+                color='blue'
+            ),
+            text=[f'Subject {i}<br>Outcome: Positive' 
+                  for i in np.where(pos_mask)[0]],
+            hoverinfo='text',
+            name='Positive Outcome'
+        )
+        
+        # Negative class points
+        neg_scatter = go.Scatter3d(
+            x=X[neg_mask, 0],
+            y=X[neg_mask, 1],
+            z=X[neg_mask, 2],
+            mode='markers',
+            marker=dict(
+                size=8,
+                color='red'
+            ),
+            text=[f'Subject {i}<br>Outcome: Negative' 
+                  for i in np.where(neg_mask)[0]],
+            hoverinfo='text',
+            name='Negative Outcome'
+        )
+        
+        fig.add_trace(pos_scatter)
+        fig.add_trace(neg_scatter)
+        
+        # Calculate and add decision boundary surface
         Z = model.predict_proba(np.c_[xx.ravel(), yy.ravel(), zz.ravel()])[:, 1]
         Z = Z.reshape(xx.shape)
         
@@ -462,7 +498,8 @@ def plot_results(accuracies, aucs, all_probs, all_true, output_dir, X=None, y=No
                 isomax=0.55,
                 opacity=0.1,
                 surface_count=1,
-                colorscale='RdBu',
+                colorscale=[[0, 'gray'], [1, 'gray']],  # Single color for the boundary
+                showscale=False,  # Hide the colorbar
                 name='Decision Boundary'
             )
         )
@@ -472,6 +509,12 @@ def plot_results(accuracies, aucs, all_probs, all_true, output_dir, X=None, y=No
             height=800,
             width=1000,
             showlegend=True,
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01
+            ),
             title_text='3D Feature Visualization with Decision Boundary',
             scene=dict(
                 xaxis_title=f'Feature {feature_indices[0]}',
