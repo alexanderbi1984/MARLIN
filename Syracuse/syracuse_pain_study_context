@@ -12,7 +12,8 @@
 12. The features are fixed 768 dimentions and each feature file is associated to a clip of a video with name like "IMG_0111_clip_014_aligned.npy" where IMG_0111 denotes the clip is from the video IMG_0111.MP4 and clip_014 denotes it is the 14th clip.
 13. The path to the features files is '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2'
 13a. regarding to how to load the features and calculate the diff, refer to the /Users/hd927/Documents/MARLIN/Syracuse/syracuse_dataset.py
-13b. The path to the feature selection result is on /Users/hd927/Documents/MARLIN/outcome_analysis_results/marlin_clip_outcome_analysis.csv
+13b. The path to the feature selection result is on /Users/hd927/Documents/MARLIN/outcome_analysis_results/marlin_clip_outcome_analysis.csv and its col names are 
+feature_idx	effect_size	p_value	pos_mean_change	neg_mean_change	pos_std_change	neg_std_change	p_value_fdr
 Dataset Statistics (as of [current_date]):
 14. Dataset Overview:
     - Total videos: 97
