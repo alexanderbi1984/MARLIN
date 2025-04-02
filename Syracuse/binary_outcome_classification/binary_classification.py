@@ -26,7 +26,13 @@ Key Features:
 4. Visualization
    - Generates accuracy and AUC distribution plots
    - Creates ROC curve visualization
+   - Creates interactive 3D visualization for 3-feature cases
    - Saves results and plots to specified output directory
+
+5. Results Management
+   - Appends classification results to existing CSV file
+   - Each run adds a new row with timestamp and configuration
+   - Maintains history of all classification experiments
 
 Usage:
     python binary_classification.py [--num_features N]
@@ -54,8 +60,10 @@ Input Requirements:
 
 Output:
 1. Classification Results:
-   - classification_results.csv: Summary of model performance
+   - classification_results.csv: Appended results with timestamp and configuration
    - classification_results.png: Visualization of results
+   - feature_coefficients.png: Feature importance visualization
+   - interactive_3d_visualization.html: Interactive 3D plot (for 3-feature cases)
 
 Author: Nan Bi
 Date: 2025
@@ -73,6 +81,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_curve, auc
 import argparse
 import plotly.graph_objects as go
+from datetime import datetime
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Binary classification for treatment outcomes')
@@ -559,18 +568,28 @@ def main():
         print(f"Mean Accuracy: {mean_acc:.3f} ± {std_acc:.3f}")
         print(f"Mean AUC: {mean_auc:.3f} ± {std_auc:.3f}")
         
-        # Save results
+        # Prepare results with timestamp
         results = {
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'mean_accuracy': mean_acc,
             'std_accuracy': std_acc,
             'mean_auc': mean_auc,
             'std_auc': std_auc,
             'n_samples': len(y),
             'n_features': len(SELECTED_FEATURES),
-            'selected_features': [feature_idx for feature_idx, _, _ in SELECTED_FEATURES]
+            'selected_features': str([feature_idx for feature_idx, _, _ in SELECTED_FEATURES])
         }
         
-        pd.DataFrame([results]).to_csv(os.path.join(OUTPUT_DIR, 'classification_results.csv'), index=False)
+        # Append results to CSV file
+        results_file = os.path.join(OUTPUT_DIR, 'classification_results.csv')
+        results_df = pd.DataFrame([results])
+        
+        if os.path.exists(results_file):
+            # Append to existing file
+            results_df.to_csv(results_file, mode='a', header=False, index=False)
+        else:
+            # Create new file with header
+            results_df.to_csv(results_file, index=False)
         
         # Plot results
         print("\nPlotting results...")

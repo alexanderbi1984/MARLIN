@@ -2,61 +2,91 @@
 Outcome-based Feature Analysis
 
 This script analyzes MARLIN features considering treatment outcomes. It performs comprehensive statistical analysis
-to identify features that significantly differ between successful and unsuccessful treatments.
+to identify features that significantly differ between successful and unsuccessful pain treatments.
 
 Analysis Components:
 1. Feature Loading and Preprocessing
-   - Loads MARLIN features from .npy files
+   - Loads MARLIN features from .npy files (768-dimensional vectors)
    - Calculates pre-post differences for each subject
-   - Handles both clip-level and video-level analysis
+   - Handles both clip-level (5-second clips) and video-level (~1-minute videos) analysis
+   - Normalizes and pairs pre-post data for comparison
 
 2. Statistical Analysis
    - Mann-Whitney U test for feature differences
    - Cohen's d effect size calculation
-   - False Discovery Rate (FDR) correction
-   - Kernel Maximum Mean Discrepancy (MMD) test
+   - False Discovery Rate (FDR) correction for multiple comparisons
+   - Kernel Maximum Mean Discrepancy (MMD) test for distribution differences
 
 3. Visualization
-   - Feature comparison box plots
-   - Feature change heatmaps
+   - Feature comparison box plots showing pre-post changes
+   - Feature change heatmaps for top discriminative features
    - PCA and UMAP dimensionality reduction plots
-   - Top feature distribution plots
+   - Top feature distribution plots with statistical annotations
+   - Interactive visualizations using Plotly
 
 Outcome Definitions:
-- Positive (Success): Treatment led to improvement in pain symptoms (pain reduction ≥4)
-- Negative (Failure): Treatment did not lead to improvement in pain symptoms (pain reduction <4)
+- Positive (Success): Pain reduction ≥4 points on the pain scale
+- Negative (Failure): Pain reduction <4 points on the pain scale
+- Pain scale range: 0-10 (self-reported)
 
 Input Requirements:
 1. Feature Files:
    - Directory containing .npy files with MARLIN features
    - Filename format: IMG_[ID]_clip_[N]_aligned.npy
-   - Features should be pre-computed using MARLIN model
+   - Features: 768-dimensional vectors from pretrained video autoencoder
+   - Clips: 5-second duration with 1-second overlap
 
 2. Metadata File (Excel):
    - Required columns:
-     * video_id: Matching feature file identifiers
-     * visit_type: Visit type (e.g., '1st-pre', '1st-post')
-     * outcome: Treatment outcome ('positive' or 'negative')
+     * file_name: Video file identifiers (e.g., IMG_xxxx.MP4)
+     * visit_type: Visit type (1st-pre, 1st-post, 2nd-pre, 2nd-post)
      * subject_id: Unique subject identifier
+     * pain_level: Pain score (0-10)
+     * outcome: Treatment outcome ('positive' or 'negative')
+   - Optional columns:
+     * creation_time: Video creation timestamp
+     * duration: Video duration
+     * comment: Additional notes
 
 Output Files:
 1. Statistical Results:
-   - [feature_type]_clip_outcome_analysis.csv: Clip-level analysis
-   - [feature_type]_video_outcome_analysis.csv: Video-level analysis
-   - [feature_type]_mmd_results.txt: MMD test results
+   - [feature_type]_clip_outcome_analysis.csv:
+     * Feature-wise statistics for clip-level analysis
+     * Effect sizes, p-values (raw and FDR-corrected)
+     * Mean and std of changes for each outcome group
+   - [feature_type]_video_outcome_analysis.csv:
+     * Same as clip analysis but for video-level features
+   - [feature_type]_mmd_results.txt:
+     * MMD test results comparing outcome distributions
 
 2. Visualizations:
-   - [feature_type]_clip/video_feature_changes_heatmap.html
-   - [feature_type]_clip/video_feature_[N]_changes.png
-   - [feature_type]_pca_visualization.html
-   - [feature_type]_umap_visualization.html
-   - [feature_type]_top_feature_distribution.html
+   - Interactive Plots (HTML):
+     * [feature_type]_clip/video_feature_changes_heatmap.html
+     * [feature_type]_pca_visualization.html
+     * [feature_type]_umap_visualization.html
+     * [feature_type]_top_feature_distribution.html
+     * [feature_type]_top_features_heatmap_[outcome].html
+   - Static Plots (PNG):
+     * [feature_type]_clip/video_feature_[N]_changes.png
 
 Usage:
-    python outcome_based_analysis.py \
-        --features_dir /path/to/features \
-        --meta_path /path/to/metadata.xlsx \
-        --output_dir outcome_analysis_results
+    python outcome_based_analysis.py \\
+        --features_dir /path/to/features \\
+        --meta_path /path/to/metadata.xlsx \\
+        --output_dir outcome_analysis_results \\
+        --features marlin
+
+Dataset Statistics (as of March 2024):
+- Total videos: 97
+- Unique subjects: 37
+- Visit distribution:
+  * 1st-pre: 28 videos
+  * 1st-post: 26 videos
+  * 2nd-pre: 2 videos
+  * 2nd-post: 13 videos
+- Outcomes (complete pairs):
+  * Positive (significant reduction): 18 cases
+  * Negative (no significant reduction): 34 cases
 
 Author: Nan Bi
 Date: March 2024
