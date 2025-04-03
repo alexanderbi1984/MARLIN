@@ -2,7 +2,8 @@
 2. the row names of the meta file are file_name	creation_time	duration	subject_id	pain_level	visit_type	comment	outcome
 3. Please note that there are some non integer values in the col pain_level, you should pay attention. The range of pain level is from 0 to 10.
 4. The optional values for col visit_type are 1st-pre, 1st-post, 2nd-pre and 2nd-post. Here pre and post means before treatment and after treatment.
-5. The study is interested in how much pain level is reduced after the treatment. To be more specific, whther the reduction of the pain level is detectable using the features obatined from the facial expression videos.
+5a. The study's Interest One is  how much pain level is reduced after the treatment. To be more specific, whther the reduction of the pain level is detectable using the features obatined from the facial expression videos.
+5b. The study's Interest Two is how to predict the pain level.
 6. The videos last about 1 minute for each and then the 5-second clips are generated from the video by slicing with 1 second overlap.
 7. Each subject has at most 4 videos (1st-pre,1st-post, 2nd-pre,2nd-post), but not necessary has all 4 videos. There is a treatment before pre and post. 1st and 2nd means two separate sessions which are taken on different date.
 8. The outcome cols store the binary ground_truth about the pain reduction induced by the differences of the pain_level of pre and post. And the threshold is 4 which is chosen based on the distribution of the data we have so far.
@@ -79,3 +80,8 @@ Dataset Statistics (as of [current_date]):
       * 2nd visits (3 pairs):
         - Mean change: 2.33 points
         - Range: 1 to 3 points 
+
+
+19. The AU feature files are stored in "C:\pain\syracus\AU_features", and the naming convention for the file is like IMG_xxxx.csv where xxx is a serial number without any meaning for our study.
+20. The col names are frame	 face_id	 timestamp	 confidence	 success	 AU01_r	 AU02_r	 AU04_r	 AU05_r	 AU06_r	 AU07_r	 AU09_r	 AU10_r	 AU12_r	 AU14_r	 AU15_r	 AU17_r	 AU20_r	 AU23_r	 AU25_r	 AU26_r	 AU45_r	 AU01_c	 AU02_c	 AU04_c	 AU05_c	 AU06_c	 AU07_c	 AU09_c	 AU10_c	 AU12_c	 AU14_c	 AU15_c	 AU17_c	 AU20_c	 AU23_c	 AU25_c	 AU26_c	 AU28_c	 AU45_c
+21. We discard any rows with confidence<0.9 or success is not 1. The naming convention of the col names AUxx_y is like where xx is the number of AU, y is either r or c, r stands for real number ranging from 0 to 5 and c stands for category with value 0 or 1.
