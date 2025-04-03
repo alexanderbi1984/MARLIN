@@ -82,6 +82,6 @@ Dataset Statistics (as of [current_date]):
         - Range: 1 to 3 points 
 
 
-19. The AU feature files are stored in "C:\pain\syracus\AU_features", and the naming convention for the file is like IMG_xxxx.csv where xxx is a serial number without any meaning for our study.
+19. The AU feature files are stored in "C:\pain\syracus\AU_features" or /Users/hd927/Documents/syracuse_pain_research/AUFeatures/processed, and the naming convention for the file is like processed_IMG_xxxx.csv where xxx is a serial number without any meaning for our study.
 20. The col names are frame	 face_id	 timestamp	 confidence	 success	 AU01_r	 AU02_r	 AU04_r	 AU05_r	 AU06_r	 AU07_r	 AU09_r	 AU10_r	 AU12_r	 AU14_r	 AU15_r	 AU17_r	 AU20_r	 AU23_r	 AU25_r	 AU26_r	 AU45_r	 AU01_c	 AU02_c	 AU04_c	 AU05_c	 AU06_c	 AU07_c	 AU09_c	 AU10_c	 AU12_c	 AU14_c	 AU15_c	 AU17_c	 AU20_c	 AU23_c	 AU25_c	 AU26_c	 AU28_c	 AU45_c
 21. We discard any rows with confidence<0.9 or success is not 1. The naming convention of the col names AUxx_y is like where xx is the number of AU, y is either r or c, r stands for real number ranging from 0 to 5 and c stands for category with value 0 or 1.
