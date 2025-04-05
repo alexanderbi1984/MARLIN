@@ -18,6 +18,10 @@ This report presents the results of analyzing the effectiveness of Action Unit (
   - Absolute pain reduction (pre_pain - post_pain)
   - Percentage pain reduction ((pre_pain - post_pain) / pre_pain * 100)
 - **Sample Size**: 24 patients
+- **Feature Engineering**:
+  - Features were averaged along the time axis
+  - Differences were calculated between post and pre conditions
+  - Features were scaled after taking differences
 - **Feature Range**: [-0.820, 0.801]
 - **Target Range**: 
   - Binary: {0, 1}
@@ -28,6 +32,8 @@ This report presents the results of analyzing the effectiveness of Action Unit (
 
 #### 2.1 Binary Classification
 - **Logistic Regression**: Standard logistic regression with L2 regularization
+  - Maximum iterations: 1000
+  - Cross-validation metrics: Accuracy and AUC
 
 #### 2.2 Regression Models
 - **Linear Regression**: Simple regression without regularization
@@ -45,6 +51,7 @@ This report presents the results of analyzing the effectiveness of Action Unit (
   - Binary: Accuracy and AUC
   - Regression: R² score
 - Results reported as mean ± standard deviation across folds
+- Feature scaling applied after taking differences between pre and post conditions
 
 ## Results
 

@@ -5,45 +5,108 @@ This analysis investigates the effectiveness of the modified Prkachin & Solomon 
 PSPI = AU4 + max(AU6, AU7) + max(AU9, AU10)
 
 ## Methodology
-- **Dataset**: Syracuse pain dataset with 24 patients
+
+### 1. Data and Feature Selection
+- **Dataset**: Syracuse pain dataset containing pre- and post-treatment data
 - **Feature**: Modified PSPI score calculated from Action Units
-- **Feature Engineering**: Difference in PSPI scores between post and pre conditions
+  - AU4 (brow lowerer)
+  - max(AU6, AU7) where:
+    - AU6 (cheek raiser)
+    - AU7 (lid tightener)
+  - max(AU9, AU10) where:
+    - AU9 (nose wrinkler)
+    - AU10 (upper lip raiser)
 - **Target Variables**:
-  1. Binary outcome (significant pain reduction ≥ 4)
-  2. Absolute pain reduction
-  3. Percentage pain reduction
-- **Models**:
-  - Binary classification: Logistic Regression
-  - Regression: Linear, Ridge, Lasso, and GAM variants
-- **Validation**: 3-fold cross-validation
+  - Binary outcome: Pain reduction ≥ 4 (yes/no)
+  - Absolute pain reduction (pre_pain - post_pain)
+  - Percentage pain reduction ((pre_pain - post_pain) / pre_pain * 100)
+- **Sample Size**: 24 patients
+- **Feature Engineering**:
+  - Features were averaged along the time axis
+  - Differences were calculated between post and pre conditions
+  - Features were scaled after taking differences
+- **Feature Statistics**:
+  - Mean PSPI difference: -0.283
+  - Standard deviation: 1.693
+  - Range: [-4.300, 3.276]
+- **Target Range**: 
+  - Binary: {0, 1}
+  - Absolute: [0.000, 10.000]
+  - Percentage: [0.000, 100.000]
+
+### 2. Models Evaluated
+
+#### 2.1 Binary Classification
+- **Logistic Regression**: Standard logistic regression with L2 regularization
+  - Maximum iterations: 1000
+  - Cross-validation metrics: Accuracy and AUC
+
+#### 2.2 Regression Models
+- **Linear Regression**: Simple regression without regularization
+- **Ridge Regression**: L2 regularization (alpha=1.0)
+- **Lasso Regression**: L1 regularization (alpha=1.0)
+- **GAM_4splines**: Basic model with 4 splines per feature
+- **GAM_8splines**: More flexible model with 8 splines
+- **GAM_4splines_lam0.1**: Less regularized (lambda=0.1)
+- **GAM_4splines_lam10**: More regularized (lambda=10)
+
+### 3. Validation Method
+- 3-fold cross-validation
+- Random splitting with seed 42 for reproducibility
+- Performance metrics:
+  - Binary: Accuracy and AUC
+  - Regression: R² score
+- Results reported as mean ± standard deviation across folds
+- Feature scaling applied after taking differences between pre and post conditions
 
 ## Results
 
-### PSPI Feature Statistics
-- Mean PSPI difference: -0.283
-- Standard deviation: 1.693
-- Range: [-4.300, 3.276]
+### 1. Binary Classification Results
+| Metric | Score ± Std |
+|--------|------------|
+| Accuracy | 0.667 ± 0.118 |
+| AUC | 0.578 ± 0.227 |
 
-### Binary Classification (Significant Pain Reduction)
-- Mean CV Accuracy: 0.667 (±0.118)
-- Mean CV AUC: 0.578 (±0.227)
+### 2. Absolute Pain Reduction Results
+| Model Type | R² ± Std |
+|------------|----------|
+| Linear | -0.020 ± 0.230 |
+| Ridge | -0.016 ± 0.212 |
+| Lasso | -0.060 ± 0.077 |
+| GAM_4splines | -0.219 ± 0.329 |
+| GAM_8splines | -0.035 ± 0.662 |
+| GAM_4splines_lam0.1 | -0.167 ± 0.384 |
+| GAM_4splines_lam10 | -0.234 ± 0.318 |
 
-### Absolute Pain Reduction Prediction
-Best performing models:
-1. Linear Regression: R² = -0.020 (±0.230)
-2. Ridge Regression: R² = -0.016 (±0.212)
-3. Lasso Regression: R² = -0.060 (±0.077)
+### 3. Percentage Pain Reduction Results
+| Model Type | R² ± Std |
+|------------|----------|
+| Linear | -0.177 ± 0.174 |
+| Ridge | -0.166 ± 0.163 |
+| Lasso | -0.149 ± 0.143 |
+| GAM_4splines | -0.312 ± 0.158 |
+| GAM_8splines | -0.260 ± 0.608 |
+| GAM_4splines_lam0.1 | -0.350 ± 0.261 |
+| GAM_4splines_lam10 | -0.305 ± 0.141 |
 
-GAM models showed varying performance with R² scores ranging from -0.234 to -0.035.
+## Discussion
 
-### Percentage Pain Reduction Prediction
-All models showed poor performance:
-- Linear Regression: R² = -0.177 (±0.174)
-- Ridge Regression: R² = -0.166 (±0.163)
-- Lasso Regression: R² = -0.149 (±0.143)
-- GAM models: R² ranging from -0.350 to -0.260
+### 1. Binary Classification
+- The model shows moderate predictive power (accuracy: 0.667)
+- AUC of 0.578 suggests slightly better than random performance
+- More stable performance compared to individual AU features
 
-## Detailed Comparison with Raw AU Features
+### 2. Absolute Pain Reduction
+- All models show negative R² values
+- Ridge performs best but still below baseline
+- Indicates PSPI cannot predict magnitude of pain reduction
+
+### 3. Percentage Pain Reduction
+- Similar poor performance to absolute reduction
+- No model shows meaningful predictive power
+- Suggests PSPI cannot capture relative pain reduction
+
+## Comparison with Individual AU Features
 
 ### Performance Metrics Comparison
 
@@ -56,18 +119,18 @@ All models showed poor performance:
 #### Absolute Pain Reduction Task
 | Model     | PSPI Feature    | Top 5 AU Features |
 |-----------|----------------|-------------------|
-| Linear    | -0.020 ±0.230  | Negative R²      |
-| Ridge     | -0.016 ±0.212  | Negative R²      |
-| Lasso     | -0.060 ±0.077  | Negative R²      |
-| GAM       | -0.035 ±0.662  | Negative R²      |
+| Linear    | -0.020 ±0.230  | -0.371 ±0.404    |
+| Ridge     | -0.016 ±0.212  | -0.371 ±0.404    |
+| Lasso     | -0.060 ±0.077  | -0.076 ±0.093    |
+| GAM       | -0.035 ±0.662  | -0.371 ±0.404    |
 
 #### Percentage Pain Reduction Task
 | Model     | PSPI Feature    | Top 5 AU Features |
 |-----------|----------------|-------------------|
-| Linear    | -0.177 ±0.174  | Negative R²      |
-| Ridge     | -0.166 ±0.163  | Negative R²      |
-| Lasso     | -0.149 ±0.143  | Negative R²      |
-| GAM       | -0.260 ±0.608  | Negative R²      |
+| Linear    | -0.177 ±0.174  | -0.371 ±0.404    |
+| Ridge     | -0.166 ±0.163  | -0.371 ±0.404    |
+| Lasso     | -0.149 ±0.143  | -0.076 ±0.093    |
+| GAM       | -0.260 ±0.608  | -0.371 ±0.404    |
 
 ### Key Findings from Comparison
 
@@ -98,41 +161,6 @@ All models showed poor performance:
    - Retains more granular facial expression information
    - Allows for feature-specific analysis
    - More flexible for alternative feature combinations
-
-### Implications
-
-1. **Feature Selection**:
-   - While PSPI slightly outperforms individual AUs, the improvement is modest
-   - The composite nature of PSPI may be losing some discriminative information
-
-2. **Clinical Relevance**:
-   - Neither approach achieves clinically reliable prediction
-   - The slight advantage of PSPI in binary classification might be practically meaningful
-
-3. **Future Directions**:
-   - Consider hybrid approaches combining PSPI and individual AU features
-   - Investigate temporal patterns in both PSPI and AU features
-   - Explore alternative feature combinations based on pain expression literature
-
-## Discussion
-1. **Binary Classification Performance**:
-   - The modified PSPI shows moderate performance in binary classification with 66.7% accuracy
-   - AUC of 0.578 suggests only slightly better than random prediction
-
-2. **Regression Performance**:
-   - All models show negative R² scores, indicating worse performance than a horizontal line
-   - The simpler models (Linear, Ridge) performed marginally better than more complex ones
-   - GAM models with different spline configurations did not improve performance
-
-3. **Feature Characteristics**:
-   - The negative mean PSPI difference (-0.283) suggests a slight overall decrease in pain expression
-   - Large standard deviation (1.693) indicates substantial variability in pain expression changes
-
-## Comparison with Individual AU Features
-Compared to our previous analysis using individual AU features:
-1. The modified PSPI shows slightly better binary classification accuracy (0.667 vs 0.542)
-2. Regression performance remains poor, similar to individual AU features
-3. The composite PSPI score does not provide substantial improvement over individual AUs
 
 ## Conclusions
 1. The modified PSPI score shows limited utility in predicting pain reduction outcomes
