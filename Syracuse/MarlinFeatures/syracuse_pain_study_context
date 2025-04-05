@@ -88,3 +88,56 @@ Dataset Statistics (as of [current_date]):
 
 22. The Micro-expression feature files are stored in /Users/hd927/Documents/syracuse_pain_research/MicroExprFeatures, and the naming convention for the file is like IMG_xxxx.csv where xxxx is a serial number without any meaning for our study.
 23. The col names are frame	timestamp	predicted_emotion	logit_Anger	prob_Anger	logit_Contempt	prob_Contempt	logit_Disgust	prob_Disgust	logit_Fear	prob_Fear	logit_Happiness	prob_Happiness	logit_Neutral	prob_Neutral	logit_Sadness	prob_Sadness	logit_Surprise	prob_Surprise
+
+24. Common Tasks and Methods for Syracuse Data Analysis:
+
+Tasks:
+1. Binary Classification Task:
+   - Predict whether pain reduction is significant (≥4 points)
+   - Target: Binary outcome (0: no significant reduction, 1: significant reduction)
+   - Metrics: Accuracy and AUC
+
+2. Pain Level Prediction Task:
+   - Predict the pain level directly
+   - Target: pain_level (range: 0 to 10)
+   - Metric: R² score
+
+3. Absolute Pain Reduction Task:
+   - Predict the exact amount of pain reduction
+   - Target: pre_pain - post_pain (range: 0 to 10)
+   - Metric: R² score
+
+4. Percentage Pain Reduction Task:
+   - Predict the relative pain reduction
+   - Target: (pre_pain - post_pain) / pre_pain * 100 (range: 0 to 100)
+   - Metric: R² score
+
+Common Methods:
+1. Feature Engineering:
+   - Average features along time axis
+   - Calculate differences between post and pre conditions
+   - Scale features after taking differences
+
+2. Models:
+   - Binary Classification:
+     * Logistic Regression (max_iter=1000)
+   - Regression:
+     * Linear Regression
+     * Ridge Regression (alpha=1.0)
+     * Lasso Regression (alpha=1.0)
+     * GAM variants:
+       - 4 splines
+       - 8 splines
+       - 4 splines with lambda=0.1
+       - 4 splines with lambda=10
+
+3. Validation:
+   - 3-fold cross-validation
+   - Random splitting with seed 42
+   - Results reported as mean ± standard deviation
+
+4. Feature Sources Used:
+   - MARLIN features (768 dimensions)
+   - Action Unit (AU) features
+   - Modified PSPI score
+   - Micro-expression features
