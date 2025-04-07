@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.linear_model import LogisticRegression, LinearRegression, Ridge, Lasso
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, mean_squared_error
 from pygam import LinearGAM, s
 import os
 from typing import Dict, Tuple
@@ -131,16 +131,25 @@ class PSPIPredictor(SyracuseDataset):
             if 'GAM' in name:
                 # GAM models need special handling for cross-validation
                 cv_scores = []
+                cv_mse_scores = []
                 for train_idx, test_idx in KFold(n_splits=3, shuffle=True, random_state=42).split(X):
                     model.fit(X[train_idx], y_abs[train_idx])
                     score = model.score(X[test_idx], y_abs[test_idx])
+                    y_pred = model.predict(X[test_idx])
+                    mse = mean_squared_error(y_abs[test_idx], y_pred)
                     cv_scores.append(score)
+                    cv_mse_scores.append(mse)
                 cv_scores = np.array(cv_scores)
+                cv_mse_scores = np.array(cv_mse_scores)
             else:
                 cv_scores = cross_val_score(model, X, y_abs, cv=3, scoring='r2')
+                cv_mse_scores = -cross_val_score(model, X, y_abs, cv=3, scoring='neg_mean_squared_error')
             
             print(f"Cross-validation R² scores: {cv_scores}")
             print(f"Mean CV R²: {cv_scores.mean():.3f} (+/- {cv_scores.std() * 2:.3f})")
+            print(f"Cross-validation MSE scores: {cv_mse_scores}")
+            print(f"Mean CV MSE: {cv_mse_scores.mean():.3f} (+/- {cv_mse_scores.std() * 2:.3f})")
+            print(f"RMSE: {np.sqrt(cv_mse_scores.mean()):.3f}")
             
             # Fit on all data
             model.fit(X, y_abs)
@@ -152,16 +161,25 @@ class PSPIPredictor(SyracuseDataset):
             if 'GAM' in name:
                 # GAM models need special handling for cross-validation
                 cv_scores = []
+                cv_mse_scores = []
                 for train_idx, test_idx in KFold(n_splits=3, shuffle=True, random_state=42).split(X):
                     model.fit(X[train_idx], y_percent[train_idx])
                     score = model.score(X[test_idx], y_percent[test_idx])
+                    y_pred = model.predict(X[test_idx])
+                    mse = mean_squared_error(y_percent[test_idx], y_pred)
                     cv_scores.append(score)
+                    cv_mse_scores.append(mse)
                 cv_scores = np.array(cv_scores)
+                cv_mse_scores = np.array(cv_mse_scores)
             else:
                 cv_scores = cross_val_score(model, X, y_percent, cv=3, scoring='r2')
+                cv_mse_scores = -cross_val_score(model, X, y_percent, cv=3, scoring='neg_mean_squared_error')
             
             print(f"Cross-validation R² scores: {cv_scores}")
             print(f"Mean CV R²: {cv_scores.mean():.3f} (+/- {cv_scores.std() * 2:.3f})")
+            print(f"Cross-validation MSE scores: {cv_mse_scores}")
+            print(f"Mean CV MSE: {cv_mse_scores.mean():.3f} (+/- {cv_mse_scores.std() * 2:.3f})")
+            print(f"RMSE: {np.sqrt(cv_mse_scores.mean()):.3f}")
             
             # Fit on all data
             model.fit(X, y_percent)

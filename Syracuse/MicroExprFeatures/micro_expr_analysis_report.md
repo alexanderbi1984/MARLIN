@@ -55,25 +55,70 @@ This study investigates the relationship between facial micro-expressions and pa
 - Using pre-treatment features to predict significant pain reduction
 - 3-fold cross-validation with balanced class weights
 - Models: Logistic Regression and Random Forest
-- Results show moderate performance with class imbalance challenges
+- Results:
+  * Final accuracy: 0.479 (47.9%)
+  * Final precision: 0.189 (18.9%)
+  * Final recall: 0.278 (27.8%)
+  * Final F1-score: 0.222 (22.2%)
+- Performance by fold:
+  * Fold 1: LR (accuracy: 0.500, precision: 0.400, recall: 0.667, F1: 0.500)
+  * Fold 2: LR (accuracy: 0.500, precision: 0.400, recall: 0.667, F1: 0.500)
+  * Fold 3: LR (accuracy: 0.375, precision: 0.000, recall: 0.000, F1: 0.000)
+- Challenges:
+  * Class imbalance (37.5% positive cases, 62.5% negative cases)
+  * High variability in model performance across folds
+  * Limited predictive power of features
 
 ### Task 2: Pain Level Prediction
 - Predicting initial pain levels using pre-treatment features
 - 3-fold cross-validation
 - Models: Linear Regression and Random Forest
-- Performance metrics include MSE, RMSE, and R²
+- Results:
+  * Final MSE: 16.534
+  * Final RMSE: 3.860
+  * Final R²: -1.579
+- Performance by fold:
+  * Fold 1: LR (MSE: 32.658, RMSE: 5.715, R²: -4.680)
+  * Fold 2: LR (MSE: 12.129, RMSE: 3.483, R²: -0.960)
+  * Fold 3: LR (MSE: 29.036, RMSE: 5.389, R²: -2.945)
+- Challenges:
+  * Negative R² values indicate poor model fit
+  * High RMSE relative to target range (2.0-10.0)
+  * Significant variability across folds
 
 ### Task 3: Absolute Pain Reduction Prediction
 - Predicting exact pain reduction using feature differences
 - 3-fold cross-validation
 - Models: Linear Regression and Random Forest
-- Using post-pre feature differences to capture changes in expressions
+- Results:
+  * Final MSE: 8.982
+  * Final RMSE: 2.989
+  * Final R²: -0.364
+- Performance by fold:
+  * Fold 1: LR (MSE: 8.746, RMSE: 2.957, R²: -0.432)
+  * Fold 2: LR (MSE: 8.365, RMSE: 2.892, R²: -0.115)
+  * Fold 3: LR (MSE: 11.130, RMSE: 3.336, R²: -0.730)
+- Challenges:
+  * Moderate RMSE relative to target range (0.0-10.0)
+  * Negative R² values indicate limited predictive power
+  * Feature differences show some promise but not sufficient for accurate prediction
 
 ### Task 4: Percentage Pain Reduction Prediction
 - Predicting relative pain reduction using feature differences
 - 3-fold cross-validation
 - Models: Linear Regression and Random Forest
-- Using post-pre feature differences normalized by initial pain level
+- Results:
+  * Final MSE: 3,131.522
+  * Final RMSE: 52.670
+  * Final R²: -2.082
+- Performance by fold:
+  * Fold 1: LR (MSE: 6,990.347, RMSE: 83.608, R²: -8.398)
+  * Fold 2: LR (MSE: 1,287.219, RMSE: 35.878, R²: -0.095)
+  * Fold 3: LR (MSE: 5,248.261, RMSE: 72.445, R²: -2.055)
+- Challenges:
+  * Very high RMSE relative to target range (0-100%)
+  * Negative R² values indicate poor model fit
+  * Extreme variability in performance across folds
 
 ## Methodological Considerations
 

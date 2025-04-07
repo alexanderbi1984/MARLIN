@@ -95,4 +95,52 @@ class MicroExprDataset(SyracuseDataset):
     
     def get_pain_levels(self) -> np.ndarray:
         """Get pre-treatment pain levels for all samples."""
-        return np.array([pair['pre_pain'] for pair in self.pairs]) 
+        return np.array([pair['pre_pain'] for pair in self.pairs])
+
+    def _load_all_micro_expr_features(self) -> Dict[str, np.ndarray]:
+        """
+        Load micro-expression features for all videos with valid pain levels.
+        
+        Returns:
+            Dictionary mapping file names to their micro-expression features
+        """
+        features = {}
+        for _, video in self.meta_df.iterrows():  # Use meta_df instead of videos
+            if pd.notna(video['pain_level']):  # Only include videos with valid pain levels
+                file = video['file_name'].replace('.MP4', '.csv')
+                file_path = os.path.join(self.micro_expr_dir, file)
+                if os.path.exists(file_path):
+                    df = pd.read_csv(file_path)
+                    # Get logit columns
+                    logit_cols = [col for col in df.columns if col.startswith('logit_')]
+                    # Average across frames
+                    video_features = df[logit_cols].mean().values
+                    features[file] = video_features
+        return features
+
+    def get_all_micro_expr_features(self) -> np.ndarray:
+        """
+        Get micro-expression features for all videos with valid pain levels.
+        
+        Returns:
+            Array of features for all videos with valid pain levels
+        """
+        if not hasattr(self, 'all_micro_expr_features'):
+            self.all_micro_expr_features = self._load_all_micro_expr_features()
+        
+        return np.stack(list(self.all_micro_expr_features.values()))
+
+    def get_all_pain_levels(self) -> np.ndarray:
+        """
+        Get pain levels for all videos with valid pain levels.
+        
+        Returns:
+            Array of pain levels for all videos with valid pain levels
+        """
+        pain_levels = []
+        for _, video in self.meta_df.iterrows():  # Use meta_df instead of videos
+            if pd.notna(video['pain_level']):  # Only include videos with valid pain levels
+                file = video['file_name'].replace('.MP4', '.csv')
+                if file in self.all_micro_expr_features:
+                    pain_levels.append(video['pain_level'])
+        return np.array(pain_levels) 
