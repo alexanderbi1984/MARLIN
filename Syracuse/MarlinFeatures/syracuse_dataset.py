@@ -325,4 +325,127 @@ class SyracuseDataset:
                                        for i in range(len(all_stability_changes[0]))])
         }
         
-        return analyses, correlations 
+        return analyses, correlations
+
+    def load_features_for_clip(self, file_name: str, clip_name: str) -> Dict:
+        """
+        Load features for a single clip and normalize to 4 frames.
+        
+        Args:
+            file_name: Name of the video file (e.g., 'IMG_0001.MP4')
+            clip_name: Name of the clip file (e.g., 'IMG_0001_clip_001_aligned.npy')
+            
+        Returns:
+            Dictionary containing:
+            - features: numpy array of shape (4, 768)
+            - metadata: dictionary with clip information
+                - subject_id: subject identifier
+                - video_name: name of the video
+                - clip_number: clip number (1-14)
+                - pain_level: pain level for the video
+                - visit_type: pre or post
+                - visit_number: visit number (1 or 2)
+        """
+        # Get video metadata
+        video_meta = self.meta_df[self.meta_df['file_name'] == file_name].iloc[0]
+        
+        # Load and normalize features
+        clip_path = os.path.join(self.feature_dir, clip_name)
+        features = np.load(clip_path)
+        
+        # Check feature dimensions
+        if features.shape[1] != 768:
+            raise ValueError(f"Clip {clip_name} has unexpected feature dimension {features.shape[1]}, expected 768")
+        
+        # Normalize to 4 frames
+        if features.shape[0] != 4:
+            if features.shape[0] > 4:
+                # If more than 4 frames, average consecutive frames
+                n_frames = features.shape[0]
+                indices = np.linspace(0, n_frames-1, 4, dtype=int)
+                features = features[indices]
+            else:
+                # If less than 4 frames, interpolate
+                n_frames = features.shape[0]
+                indices = np.linspace(0, n_frames-1, 4)
+                interpolated_features = np.zeros((4, features.shape[1]))
+                for j in range(features.shape[1]):
+                    interpolated_features[:, j] = np.interp(indices, np.arange(n_frames), features[:, j])
+                features = interpolated_features
+        
+        # Extract clip number from clip name (handling zero-padded numbers)
+        clip_str = clip_name.split('_clip_')[1].split('_')[0]
+        clip_number = int(clip_str.lstrip('0') or '0')  # Handle cases like '000' correctly
+        
+        return {
+            'features': features,
+            'metadata': {
+                'subject_id': video_meta['subject_id'],
+                'video_name': file_name,
+                'clip_number': clip_number,
+                'pain_level': video_meta['pain_level'],
+                'visit_type': video_meta['visit_type'],
+                'visit_number': video_meta['visit_number']
+            }
+        }
+    
+    def load_all_clips(self) -> List[Dict]:
+        """
+        Load features for all clips in the dataset.
+        
+        Returns:
+            List of dictionaries, each containing:
+            - features: numpy array of shape (4, 768)
+            - metadata: dictionary with clip information
+                - subject_id: subject identifier
+                - video_name: name of the video
+                - clip_number: clip number (1-14)
+                - pain_level: pain level for the video
+                - visit_type: pre or post
+                - visit_number: visit number (1 or 2)
+        """
+        all_clips = []
+        total_videos = 0
+        videos_with_all_clips = 0
+        total_clips_found = 0
+        total_clips_loaded = 0
+        failed_clips = 0
+        
+        # Process each video in the meta data
+        for _, video_meta in self.meta_df.iterrows():
+            if pd.notna(video_meta['pain_level']):  # Only include videos with valid pain levels
+                total_videos += 1
+                file_name = video_meta['file_name']
+                video_name = file_name.replace('.MP4', '')
+                
+                # Get all clips for this video, ensuring proper sorting of zero-padded numbers
+                clips = sorted([f for f in os.listdir(self.feature_dir) 
+                              if f.startswith(f"{video_name}_clip_") and f.endswith('_aligned.npy')],
+                             key=lambda x: int(x.split('_clip_')[1].split('_')[0]))[:14]
+                
+                total_clips_found += len(clips)
+                
+                if len(clips) == 14:  # Only use videos with all 14 clips
+                    videos_with_all_clips += 1
+                    for clip in clips:
+                        try:
+                            clip_data = self.load_features_for_clip(file_name, clip)
+                            all_clips.append(clip_data)
+                            total_clips_loaded += 1
+                        except Exception as e:
+                            print(f"Warning: Could not load clip {clip}: {str(e)}")
+                            failed_clips += 1
+                            continue
+        
+        # Print statistics
+        print("\n=== Clip Loading Statistics ===")
+        print(f"Total videos with valid pain levels: {total_videos}")
+        print(f"Videos with all 14 clips: {videos_with_all_clips}")
+        print(f"Total clips found: {total_clips_found}")
+        print(f"Total clips successfully loaded: {total_clips_loaded}")
+        print(f"Failed to load clips: {failed_clips}")
+        print(f"Average clips per video: {total_clips_found/total_videos:.2f}")
+        print(f"Success rate: {(total_clips_loaded/total_clips_found)*100:.2f}%")
+        print("=" * 30)
+        
+        return all_clips 
