@@ -399,14 +399,13 @@ class SyracuseDataset:
             - metadata: dictionary with clip information
                 - subject_id: subject identifier
                 - video_name: name of the video
-                - clip_number: clip number (1-14)
+                - clip_number: clip number
                 - pain_level: pain level for the video
                 - visit_type: pre or post
                 - visit_number: visit number (1 or 2)
         """
         all_clips = []
         total_videos = 0
-        videos_with_all_clips = 0
         total_clips_found = 0
         total_clips_loaded = 0
         failed_clips = 0
@@ -421,26 +420,24 @@ class SyracuseDataset:
                 # Get all clips for this video, ensuring proper sorting of zero-padded numbers
                 clips = sorted([f for f in os.listdir(self.feature_dir) 
                               if f.startswith(f"{video_name}_clip_") and f.endswith('_aligned.npy')],
-                             key=lambda x: int(x.split('_clip_')[1].split('_')[0]))[:14]
+                             key=lambda x: int(x.split('_clip_')[1].split('_')[0]))
                 
                 total_clips_found += len(clips)
                 
-                if len(clips) == 14:  # Only use videos with all 14 clips
-                    videos_with_all_clips += 1
-                    for clip in clips:
-                        try:
-                            clip_data = self.load_features_for_clip(file_name, clip)
-                            all_clips.append(clip_data)
-                            total_clips_loaded += 1
-                        except Exception as e:
-                            print(f"Warning: Could not load clip {clip}: {str(e)}")
-                            failed_clips += 1
-                            continue
+                # Load all clips for this video
+                for clip in clips:
+                    try:
+                        clip_data = self.load_features_for_clip(file_name, clip)
+                        all_clips.append(clip_data)
+                        total_clips_loaded += 1
+                    except Exception as e:
+                        print(f"Warning: Could not load clip {clip}: {str(e)}")
+                        failed_clips += 1
+                        continue
         
         # Print statistics
         print("\n=== Clip Loading Statistics ===")
         print(f"Total videos with valid pain levels: {total_videos}")
-        print(f"Videos with all 14 clips: {videos_with_all_clips}")
         print(f"Total clips found: {total_clips_found}")
         print(f"Total clips successfully loaded: {total_clips_loaded}")
         print(f"Failed to load clips: {failed_clips}")

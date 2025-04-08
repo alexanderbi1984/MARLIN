@@ -443,7 +443,7 @@ def main():
     
     # Initialize dataset
     print("Initializing Syracuse dataset...")
-    meta_path = '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2/meta_with_outcomes.xlsx'
+    meta_path = '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2/meta_with_outcomes_and_classes.xlsx'
     feature_dir = '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2'
     dataset = SyracuseDataset(meta_path, feature_dir)
     

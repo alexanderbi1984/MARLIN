@@ -1,4 +1,4 @@
-1. The meta file path is '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2/meta_with_outcomes.xlsx'
+1. The meta file path is '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2/meta_with_outcomes_and_classes.xlsx'
 2. the row names of the meta file are file_name	creation_time	duration	subject_id	pain_level	visit_type	comment	outcome
 3. Please note that there are some non integer values in the col pain_level, you should pay attention. The range of pain level is from 0 to 10.
 4. The optional values for col visit_type are 1st-pre, 1st-post, 2nd-pre and 2nd-post. Here pre and post means before treatment and after treatment.
