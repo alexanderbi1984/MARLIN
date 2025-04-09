@@ -4,6 +4,10 @@ from pathlib import Path
 import os
 from typing import Dict, List, Tuple, Optional
 
+# The meta file path is '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2/meta_with_outcomes_and_classes.xlsx'
+# the row names of the meta file are file_name	creation_time	duration	subject_id	pain_level	visit_type	comment	outcome	visit_number	class_3	class_4	class_5
+# The path to the features files is '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2'
+
 class SyracuseDataset:
     def __init__(self, meta_path: str, feature_dir: str):
         """
