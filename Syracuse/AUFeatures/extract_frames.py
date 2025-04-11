@@ -49,8 +49,8 @@ def extract_frames(video_path, output_dir, frame_rate=30):
 
 if __name__ == "__main__":
     # Set paths
-    video_path = r"C:\pain\syracus\syracuse_pain_videos\IMG_0111.MP4"
-    output_dir = os.path.join(os.path.dirname(video_path), "frames111")
+    video_path = r"C:\pain\syracus\syracuse_pain_videos\026\IMG_0061.MOV"
+    output_dir = os.path.join(os.path.dirname(video_path), "frames61")
     
     # Extract frames
     extract_frames(video_path, output_dir) 
