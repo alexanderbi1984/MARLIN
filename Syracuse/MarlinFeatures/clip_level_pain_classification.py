@@ -182,18 +182,32 @@ class ClipLevelPainClassifier:
         print(f"Clips with valid 4-class labels: {np.sum(self.y_4 >= 0)}/{n_clips}")
         print(f"Clips with valid 5-class labels: {np.sum(self.y_5 >= 0)}/{n_clips}")
     
-    def _create_video_stratified_folds(self, video_names, labels, n_splits=3):
+    def _create_video_stratified_folds(self, video_names, labels, n_splits=3, fold_strategy='part_based'):
         """
-        Create folds that maintain class balance while ensuring clips from the same part
-        (start or end) of a video stay together.
+        Create folds that maintain class balance while ensuring clips from the same video stay together.
         
         Args:
             video_names: List of video names for each clip
             labels: Class labels for each clip
             n_splits: Number of folds to create
+            fold_strategy: Strategy for creating folds
+                - 'part_based': Clips from the same part (start/end) of a video stay together
+                - 'video_based': All clips from the same video stay together
             
         Returns:
             List of tuples (train_idx, test_idx) for each fold
+        """
+        if fold_strategy == 'part_based':
+            return self._create_part_based_folds(video_names, labels, n_splits)
+        elif fold_strategy == 'video_based':
+            return self._create_video_based_folds(video_names, labels, n_splits)
+        else:
+            raise ValueError(f"Unknown fold strategy: {fold_strategy}")
+
+    def _create_part_based_folds(self, video_names, labels, n_splits=3):
+        """
+        Create folds that maintain class balance while ensuring clips from the same part
+        (start or end) of a video stay together.
         """
         # Group clips by video name and part (start/end)
         video_part_groups = {}
@@ -236,27 +250,66 @@ class ClipLevelPainClassifier:
                                     end_labels[valid_end_mask]):
                     video_part_groups[end_key].append((idx, int(label)))
         
+        return self._create_folds_from_groups(video_part_groups, n_splits)
+
+    def _create_video_based_folds(self, video_names, labels, n_splits=3):
+        """
+        Create folds that maintain class balance while ensuring all clips from the same video
+        stay together, regardless of which part of the video they come from.
+        """
+        # Group clips by video name only
+        video_groups = {}
+        
+        # Get all clips for each video
+        unique_videos = np.unique(video_names)
+        for video in unique_videos:
+            video_mask = video_names == video
+            video_indices = np.where(video_mask)[0]
+            video_labels = labels[video_mask]
+            
+            # Skip videos with no valid labels
+            valid_label_mask = video_labels >= 0
+            if not np.any(valid_label_mask):
+                continue
+            
+            # Add all clips from this video
+            video_groups[video] = []
+            for idx, label in zip(video_indices[valid_label_mask], 
+                                video_labels[valid_label_mask]):
+                video_groups[video].append((idx, int(label)))
+        
+        return self._create_folds_from_groups(video_groups, n_splits)
+
+    def _create_folds_from_groups(self, groups, n_splits=3):
+        """
+        Helper method to create folds from grouped clips.
+        
+        Args:
+            groups: Dictionary mapping group keys to lists of (index, label) tuples
+            n_splits: Number of folds to create
+            
+        Returns:
+            List of tuples (train_idx, test_idx) for each fold
+        """
         # Convert groups to arrays for stratification
         group_indices = []
         group_labels = []
         
-        for video_part, clips in video_part_groups.items():
-            if clips:  # Only add if there are clips in this part
+        for group_key, clips in groups.items():
+            if clips:  # Only add if there are clips in this group
                 indices, labels = zip(*clips)
                 group_indices.append(list(indices))
                 # Use the most common label in the group for stratification
-                # Ensure all labels are non-negative before using bincount
-                valid_labels = np.array(labels)
-                group_labels.append(np.bincount(valid_labels).argmax())
+                group_labels.append(np.bincount(labels).argmax())
         
         # Create stratified folds
         skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
         folds = []
         
-        # Convert group_indices and group_labels to numpy arrays
+        # Convert group_labels to numpy array
         group_labels = np.array(group_labels)
         
-        # Create folds using the video-part groups
+        # Create folds using the groups
         for train_idx, test_idx in skf.split(np.arange(len(group_labels)), group_labels):
             # Convert group indices back to clip indices
             train_clip_indices = []
@@ -348,7 +401,7 @@ class ClipLevelPainClassifier:
         # Store the fold setup in the class
         self.fold_setups[problem] = fold_setup
     
-    def train_and_evaluate(self, n_splits: int = 3, random_state: int = 42, save_folds: bool = True) -> Dict[str, Dict[str, Dict[str, float]]]:
+    def train_and_evaluate(self, n_splits: int = 3, random_state: int = 42, save_folds: bool = True, fold_strategy: str = 'part_based') -> Dict[str, Dict[str, Dict[str, float]]]:
         """
         Train and evaluate all models using k-fold cross-validation.
         
@@ -356,6 +409,9 @@ class ClipLevelPainClassifier:
             n_splits: Number of folds for cross-validation
             random_state: Random seed for reproducibility
             save_folds: Whether to save the fold setup to a file
+            fold_strategy: Strategy for creating folds
+                - 'part_based': Clips from the same part (start/end) of a video stay together
+                - 'video_based': All clips from the same video stay together
             
         Returns:
             Dictionary of results for each model and classification problem
@@ -393,7 +449,7 @@ class ClipLevelPainClassifier:
                 print(f"  {problem} classification")
                 
                 # Create video-stratified folds
-                folds = self._create_video_stratified_folds(self.video_names, y)
+                folds = self._create_video_stratified_folds(self.video_names, y, n_splits, fold_strategy)
                 
                 # Save the fold setup if requested
                 if save_folds:
@@ -505,16 +561,20 @@ class ClipLevelPainClassifier:
 def main():
     """
     Main function to run the clip-level pain classification analysis.
+    
+    The function supports two fold strategies:
+    - 'part_based': Clips from the same part (start/end) of a video stay together
+    - 'video_based': All clips from the same video stay together
     """
     # Define paths
-    meta_path = '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2/meta_with_outcomes_and_classes.xlsx'
+    meta_path = '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2/aug_meta_with_outcomes_and_classes.xlsx'
     feature_dir = '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2'
     
     # Create classifier
     classifier = ClipLevelPainClassifier(meta_path, feature_dir)
     
-    # Train and evaluate models
-    results = classifier.train_and_evaluate(n_splits=3, random_state=42, save_folds=True)
+    # Train and evaluate models with video-based fold strategy
+    results = classifier.train_and_evaluate(n_splits=3, random_state=42, save_folds=True, fold_strategy='video_based')
     
     # Print results
     classifier.print_results(results)
