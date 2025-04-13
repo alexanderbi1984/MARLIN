@@ -72,6 +72,8 @@ def parse_args():
                         help='Specific models to evaluate (default: all)')
     parser.add_argument('--seed', type=int, default=42,
                         help='Random seed for reproducibility')
+    parser.add_argument('--aug_per_video', type=int, default=1,
+                        help='Number of augmented videos to use per original video (max 4, default: 1)')
     return parser.parse_args()
 
 def create_video_based_folds(video_names, labels, n_splits, random_state=42):
@@ -214,8 +216,43 @@ def main():
     # Set random seed for reproducibility
     np.random.seed(args.seed)
     
-    # Create output directory
-    os.makedirs(args.output_dir, exist_ok=True)
+    # Create output directory with subfolder for specific run
+    subfolder_name = f"{args.model_name}_{args.n_classes}class_{args.fold_strategy}_aug{args.aug_per_video}"
+    output_dir = os.path.join(args.output_dir, subfolder_name)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Write README file with experiment details
+    readme_path = os.path.join(output_dir, "README.md")
+    with open(readme_path, "w") as f:
+        f.write(f"# Pain Classification Experiment\n\n")
+        f.write(f"## Parameters\n")
+        f.write(f"- Model: {args.model_name}\n")
+        f.write(f"- Number of classes: {args.n_classes}\n")
+        f.write(f"- Number of splits: {args.n_splits}\n")
+        f.write(f"- Fold strategy: {args.fold_strategy}\n")
+        f.write(f"- Augmented videos per original: {args.aug_per_video}\n")
+        f.write(f"- Random seed: {args.seed}\n\n")
+        
+        f.write(f"## Fold Strategy Description\n")
+        if args.fold_strategy == 'aug_aware':
+            f.write("Augmentation-aware fold strategy:\n")
+            f.write("- Folds created using original videos only\n")
+            f.write("- Videos with the same ID stay together in a fold\n")
+            f.write(f"- When using folds for training, up to {args.aug_per_video} augmented clips per original video are included\n")
+            f.write("- Only original clips are used for testing\n")
+        elif args.fold_strategy == 'video_based':
+            f.write("Video-based fold strategy:\n")
+            f.write("- Ensures videos from the same source are not split across train and test sets\n")
+            f.write("- Stratification is done at the video level, using the most common label in each video\n")
+        elif args.fold_strategy == 'part_based':
+            f.write("Part-based fold strategy:\n")
+            f.write("- Ensures parts from the same video are not split across train and test sets\n")
+            f.write("- Videos are grouped by their base name before '_part_X'\n")
+            f.write("- Stratification is done at the part level, using the most common label in each part\n")
+        else:
+            f.write("Stratified fold strategy:\n")
+            f.write("- Standard stratified K-fold cross-validation\n")
+            f.write("- Folds are created to maintain the same class distribution across all splits\n")
     
     # Initialize classifier
     classifier = MarlinPainClassifier(
@@ -232,7 +269,7 @@ def main():
         print("\nUsing augmentation-aware fold strategy:")
         print("- Folds created using original videos only")
         print("- Videos with the same ID stay together in a fold")
-        print("- When using folds for training, augmented clips from those videos are included")
+        print(f"- When using folds for training, up to {args.aug_per_video} augmented clips per original video are included")
         print("- Only original clips are used for testing\n")
     
     # Select models to evaluate
@@ -253,22 +290,23 @@ def main():
             n_classes=args.n_classes,
             n_splits=args.n_splits,
             fold_strategy=args.fold_strategy,
-            random_state=args.seed
+            random_state=args.seed,
+            aug_per_video=args.aug_per_video
         )
         
         # Save results
         all_results[model_name] = results
-        classifier.save_results(results, os.path.join(args.output_dir, f'{model_name}_{args.n_classes}class_results.json'))
+        classifier.save_results(results, os.path.join(output_dir, f'{model_name}_{args.n_classes}class_results.json'))
         
         # Plot results
-        plot_results(results, args.output_dir, model_name, args.n_classes)
+        plot_results(results, output_dir, model_name, args.n_classes)
         
         # Print summary
         print(f"Mean accuracy: {results['mean_accuracy']:.3f} ± {results['std_accuracy']:.3f}")
         print(f"Mean AUC: {results['mean_auc']:.3f} ± {results['std_auc']:.3f}")
     
     # Save all results
-    with open(os.path.join(args.output_dir, f'all_results_{args.n_classes}class.json'), 'w') as f:
+    with open(os.path.join(output_dir, f'all_results_{args.n_classes}class.json'), 'w') as f:
         # Convert all NumPy types to native Python types for JSON serialization
         json_safe_results = convert_numpy_types(all_results)
         json.dump(json_safe_results, f, indent=4)
@@ -282,7 +320,7 @@ def main():
         'AUC Std': [results['std_auc'] for results in all_results.values()]
     })
     summary = summary.sort_values('Accuracy', ascending=False)
-    summary.to_csv(os.path.join(args.output_dir, f'summary_{args.n_classes}class.csv'), index=False)
+    summary.to_csv(os.path.join(output_dir, f'summary_{args.n_classes}class.csv'), index=False)
     
     # Plot comparison of all models
     plt.figure(figsize=(12, 6))
@@ -290,10 +328,10 @@ def main():
     plt.xticks(rotation=45, ha='right')
     plt.title(f'Comparison of Models - {args.n_classes}-class Accuracy')
     plt.tight_layout()
-    plt.savefig(os.path.join(args.output_dir, f'model_comparison_{args.n_classes}class.png'))
+    plt.savefig(os.path.join(output_dir, f'model_comparison_{args.n_classes}class.png'))
     plt.close()
     
-    print(f"\nResults saved to {args.output_dir}")
+    print(f"\nResults saved to {output_dir}")
     print("\nSummary of results:")
     print(summary.to_string(index=False))
 

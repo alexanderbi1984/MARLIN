@@ -18,6 +18,26 @@ import torch
 from pathlib import Path
 from marlin_features import MarlinFeatures
 
+"""
+Pain Classifier Module
+
+This module provides the MarlinPainClassifier class for pain classification from video clips.
+The class handles loading pre-extracted features from a marlin_base_dir, creating stratified
+cross-validation folds, and training/evaluating machine learning models.
+
+Key features:
+- Loads clip metadata and pre-extracted features from .npy files
+- Supports different pain classification schemes (3, 4, or 5 classes)
+- Provides multiple fold creation strategies: stratified, video-based, part-based, and augmentation-aware
+- Includes built-in classification models and metrics reporting
+- Handles training/test split creation with awareness of data augmentation
+- Reports detailed training and testing statistics for each fold
+
+Dependencies:
+- numpy, pandas, scikit-learn
+- marlin_features.MarlinFeatures for feature extraction
+"""
+
 class LassoClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, alpha=1.0, max_iter=1000, random_state=None):
         self.alpha = alpha
@@ -486,7 +506,8 @@ class MarlinPainClassifier:
         return folds
     
     def train_model(self, model_name: str, n_classes: int = 3, n_splits: int = 3, 
-                   fold_strategy: str = 'stratified', random_state: int = 42) -> Dict[str, Any]:
+                   fold_strategy: str = 'stratified', random_state: int = 42,
+                   aug_per_video: int = 1) -> Dict[str, Any]:
         """
         Train a model using cross-validation.
         
@@ -496,6 +517,7 @@ class MarlinPainClassifier:
             n_splits: Number of cross-validation splits
             fold_strategy: Strategy for creating folds ('stratified', 'video_based', 'part_based', 'aug_aware')
             random_state: Random seed for reproducibility
+            aug_per_video: Maximum number of augmented videos to use per original video (1-4, default: 1)
             
         Returns:
             Dictionary containing training results
@@ -547,16 +569,35 @@ class MarlinPainClassifier:
                 X_test = self.X[test_idx]
                 y_test = y[test_idx]
                 
-                # Include augmented clips in training if available
+                # Include augmented clips in training if available, but limit by aug_per_video
                 if aug_train_idx is not None and len(aug_train_idx) > 0:
-                    X_train_aug = self.X_aug[aug_train_idx]
-                    y_train_aug = y_aug[aug_train_idx]
+                    # Map from original video ID to its augmented videos
+                    vid_to_aug = defaultdict(list)
+                    for aug_idx in aug_train_idx:
+                        vid_id = self.video_ids_aug[aug_idx]
+                        vid_to_aug[vid_id].append(aug_idx)
+                    
+                    # Select limited number of augmented videos per original
+                    limited_aug_idx = []
+                    for vid_id, aug_indices in vid_to_aug.items():
+                        # Shuffle augmented indices to randomize selection
+                        aug_indices_shuffled = list(aug_indices)
+                        np.random.shuffle(aug_indices_shuffled)
+                        # Take only the specified number of augmented videos
+                        limited_aug_idx.extend(aug_indices_shuffled[:aug_per_video])
+                    
+                    limited_aug_idx = np.array(limited_aug_idx)
+                    
+                    # Now use the limited augmented indices
+                    X_train_aug = self.X_aug[limited_aug_idx]
+                    y_train_aug = y_aug[limited_aug_idx]
                     
                     # Combine original and augmented data for training
                     X_train = np.vstack((X_train_orig, X_train_aug))
                     y_train = np.concatenate((y_train_orig, y_train_aug))
                     
                     print(f"  Fold {fold_idx+1} training: {len(X_train_orig)} original clips + {len(X_train_aug)} augmented clips = {len(X_train)} total")
+                    print(f"  Limited to max {aug_per_video} augmented clips per original video")
                 else:
                     X_train = X_train_orig
                     y_train = y_train_orig
