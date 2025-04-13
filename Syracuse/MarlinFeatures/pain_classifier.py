@@ -31,6 +31,7 @@ Key features:
 - Provides multiple fold creation strategies: stratified, video-based, part-based, and augmentation-aware
 - Includes built-in classification models and metrics reporting
 - Handles training/test split creation with awareness of data augmentation
+- Controls augmentation percentage for training (25%, 50%, 75%, or 100%)
 - Reports detailed training and testing statistics for each fold
 
 Dependencies:
@@ -517,7 +518,8 @@ class MarlinPainClassifier:
             n_splits: Number of cross-validation splits
             fold_strategy: Strategy for creating folds ('stratified', 'video_based', 'part_based', 'aug_aware')
             random_state: Random seed for reproducibility
-            aug_per_video: Maximum number of augmented videos to use per original video (1-4, default: 1)
+            aug_per_video: Controls the percentage of augmented clips to use in training:
+                           1 = 25%, 2 = 50%, 3 = 75%, 4 = 100% of available augmented clips
             
         Returns:
             Dictionary containing training results
@@ -571,22 +573,20 @@ class MarlinPainClassifier:
                 
                 # Include augmented clips in training if available, but limit by aug_per_video
                 if aug_train_idx is not None and len(aug_train_idx) > 0:
-                    # Map from original video ID to its augmented videos
-                    vid_to_aug = defaultdict(list)
-                    for aug_idx in aug_train_idx:
-                        vid_id = self.video_ids_aug[aug_idx]
-                        vid_to_aug[vid_id].append(aug_idx)
+                    # Calculate percentage based on aug_per_video
+                    if aug_per_video < 1 or aug_per_video > 4:
+                        print(f"  Warning: aug_per_video must be between 1 and 4. Using aug_per_video=4 (100%)")
+                        percentage = 1.0
+                    else:
+                        percentage = aug_per_video * 0.25
                     
-                    # Select limited number of augmented videos per original
-                    limited_aug_idx = []
-                    for vid_id, aug_indices in vid_to_aug.items():
-                        # Shuffle augmented indices to randomize selection
-                        aug_indices_shuffled = list(aug_indices)
-                        np.random.shuffle(aug_indices_shuffled)
-                        # Take only the specified number of augmented videos
-                        limited_aug_idx.extend(aug_indices_shuffled[:aug_per_video])
+                    # Shuffle all augmented indices to randomize selection
+                    all_aug_indices = np.array(aug_train_idx)
+                    np.random.shuffle(all_aug_indices)
                     
-                    limited_aug_idx = np.array(limited_aug_idx)
+                    # Select the specified percentage of augmented clips
+                    num_to_select = int(len(all_aug_indices) * percentage)
+                    limited_aug_idx = all_aug_indices[:num_to_select]
                     
                     # Now use the limited augmented indices
                     X_train_aug = self.X_aug[limited_aug_idx]
@@ -597,7 +597,7 @@ class MarlinPainClassifier:
                     y_train = np.concatenate((y_train_orig, y_train_aug))
                     
                     print(f"  Fold {fold_idx+1} training: {len(X_train_orig)} original clips + {len(X_train_aug)} augmented clips = {len(X_train)} total")
-                    print(f"  Limited to max {aug_per_video} augmented clips per original video")
+                    print(f"  Using {percentage*100:.0f}% of available augmented clips ({len(X_train_aug)}/{len(aug_train_idx)})")
                 else:
                     X_train = X_train_orig
                     y_train = y_train_orig

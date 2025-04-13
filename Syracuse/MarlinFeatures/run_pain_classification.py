@@ -5,6 +5,34 @@
 Run pain classification study using MARLIN features.
 This script performs the same study as clip_level_pain_classification.py
 but uses the new MarlinPainClassifier class with careful fold setup.
+
+Key features:
+- Command-line interface for running pain classification experiments
+- Support for multiple classification models and cross-validation strategies
+- Customizable class setups (3, 4, or 5 pain classes)
+- Augmentation-aware training with controlled augmentation percentages
+- Comprehensive results output with performance metrics and visualizations
+
+Usage example:
+    python run_pain_classification.py 
+        --meta_path "/path/to/meta_with_outcomes_and_classes.xlsx" 
+        --marlin_base_dir "/path/to/marlin_base_dir" 
+        --output_dir "results" 
+        --n_classes 3 
+        --fold_strategy "aug_aware"
+        --aug_per_video 2
+
+Parameters:
+    --meta_path: Path to the metadata Excel file with outcome labels
+    --marlin_base_dir: Directory containing pre-extracted MARLIN features
+    --output_dir: Directory to save results (subfolders will be created)
+    --model_name: Name of the MARLIN model used for feature extraction
+    --n_classes: Number of classes for pain classification (3, 4, or 5)
+    --n_splits: Number of cross-validation folds
+    --fold_strategy: Strategy for creating folds (stratified, video_based, part_based, aug_aware)
+    --models: Specific models to evaluate (default: all available models)
+    --seed: Random seed for reproducibility
+    --aug_per_video: Controls percentage of augmented clips used (1=25%, 2=50%, 3=75%, 4=100%)
 """
 
 import os
@@ -72,8 +100,8 @@ def parse_args():
                         help='Specific models to evaluate (default: all)')
     parser.add_argument('--seed', type=int, default=42,
                         help='Random seed for reproducibility')
-    parser.add_argument('--aug_per_video', type=int, default=1,
-                        help='Number of augmented videos to use per original video (max 4, default: 1)')
+    parser.add_argument('--aug_per_video', type=int, default=1, choices=[1, 2, 3, 4],
+                        help='Proportion of augmented clips to use: 1=25%%, 2=50%%, 3=75%%, 4=100%% (default: 1)')
     return parser.parse_args()
 
 def create_video_based_folds(video_names, labels, n_splits, random_state=42):
@@ -230,7 +258,7 @@ def main():
         f.write(f"- Number of classes: {args.n_classes}\n")
         f.write(f"- Number of splits: {args.n_splits}\n")
         f.write(f"- Fold strategy: {args.fold_strategy}\n")
-        f.write(f"- Augmented videos per original: {args.aug_per_video}\n")
+        f.write(f"- Augmentation percentage: {args.aug_per_video * 25}% (aug_per_video={args.aug_per_video})\n")
         f.write(f"- Random seed: {args.seed}\n\n")
         
         f.write(f"## Fold Strategy Description\n")
@@ -238,7 +266,7 @@ def main():
             f.write("Augmentation-aware fold strategy:\n")
             f.write("- Folds created using original videos only\n")
             f.write("- Videos with the same ID stay together in a fold\n")
-            f.write(f"- When using folds for training, up to {args.aug_per_video} augmented clips per original video are included\n")
+            f.write(f"- When using folds for training, {args.aug_per_video * 25}% of augmented clips are included\n")
             f.write("- Only original clips are used for testing\n")
         elif args.fold_strategy == 'video_based':
             f.write("Video-based fold strategy:\n")
@@ -269,7 +297,7 @@ def main():
         print("\nUsing augmentation-aware fold strategy:")
         print("- Folds created using original videos only")
         print("- Videos with the same ID stay together in a fold")
-        print(f"- When using folds for training, up to {args.aug_per_video} augmented clips per original video are included")
+        print(f"- When using folds for training, {args.aug_per_video * 25}% of augmented clips are included")
         print("- Only original clips are used for testing\n")
     
     # Select models to evaluate
