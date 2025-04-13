@@ -33,6 +33,10 @@ Parameters:
     --models: Specific models to evaluate (default: all available models)
     --seed: Random seed for reproducibility
     --aug_per_video: Controls percentage of augmented clips used (1=25%, 2=50%, 3=75%, 4=100%)
+
+TODO:
+- Consider implementing a smarter augmentation sampling strategy to address class imbalance issues
+  (e.g., sample more augmented clips from underrepresented classes to balance the training data)
 """
 
 import os

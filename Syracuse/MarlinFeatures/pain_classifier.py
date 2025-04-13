@@ -580,6 +580,11 @@ class MarlinPainClassifier:
                     else:
                         percentage = aug_per_video * 0.25
                     
+                    # TODO: Implement a smarter sampling strategy to address class imbalance
+                    # - Sample more augmented clips from underrepresented classes
+                    # - Consider stratified sampling based on class distribution
+                    # - Could use sklearn.utils.resample with stratification for this purpose
+                    
                     # Shuffle all augmented indices to randomize selection
                     all_aug_indices = np.array(aug_train_idx)
                     np.random.shuffle(all_aug_indices)
