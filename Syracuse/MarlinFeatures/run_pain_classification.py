@@ -33,8 +33,9 @@ Parameters:
     --fold_strategy: Strategy for creating folds (stratified, video_based, part_based, aug_aware)
     --models: Specific models to evaluate (default: all available models)
     --seed: Random seed for reproducibility
-    --aug_per_video: Controls percentage of augmented clips used (1=25%, 2=50%, 3=75%, 4=100%)
+    --aug_per_video: Controls percentage of augmented clips used (0=None, 1=25%, 2=50%, 3=75%, 4=100%)
                     Class-weighted sampling is applied to prioritize minority classes.
+    --binary_task: Specific binary classification task in format "class1,class2" (e.g., "0,4" to classify between class 0 and 4 only)
 
 TODO:
 - Consider additional evaluation metrics for multi-class imbalanced data (e.g., macro-F1)
@@ -107,8 +108,10 @@ def parse_args():
                         help='Specific models to evaluate (default: all)')
     parser.add_argument('--seed', type=int, default=42,
                         help='Random seed for reproducibility')
-    parser.add_argument('--aug_per_video', type=int, default=1, choices=[1, 2, 3, 4],
-                        help='Proportion of augmented clips to use: 1=25%%, 2=50%%, 3=75%%, 4=100%% (default: 1)')
+    parser.add_argument('--aug_per_video', type=int, default=1, choices=[0, 1, 2, 3, 4],
+                        help='Proportion of augmented clips to use: 0=None, 1=25%%, 2=50%%, 3=75%%, 4=100%% (default: 1)')
+    parser.add_argument('--binary_task', type=str, default=None,
+                        help='Specific binary classification task in format "class1,class2" (e.g., "0,4" to classify between class 0 and 4 only)')
     return parser.parse_args()
 
 def create_video_based_folds(video_names, labels, n_splits, random_state=42):
@@ -209,6 +212,9 @@ def plot_results(results, output_dir, model_name, n_classes):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     
+    # Check if this is a binary classification task
+    is_binary = isinstance(n_classes, str) and n_classes.startswith('binary_')
+    
     # Plot accuracy
     plt.figure(figsize=(10, 6))
     sns.barplot(x=range(1, len(results['accuracy']) + 1), y=results['accuracy'])
@@ -216,9 +222,9 @@ def plot_results(results, output_dir, model_name, n_classes):
                 label=f'Mean: {results["mean_accuracy"]:.3f} ± {results["std_accuracy"]:.3f}')
     plt.xlabel('Fold')
     plt.ylabel('Accuracy')
-    plt.title(f'{model_name} - {n_classes}-class Accuracy')
+    plt.title(f'{model_name} - {n_classes} Accuracy')
     plt.legend()
-    plt.savefig(os.path.join(output_dir, f'{model_name}_{n_classes}class_accuracy.png'))
+    plt.savefig(os.path.join(output_dir, f'{model_name}_{n_classes}_accuracy.png'))
     plt.close()
     
     # Plot AUC
@@ -228,20 +234,79 @@ def plot_results(results, output_dir, model_name, n_classes):
                 label=f'Mean: {results["mean_auc"]:.3f} ± {results["std_auc"]:.3f}')
     plt.xlabel('Fold')
     plt.ylabel('AUC')
-    plt.title(f'{model_name} - {n_classes}-class AUC')
+    plt.title(f'{model_name} - {n_classes} AUC')
     plt.legend()
-    plt.savefig(os.path.join(output_dir, f'{model_name}_{n_classes}class_auc.png'))
+    plt.savefig(os.path.join(output_dir, f'{model_name}_{n_classes}_auc.png'))
     plt.close()
+    
+    # Plot precision, recall, F1 for binary classification
+    if is_binary and 'precision' in results:
+        # Plot precision
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x=range(1, len(results['precision']) + 1), y=results['precision'])
+        plt.axhline(y=results['mean_precision'], color='r', linestyle='--', 
+                    label=f'Mean: {results["mean_precision"]:.3f} ± {results["std_precision"]:.3f}')
+        plt.xlabel('Fold')
+        plt.ylabel('Precision')
+        plt.title(f'{model_name} - {n_classes} Precision')
+        plt.legend()
+        plt.savefig(os.path.join(output_dir, f'{model_name}_{n_classes}_precision.png'))
+        plt.close()
+        
+        # Plot recall
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x=range(1, len(results['recall']) + 1), y=results['recall'])
+        plt.axhline(y=results['mean_recall'], color='r', linestyle='--', 
+                    label=f'Mean: {results["mean_recall"]:.3f} ± {results["std_recall"]:.3f}')
+        plt.xlabel('Fold')
+        plt.ylabel('Recall')
+        plt.title(f'{model_name} - {n_classes} Recall')
+        plt.legend()
+        plt.savefig(os.path.join(output_dir, f'{model_name}_{n_classes}_recall.png'))
+        plt.close()
+        
+        # Plot F1
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x=range(1, len(results['f1_score']) + 1), y=results['f1_score'])
+        plt.axhline(y=results['mean_f1'], color='r', linestyle='--', 
+                    label=f'Mean: {results["mean_f1"]:.3f} ± {results["std_f1"]:.3f}')
+        plt.xlabel('Fold')
+        plt.ylabel('F1 Score')
+        plt.title(f'{model_name} - {n_classes} F1 Score')
+        plt.legend()
+        plt.savefig(os.path.join(output_dir, f'{model_name}_{n_classes}_f1.png'))
+        plt.close()
+        
+        # Plot combined metrics
+        plt.figure(figsize=(12, 8))
+        metrics_df = pd.DataFrame({
+            'Fold': np.repeat(range(1, len(results['accuracy']) + 1), 4),
+            'Metric': np.tile(['Accuracy', 'Precision', 'Recall', 'F1'], len(results['accuracy'])),
+            'Value': np.concatenate([results['accuracy'], results['precision'], results['recall'], results['f1_score']])
+        })
+        sns.barplot(x='Fold', y='Value', hue='Metric', data=metrics_df)
+        plt.title(f'{model_name} - {n_classes} Metrics Comparison')
+        plt.legend(loc='lower right')
+        plt.savefig(os.path.join(output_dir, f'{model_name}_{n_classes}_metrics_comparison.png'))
+        plt.close()
     
     # Plot confusion matrix
     from sklearn.metrics import confusion_matrix
     cm = confusion_matrix(results['true_labels'], results['predictions'])
     plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    
+    # Add labels for binary classification
+    if is_binary and 'class_indices' in results:
+        class_indices = results['class_indices']
+        class_labels = [f'Class {class_indices[0]}', f'Class {class_indices[1]}']
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_labels, yticklabels=class_labels)
+    else:
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        
     plt.xlabel('Predicted')
     plt.ylabel('True')
-    plt.title(f'{model_name} - {n_classes}-class Confusion Matrix')
-    plt.savefig(os.path.join(output_dir, f'{model_name}_{n_classes}class_confusion_matrix.png'))
+    plt.title(f'{model_name} - {n_classes} Confusion Matrix')
+    plt.savefig(os.path.join(output_dir, f'{model_name}_{n_classes}_confusion_matrix.png'))
     plt.close()
 
 def main():
@@ -252,7 +317,13 @@ def main():
     np.random.seed(args.seed)
     
     # Create output directory with subfolder for specific run
-    subfolder_name = f"{args.model_name}_{args.n_classes}class_{args.fold_strategy}_aug{args.aug_per_video}"
+    if args.binary_task:
+        binary_classes = args.binary_task.split(',')
+        if len(binary_classes) != 2:
+            raise ValueError("Binary task must specify exactly two classes separated by a comma (e.g., '0,4')")
+        subfolder_name = f"{args.model_name}_binary{args.binary_task}_{args.fold_strategy}_aug{args.aug_per_video}"
+    else:
+        subfolder_name = f"{args.model_name}_{args.n_classes}class_{args.fold_strategy}_aug{args.aug_per_video}"
     output_dir = os.path.join(args.output_dir, subfolder_name)
     os.makedirs(output_dir, exist_ok=True)
     
@@ -262,7 +333,12 @@ def main():
         f.write(f"# Pain Classification Experiment\n\n")
         f.write(f"## Parameters\n")
         f.write(f"- Model: {args.model_name}\n")
-        f.write(f"- Number of classes: {args.n_classes}\n")
+        
+        if args.binary_task:
+            f.write(f"- Classification task: Binary classification between classes {args.binary_task.replace(',', ' vs ')}\n")
+        else:
+            f.write(f"- Number of classes: {args.n_classes}\n")
+            
         f.write(f"- Number of splits: {args.n_splits}\n")
         f.write(f"- Fold strategy: {args.fold_strategy}\n")
         f.write(f"- Augmentation percentage: {args.aug_per_video * 25}% (aug_per_video={args.aug_per_video})\n")
@@ -319,24 +395,45 @@ def main():
     # Run classification for each model
     all_results = {}
     for model_name, model in models_to_evaluate.items():
-        print(f"\nEvaluating {model_name} for {args.n_classes}-class classification...")
-        
-        # Train model with custom fold setup
-        results = classifier.train_model(
-            model_name=model_name,
-            n_classes=args.n_classes,
-            n_splits=args.n_splits,
-            fold_strategy=args.fold_strategy,
-            random_state=args.seed,
-            aug_per_video=args.aug_per_video
-        )
+        if args.binary_task:
+            binary_classes = [int(c) for c in args.binary_task.split(',')]
+            print(f"\nEvaluating {model_name} for binary classification between classes {binary_classes[0]} and {binary_classes[1]}...")
+            
+            # Train model with binary task
+            results = classifier.train_model_binary(
+                model_name=model_name,
+                class_indices=binary_classes,
+                n_splits=args.n_splits,
+                fold_strategy=args.fold_strategy,
+                random_state=args.seed,
+                aug_per_video=args.aug_per_video
+            )
+            
+            output_file_prefix = f'{model_name}_binary{args.binary_task}'
+        else:
+            print(f"\nEvaluating {model_name} for {args.n_classes}-class classification...")
+            
+            # Train model with custom fold setup
+            results = classifier.train_model(
+                model_name=model_name,
+                n_classes=args.n_classes,
+                n_splits=args.n_splits,
+                fold_strategy=args.fold_strategy,
+                random_state=args.seed,
+                aug_per_video=args.aug_per_video
+            )
+            
+            output_file_prefix = f'{model_name}_{args.n_classes}class'
         
         # Save results
         all_results[model_name] = results
-        classifier.save_results(results, os.path.join(output_dir, f'{model_name}_{args.n_classes}class_results.json'))
+        classifier.save_results(results, os.path.join(output_dir, f'{output_file_prefix}_results.json'))
         
         # Plot results
-        plot_results(results, output_dir, model_name, args.n_classes)
+        if args.binary_task:
+            plot_results(results, output_dir, model_name, f"binary_{args.binary_task.replace(',', 'vs')}")
+        else:
+            plot_results(results, output_dir, model_name, args.n_classes)
         
         # Print summary
         print(f"Mean accuracy: {results['mean_accuracy']:.3f} ± {results['std_accuracy']:.3f}")
@@ -349,24 +446,72 @@ def main():
         json.dump(json_safe_results, f, indent=4)
     
     # Create summary table
-    summary = pd.DataFrame({
-        'Model': list(all_results.keys()),
-        'Accuracy': [results['mean_accuracy'] for results in all_results.values()],
-        'Accuracy Std': [results['std_accuracy'] for results in all_results.values()],
-        'AUC': [results['mean_auc'] for results in all_results.values()],
-        'AUC Std': [results['std_auc'] for results in all_results.values()]
-    })
-    summary = summary.sort_values('Accuracy', ascending=False)
-    summary.to_csv(os.path.join(output_dir, f'summary_{args.n_classes}class.csv'), index=False)
-    
-    # Plot comparison of all models
-    plt.figure(figsize=(12, 6))
-    sns.barplot(x='Model', y='Accuracy', data=summary)
-    plt.xticks(rotation=45, ha='right')
-    plt.title(f'Comparison of Models - {args.n_classes}-class Accuracy')
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'model_comparison_{args.n_classes}class.png'))
-    plt.close()
+    if args.binary_task:
+        summary = pd.DataFrame({
+            'Model': list(all_results.keys()),
+            'Accuracy': [results['mean_accuracy'] for results in all_results.values()],
+            'Accuracy Std': [results['std_accuracy'] for results in all_results.values()],
+            'AUC': [results['mean_auc'] for results in all_results.values()],
+            'AUC Std': [results['std_auc'] for results in all_results.values()],
+            'Precision': [results['mean_precision'] for results in all_results.values()],
+            'Precision Std': [results['std_precision'] for results in all_results.values()],
+            'Recall': [results['mean_recall'] for results in all_results.values()],
+            'Recall Std': [results['std_recall'] for results in all_results.values()],
+            'F1 Score': [results['mean_f1'] for results in all_results.values()],
+            'F1 Score Std': [results['std_f1'] for results in all_results.values()]
+        })
+        # Sort by F1 score for binary classification
+        summary = summary.sort_values('F1 Score', ascending=False)
+        summary.to_csv(os.path.join(output_dir, f'summary_binary{args.binary_task}.csv'), index=False)
+        
+        # Plot comparison of models by multiple metrics
+        if len(all_results) > 1:  # Only if we have multiple models
+            metrics = ['Accuracy', 'AUC', 'Precision', 'Recall', 'F1 Score']
+            plt.figure(figsize=(14, 10))
+            
+            # Create a comparison dataframe in long format
+            comparison_data = []
+            for model_name, results in all_results.items():
+                for metric in metrics:
+                    if metric == 'F1 Score':
+                        metric_key = 'mean_f1'  # Use the same key as defined in train_model_binary
+                    else:
+                        metric_key = f'mean_{metric.lower()}'
+                    comparison_data.append({
+                        'Model': model_name,
+                        'Metric': metric,
+                        'Value': results[metric_key]
+                    })
+            
+            comparison_df = pd.DataFrame(comparison_data)
+            
+            # Plot
+            sns.barplot(x='Model', y='Value', hue='Metric', data=comparison_df)
+            plt.title(f'Binary {args.binary_task.replace(",", " vs ")} Classification - Model Comparison')
+            plt.xticks(rotation=45, ha='right')
+            plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, f'model_comparison_binary{args.binary_task}.png'))
+            plt.close()
+    else:
+        summary = pd.DataFrame({
+            'Model': list(all_results.keys()),
+            'Accuracy': [results['mean_accuracy'] for results in all_results.values()],
+            'Accuracy Std': [results['std_accuracy'] for results in all_results.values()],
+            'AUC': [results['mean_auc'] for results in all_results.values()],
+            'AUC Std': [results['std_auc'] for results in all_results.values()]
+        })
+        summary = summary.sort_values('Accuracy', ascending=False)
+        summary.to_csv(os.path.join(output_dir, f'summary_{args.n_classes}class.csv'), index=False)
+        
+        # Plot comparison of all models
+        plt.figure(figsize=(12, 6))
+        sns.barplot(x='Model', y='Accuracy', data=summary)
+        plt.xticks(rotation=45, ha='right')
+        plt.title(f'Comparison of Models - {args.n_classes}-class Accuracy')
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, f'model_comparison_{args.n_classes}class.png'))
+        plt.close()
     
     print(f"\nResults saved to {output_dir}")
     print("\nSummary of results:")

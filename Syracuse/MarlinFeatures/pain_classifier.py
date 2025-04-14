@@ -143,7 +143,6 @@ class MarlinPainClassifier:
             # Linear models
             'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42),
             'Ridge Regression': RidgeClassifier(alpha=1.0, random_state=42),
-            'Lasso Classifier': LassoClassifier(alpha=1.0, max_iter=1000, random_state=42),
             'Ridge (alpha=0.1)': RidgeClassifier(alpha=0.1, random_state=42),
             'Ridge (alpha=10)': RidgeClassifier(alpha=10, random_state=42),
             
@@ -527,6 +526,7 @@ class MarlinPainClassifier:
             fold_strategy: Strategy for creating folds ('stratified', 'video_based', 'part_based', 'aug_aware')
             random_state: Random seed for reproducibility
             aug_per_video: Controls the percentage of augmented clips to use in training:
+                           0 = No augmentation (original clips only)
                            1 = 25%, 2 = 50%, 3 = 75%, 4 = 100% of available augmented clips
             
         Returns:
@@ -580,11 +580,14 @@ class MarlinPainClassifier:
                 y_test = y[test_idx]
                 
                 # Include augmented clips in training if available, but limit by aug_per_video
-                if aug_train_idx is not None and len(aug_train_idx) > 0:
+                if aug_train_idx is not None and len(aug_train_idx) > 0 and aug_per_video > 0:
                     # Calculate percentage based on aug_per_video
-                    if aug_per_video < 1 or aug_per_video > 4:
-                        print(f"  Warning: aug_per_video must be between 1 and 4. Using aug_per_video=4 (100%)")
+                    if aug_per_video < 0 or aug_per_video > 4:
+                        print(f"  Warning: aug_per_video must be between 0 and 4. Using aug_per_video=4 (100%)")
                         percentage = 1.0
+                    elif aug_per_video == 0:
+                        # Skip augmentation completely
+                        percentage = 0.0
                     else:
                         percentage = aug_per_video * 0.25
                     
@@ -807,4 +810,366 @@ class MarlinPainClassifier:
             Dictionary containing classification results
         """
         with open(input_path, 'r') as f:
-            return json.load(f) 
+            return json.load(f)
+    
+    def train_model_binary(self, model_name: str, class_indices: List[int], n_splits: int = 3, 
+                          fold_strategy: str = 'stratified', random_state: int = 42,
+                          aug_per_video: int = 1) -> Dict[str, Any]:
+        """
+        Train a model for binary classification between two specific classes.
+        
+        Args:
+            model_name: Name of the model to train
+            class_indices: List of two class indices to include in binary classification
+            n_splits: Number of cross-validation splits
+            fold_strategy: Strategy for creating folds ('stratified', 'video_based', 'part_based', 'aug_aware')
+            random_state: Random seed for reproducibility
+            aug_per_video: Controls the percentage of augmented clips to use in training:
+                           0 = No augmentation (original clips only)
+                           1 = 25%, 2 = 50%, 3 = 75%, 4 = 100% of available augmented clips
+            
+        Returns:
+            Dictionary containing training results
+        """
+        if model_name not in self.models:
+            raise ValueError(f"Unknown model: {model_name}")
+        
+        if len(class_indices) != 2:
+            raise ValueError(f"Binary classification requires exactly 2 class indices, got {len(class_indices)}")
+        
+        class1, class2 = class_indices
+        print(f"Binary classification between class {class1} and class {class2}")
+        
+        # Determine which label set to use based on how many distinct classes we need
+        max_class = max(class1, class2)
+        if max_class <= 2:  # Both classes are in 3-class set
+            print("Using 3-class labels")
+            y_all = self.y_3
+            y_aug_all = self.y_3_aug
+        elif max_class <= 3:  # Both classes are in 4-class set
+            print("Using 4-class labels")
+            y_all = self.y_4
+            y_aug_all = self.y_4_aug
+        else:  # At least one class is in 5-class set
+            print("Using 5-class labels")
+            y_all = self.y_5
+            y_aug_all = self.y_5_aug
+        
+        # Filter data to include only the specified classes
+        orig_indices = np.where((y_all == class1) | (y_all == class2))[0]
+        X = self.X[orig_indices]
+        y = y_all[orig_indices]
+        
+        # Remap classes to 0 and 1 for binary classification
+        y_binary = np.zeros_like(y)
+        y_binary[y == class2] = 1
+        
+        # Also get video names and IDs for fold creation
+        video_names = self.video_names[orig_indices]
+        video_ids = self.video_ids[orig_indices]
+        
+        # Filter augmented data if available
+        if self.X_aug is not None and y_aug_all is not None:
+            aug_indices = np.where((y_aug_all == class1) | (y_aug_all == class2))[0]
+            X_aug = self.X_aug[aug_indices]
+            y_aug = y_aug_all[aug_indices]
+            
+            # Remap augmented classes to 0 and 1
+            y_aug_binary = np.zeros_like(y_aug)
+            y_aug_binary[y_aug == class2] = 1
+            
+            video_names_aug = self.video_names_aug[aug_indices] if self.video_names_aug is not None else None
+            video_ids_aug = self.video_ids_aug[aug_indices] if self.video_ids_aug is not None else None
+        else:
+            X_aug = None
+            y_aug_binary = None
+            video_names_aug = None
+            video_ids_aug = None
+        
+        # Print class distribution
+        class_counts = np.bincount(y_binary)
+        print(f"Original class distribution: {class_counts}")
+        if y_aug_binary is not None:
+            aug_class_counts = np.bincount(y_aug_binary)
+            print(f"Augmented class distribution: {aug_class_counts}")
+        
+        # Create folds based on the specified strategy
+        if fold_strategy == 'aug_aware':
+            # For aug_aware strategy, we need to create folds based on video IDs
+            # and track which augmented samples belong to which video
+            folds = []
+            
+            # Get unique video IDs and their labels
+            unique_video_ids = np.unique(video_ids)
+            video_id_labels = []
+            
+            for vid in unique_video_ids:
+                if vid is None:
+                    continue
+                vid_mask = video_ids == vid
+                vid_label = np.bincount(y_binary[vid_mask]).argmax()
+                video_id_labels.append((vid, vid_label))
+            
+            # Filter out None values
+            video_id_labels = [(vid, label) for vid, label in video_id_labels if vid is not None]
+            
+            # Extract video IDs and labels
+            filtered_video_ids = np.array([vid for vid, _ in video_id_labels])
+            video_labels = np.array([label for _, label in video_id_labels])
+            
+            # Create stratified folds using video IDs
+            skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+            
+            for train_vid_idx, test_vid_idx in skf.split(filtered_video_ids, video_labels):
+                # Get video IDs for training and testing
+                train_vids = filtered_video_ids[train_vid_idx]
+                test_vids = filtered_video_ids[test_vid_idx]
+                
+                # Map video IDs back to indices in the filtered datasets
+                train_idx = np.array([i for i, vid in enumerate(video_ids) 
+                                   if vid is not None and vid in train_vids])
+                test_idx = np.array([i for i, vid in enumerate(video_ids) 
+                                  if vid is not None and vid in test_vids])
+                
+                # Get indices for augmented clips from training videos (if available)
+                aug_train_idx = []
+                if X_aug is not None and video_ids_aug is not None:
+                    for i, vid in enumerate(video_ids_aug):
+                        if vid in train_vids:
+                            aug_train_idx.append(i)
+                
+                # Store fold information
+                fold_info = {
+                    'train_idx': train_idx,
+                    'test_idx': test_idx,
+                    'aug_train_idx': np.array(aug_train_idx) if aug_train_idx else None
+                }
+                
+                folds.append(fold_info)
+        else:
+            # For other strategies, use standard cross-validation on binary labels
+            skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+            folds = []
+            for train_idx, test_idx in skf.split(X, y_binary):
+                folds.append((train_idx, test_idx))
+        
+        # Initialize results
+        results = {
+            'accuracy': [],
+            'auc': [],
+            'precision': [],
+            'recall': [],
+            'f1_score': [],
+            'predictions': [],
+            'true_labels': [],
+            'train_sizes': [],
+            'test_sizes': [],
+            'class_indices': class_indices  # Store the original class indices for reference
+        }
+        
+        # Train and evaluate
+        model = self.models[model_name]
+        
+        for fold_idx, fold in enumerate(folds):
+            print(f"Training fold {fold_idx+1}/{len(folds)}...")
+            
+            if fold_strategy == 'aug_aware':
+                # For aug_aware strategy, handle augmented clips specially
+                train_idx = fold['train_idx']
+                test_idx = fold['test_idx']
+                aug_train_idx = fold['aug_train_idx']
+                
+                # Get training and testing data
+                X_train_orig = X[train_idx]
+                y_train_orig = y_binary[train_idx]
+                X_test = X[test_idx]
+                y_test = y_binary[test_idx]
+                
+                # Include augmented clips in training if available, but limit by aug_per_video
+                if aug_train_idx is not None and len(aug_train_idx) > 0 and X_aug is not None:
+                    # Calculate percentage based on aug_per_video
+                    if aug_per_video < 0 or aug_per_video > 4:
+                        print(f"  Warning: aug_per_video must be between 0 and 4. Using aug_per_video=4 (100%)")
+                        percentage = 1.0
+                    elif aug_per_video == 0:
+                        # Skip augmentation completely
+                        percentage = 0.0
+                    else:
+                        percentage = aug_per_video * 0.25
+                    
+                    # Implement class-weighted sampling to address class imbalance
+                    # First, analyze the class distribution in original training set
+                    class_counts = np.bincount(y_train_orig)
+                    print(f"  Original class distribution: {class_counts}")
+                    
+                    # If all classes have samples, compute inverse frequency weights
+                    if np.all(class_counts > 0):
+                        # Compute inverse frequency for weighting (more weight to minority classes)
+                        class_weights = 1.0 / class_counts
+                        class_weights = class_weights / np.sum(class_weights)  # Normalize to sum to 1
+                        print(f"  Class weights for sampling: {np.round(class_weights, 3)}")
+                        
+                        # Group augmented indices by class
+                        aug_indices_by_class = {}
+                        for i in aug_train_idx:
+                            label = y_aug_binary[i]
+                            if label not in aug_indices_by_class:
+                                aug_indices_by_class[label] = []
+                            aug_indices_by_class[label].append(i)
+                        
+                        # Calculate how many samples to take from each class
+                        total_to_select = int(len(aug_train_idx) * percentage)
+                        samples_per_class = {}
+                        
+                        print(f"  Available augmented clips by class:")
+                        for label, indices in aug_indices_by_class.items():
+                            print(f"    Class {label}: {len(indices)} clips")
+                            # Calculate weighted number of samples (at least 1 if available)
+                            weight = class_weights[label]
+                            class_samples = max(1, int(total_to_select * weight))
+                            # Cap to available samples
+                            class_samples = min(class_samples, len(indices))
+                            samples_per_class[label] = class_samples
+                        
+                        # Select samples from each class
+                        limited_aug_idx = []
+                        print(f"  Selecting augmented clips by class (class-weighted sampling):")
+                        for label, count in samples_per_class.items():
+                            indices = aug_indices_by_class[label]
+                            # Shuffle to randomize selection
+                            np.random.shuffle(indices)
+                            # Take requested number of samples
+                            selected = indices[:count]
+                            limited_aug_idx.extend(selected)
+                            print(f"    Class {label}: {len(selected)}/{len(indices)} clips (weight={class_weights[label]:.3f})")
+                        
+                        # Ensure we respect the total percentage limit
+                        if len(limited_aug_idx) > total_to_select:
+                            np.random.shuffle(limited_aug_idx)
+                            limited_aug_idx = limited_aug_idx[:total_to_select]
+                            print(f"  Reduced to {total_to_select} clips to match requested percentage")
+                        elif len(limited_aug_idx) < total_to_select and len(aug_train_idx) > 0:
+                            remaining = total_to_select - len(limited_aug_idx)
+                            remaining_indices = [i for i in aug_train_idx if i not in limited_aug_idx]
+                            if remaining_indices:
+                                np.random.shuffle(remaining_indices)
+                                additional = remaining_indices[:min(remaining, len(remaining_indices))]
+                                limited_aug_idx.extend(additional)
+                                print(f"  Added {len(additional)} random clips to reach requested percentage")
+                        
+                        limited_aug_idx = np.array(limited_aug_idx)
+                        
+                    else:
+                        # Fallback to random sampling if not all classes have samples
+                        print("  Not all classes have samples in training set. Using random sampling.")
+                        all_aug_indices = np.array(aug_train_idx)
+                        np.random.shuffle(all_aug_indices)
+                        num_to_select = int(len(all_aug_indices) * percentage)
+                        limited_aug_idx = all_aug_indices[:num_to_select]
+                    
+                    # Now use the limited augmented indices
+                    X_train_aug = X_aug[limited_aug_idx]
+                    y_train_aug = y_aug_binary[limited_aug_idx]
+                    
+                    # Combine original and augmented data for training
+                    X_train = np.vstack((X_train_orig, X_train_aug))
+                    y_train = np.concatenate((y_train_orig, y_train_aug))
+                    
+                    # Report on augmentation and class distribution
+                    print(f"  Fold {fold_idx+1} training: {len(X_train_orig)} original clips + {len(X_train_aug)} augmented clips = {len(X_train)} total")
+                    print(f"  Using {percentage*100:.0f}% of available augmented clips ({len(X_train_aug)}/{len(aug_train_idx)})")
+                    
+                    # Print class distribution after augmentation
+                    aug_class_counts = np.bincount(y_train_aug)
+                    final_class_counts = np.bincount(y_train)
+                    print(f"  Augmented clips class distribution: {aug_class_counts}")
+                    print(f"  Final training data class distribution: {final_class_counts}")
+                else:
+                    X_train = X_train_orig
+                    y_train = y_train_orig
+                    print(f"  Fold {fold_idx+1} training: {len(X_train)} original clips (no augmented clips)")
+                    # Print class distribution
+                    class_counts = np.bincount(y_train)
+                    print(f"  Training data class distribution: {class_counts}")
+            else:
+                # For other strategies, use standard train/test split
+                train_idx, test_idx = fold
+                X_train = X[train_idx]
+                y_train = y_binary[train_idx]
+                X_test = X[test_idx]
+                y_test = y_binary[test_idx]
+                print(f"  Fold {fold_idx+1} training: {len(X_train)} clips")
+                
+                # Print class distribution
+                class_counts = np.bincount(y_train)
+                print(f"  Training data class distribution: {class_counts}")
+            
+            print(f"  Fold {fold_idx+1} testing: {len(X_test)} clips")
+            
+            # Store counts
+            results['train_sizes'].append(len(X_train))
+            results['test_sizes'].append(len(X_test))
+            
+            # Train model
+            model.fit(X_train, y_train)
+            
+            # Make predictions
+            y_pred = model.predict(X_test)
+            
+            # Calculate probability predictions
+            if hasattr(model, 'predict_proba'):
+                y_prob = model.predict_proba(X_test)[:, 1]  # Prob of class 1 for binary
+            else:
+                # For models without predict_proba, use a simple fallback
+                y_prob = y_pred
+            
+            # Calculate metrics
+            from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score
+            
+            accuracy = accuracy_score(y_test, y_pred)
+            
+            try:
+                auc = roc_auc_score(y_test, y_prob)
+            except Exception as e:
+                print(f"  Warning: Could not calculate AUC - {str(e)}")
+                auc = 0.0
+            
+            precision = precision_score(y_test, y_pred, zero_division=0)
+            recall = recall_score(y_test, y_pred, zero_division=0)
+            f1 = f1_score(y_test, y_pred, zero_division=0)
+            
+            # Store results
+            results['accuracy'].append(accuracy)
+            results['auc'].append(auc)
+            results['precision'].append(precision)
+            results['recall'].append(recall)
+            results['f1_score'].append(f1)
+            results['predictions'].extend(y_pred)
+            results['true_labels'].extend(y_test)
+            
+            print(f"  Fold {fold_idx+1} metrics: Acc={accuracy:.3f}, AUC={auc:.3f}, Prec={precision:.3f}, Rec={recall:.3f}, F1={f1:.3f}")
+        
+        # Calculate average metrics
+        results['mean_accuracy'] = np.mean(results['accuracy'])
+        results['std_accuracy'] = np.std(results['accuracy'])
+        results['mean_auc'] = np.mean(results['auc'])
+        results['std_auc'] = np.std(results['auc'])
+        results['mean_precision'] = np.mean(results['precision'])
+        results['std_precision'] = np.std(results['precision'])
+        results['mean_recall'] = np.mean(results['recall'])
+        results['std_recall'] = np.std(results['recall'])
+        results['mean_f1'] = np.mean(results['f1_score'])
+        results['std_f1'] = np.std(results['f1_score'])
+        
+        # Print average training/testing sizes and metrics
+        avg_train = np.mean(results['train_sizes'])
+        avg_test = np.mean(results['test_sizes'])
+        print(f"\nAverage training set size: {avg_train:.1f} clips")
+        print(f"Average testing set size: {avg_test:.1f} clips")
+        print(f"Mean accuracy: {results['mean_accuracy']:.3f} ± {results['std_accuracy']:.3f}")
+        print(f"Mean AUC: {results['mean_auc']:.3f} ± {results['std_auc']:.3f}")
+        print(f"Mean precision: {results['mean_precision']:.3f} ± {results['std_precision']:.3f}")
+        print(f"Mean recall: {results['mean_recall']:.3f} ± {results['std_recall']:.3f}")
+        print(f"Mean F1 score: {results['mean_f1']:.3f} ± {results['std_f1']:.3f}")
+        
+        return results 
