@@ -32,7 +32,15 @@ Key features:
 - Includes built-in classification models and metrics reporting
 - Handles training/test split creation with awareness of data augmentation
 - Controls augmentation percentage for training (25%, 50%, 75%, or 100%)
+- Implements class-weighted sampling for augmented clips to address class imbalance
 - Reports detailed training and testing statistics for each fold
+
+Class balancing strategy:
+- Analyzes class distribution in original training data
+- Computes inverse frequency weights for each class (giving more weight to minority classes)
+- Selects more augmented clips from underrepresented classes
+- Maintains overall augmentation percentage as specified by the user
+- Ensures final training data has more balanced class distribution
 
 Dependencies:
 - numpy, pandas, scikit-learn
@@ -580,18 +588,82 @@ class MarlinPainClassifier:
                     else:
                         percentage = aug_per_video * 0.25
                     
-                    # TODO: Implement a smarter sampling strategy to address class imbalance
-                    # - Sample more augmented clips from underrepresented classes
-                    # - Consider stratified sampling based on class distribution
-                    # - Could use sklearn.utils.resample with stratification for this purpose
+                    # Implement class-weighted sampling to address class imbalance
+                    # First, analyze the class distribution in original training set
+                    class_counts = np.bincount(y_train_orig[y_train_orig >= 0])
+                    print(f"  Original class distribution: {class_counts}")
                     
-                    # Shuffle all augmented indices to randomize selection
-                    all_aug_indices = np.array(aug_train_idx)
-                    np.random.shuffle(all_aug_indices)
-                    
-                    # Select the specified percentage of augmented clips
-                    num_to_select = int(len(all_aug_indices) * percentage)
-                    limited_aug_idx = all_aug_indices[:num_to_select]
+                    # If all classes have samples, compute inverse frequency weights
+                    if np.all(class_counts > 0):
+                        # Compute inverse frequency for weighting (more weight to minority classes)
+                        class_weights = 1.0 / class_counts
+                        class_weights = class_weights / np.sum(class_weights)  # Normalize to sum to 1
+                        print(f"  Class weights for sampling: {np.round(class_weights, 3)}")
+                        
+                        # Group augmented indices by class
+                        aug_indices_by_class = {}
+                        for i in aug_train_idx:
+                            label = y_aug[i]
+                            if label >= 0:  # Skip invalid labels
+                                if label not in aug_indices_by_class:
+                                    aug_indices_by_class[label] = []
+                                aug_indices_by_class[label].append(i)
+                        
+                        # Calculate how many samples to take from each class
+                        total_to_select = int(len(aug_train_idx) * percentage)
+                        samples_per_class = {}
+                        
+                        print(f"  Available augmented clips by class:")
+                        for label, indices in aug_indices_by_class.items():
+                            print(f"    Class {label}: {len(indices)} clips")
+                            # Calculate weighted number of samples (at least 1 if available)
+                            if label < len(class_weights):
+                                weight = class_weights[label]
+                                class_samples = max(1, int(total_to_select * weight))
+                                # Cap to available samples
+                                class_samples = min(class_samples, len(indices))
+                                samples_per_class[label] = class_samples
+                        
+                        # Select samples from each class
+                        limited_aug_idx = []
+                        print(f"  Selecting augmented clips by class (class-weighted sampling):")
+                        for label, count in samples_per_class.items():
+                            indices = aug_indices_by_class[label]
+                            # Shuffle to randomize selection
+                            np.random.shuffle(indices)
+                            # Take requested number of samples
+                            selected = indices[:count]
+                            limited_aug_idx.extend(selected)
+                            print(f"    Class {label}: {len(selected)}/{len(indices)} clips (weight={class_weights[label]:.3f})")
+                        
+                        # Ensure we respect the total percentage limit
+                        # If we have too many samples, randomly subsample
+                        if len(limited_aug_idx) > total_to_select:
+                            np.random.shuffle(limited_aug_idx)
+                            limited_aug_idx = limited_aug_idx[:total_to_select]
+                            print(f"  Reduced to {total_to_select} clips to match requested percentage")
+                        # If we have too few samples, add random samples
+                        elif len(limited_aug_idx) < total_to_select and len(aug_train_idx) > 0:
+                            remaining = total_to_select - len(limited_aug_idx)
+                            # Get indices we haven't already selected
+                            remaining_indices = [i for i in aug_train_idx if i not in limited_aug_idx]
+                            if remaining_indices:
+                                np.random.shuffle(remaining_indices)
+                                additional = remaining_indices[:min(remaining, len(remaining_indices))]
+                                limited_aug_idx.extend(additional)
+                                print(f"  Added {len(additional)} random clips to reach requested percentage")
+                        
+                        limited_aug_idx = np.array(limited_aug_idx)
+                        
+                    else:
+                        # Fallback to random sampling if not all classes have samples
+                        print("  Not all classes have samples in training set. Using random sampling.")
+                        # Shuffle all augmented indices to randomize selection
+                        all_aug_indices = np.array(aug_train_idx)
+                        np.random.shuffle(all_aug_indices)
+                        # Select the specified percentage of augmented clips
+                        num_to_select = int(len(all_aug_indices) * percentage)
+                        limited_aug_idx = all_aug_indices[:num_to_select]
                     
                     # Now use the limited augmented indices
                     X_train_aug = self.X_aug[limited_aug_idx]
@@ -601,12 +673,22 @@ class MarlinPainClassifier:
                     X_train = np.vstack((X_train_orig, X_train_aug))
                     y_train = np.concatenate((y_train_orig, y_train_aug))
                     
+                    # Report on augmentation and class distribution
                     print(f"  Fold {fold_idx+1} training: {len(X_train_orig)} original clips + {len(X_train_aug)} augmented clips = {len(X_train)} total")
                     print(f"  Using {percentage*100:.0f}% of available augmented clips ({len(X_train_aug)}/{len(aug_train_idx)})")
+                    
+                    # Print class distribution after augmentation
+                    aug_class_counts = np.bincount(y_train_aug[y_train_aug >= 0])
+                    final_class_counts = np.bincount(y_train[y_train >= 0])
+                    print(f"  Augmented clips class distribution: {aug_class_counts}")
+                    print(f"  Final training data class distribution: {final_class_counts}")
                 else:
                     X_train = X_train_orig
                     y_train = y_train_orig
                     print(f"  Fold {fold_idx+1} training: {len(X_train)} original clips (no augmented clips)")
+                    # Print class distribution
+                    orig_class_counts = np.bincount(y_train[y_train >= 0])
+                    print(f"  Training data class distribution: {orig_class_counts}")
             else:
                 # For other strategies, use standard train/test split
                 train_idx, test_idx = fold

@@ -11,6 +11,7 @@ Key features:
 - Support for multiple classification models and cross-validation strategies
 - Customizable class setups (3, 4, or 5 pain classes)
 - Augmentation-aware training with controlled augmentation percentages
+- Class-weighted sampling to address class imbalance in training data
 - Comprehensive results output with performance metrics and visualizations
 
 Usage example:
@@ -33,10 +34,12 @@ Parameters:
     --models: Specific models to evaluate (default: all available models)
     --seed: Random seed for reproducibility
     --aug_per_video: Controls percentage of augmented clips used (1=25%, 2=50%, 3=75%, 4=100%)
+                    Class-weighted sampling is applied to prioritize minority classes.
 
 TODO:
-- Consider implementing a smarter augmentation sampling strategy to address class imbalance issues
-  (e.g., sample more augmented clips from underrepresented classes to balance the training data)
+- Consider additional evaluation metrics for multi-class imbalanced data (e.g., macro-F1)
+- Explore other augmentation techniques to further improve minority class performance
+- Implement model selection based on balanced accuracy rather than standard accuracy
 """
 
 import os
@@ -271,6 +274,7 @@ def main():
             f.write("- Folds created using original videos only\n")
             f.write("- Videos with the same ID stay together in a fold\n")
             f.write(f"- When using folds for training, {args.aug_per_video * 25}% of augmented clips are included\n")
+            f.write("- Class-weighted sampling is used for augmented clips (more samples from minority classes)\n")
             f.write("- Only original clips are used for testing\n")
         elif args.fold_strategy == 'video_based':
             f.write("Video-based fold strategy:\n")
@@ -302,6 +306,7 @@ def main():
         print("- Folds created using original videos only")
         print("- Videos with the same ID stay together in a fold")
         print(f"- When using folds for training, {args.aug_per_video * 25}% of augmented clips are included")
+        print("- Class-weighted sampling is used for augmented clips (more samples from minority classes)")
         print("- Only original clips are used for testing\n")
     
     # Select models to evaluate
