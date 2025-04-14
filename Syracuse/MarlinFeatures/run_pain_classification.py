@@ -36,6 +36,7 @@ Parameters:
     --aug_per_video: Controls percentage of augmented clips used (0=None, 1=25%, 2=50%, 3=75%, 4=100%)
                     Class-weighted sampling is applied to prioritize minority classes.
     --binary_task: Specific binary classification task in format "class1,class2" (e.g., "0,4" to classify between class 0 and 4 only)
+    --binary_class_set: Which class set to use for binary classification (3, 4, or 5). If not specified, it will be determined automatically.
 
 TODO:
 - Consider additional evaluation metrics for multi-class imbalanced data (e.g., macro-F1)
@@ -112,6 +113,8 @@ def parse_args():
                         help='Proportion of augmented clips to use: 0=None, 1=25%%, 2=50%%, 3=75%%, 4=100%% (default: 1)')
     parser.add_argument('--binary_task', type=str, default=None,
                         help='Specific binary classification task in format "class1,class2" (e.g., "0,4" to classify between class 0 and 4 only)')
+    parser.add_argument('--binary_class_set', type=int, choices=[3, 4, 5], default=None,
+                        help='Which class set to use for binary classification (3, 4, or 5). If not specified, it will be determined automatically.')
     return parser.parse_args()
 
 def create_video_based_folds(video_names, labels, n_splits, random_state=42):
@@ -321,7 +324,22 @@ def main():
         binary_classes = args.binary_task.split(',')
         if len(binary_classes) != 2:
             raise ValueError("Binary task must specify exactly two classes separated by a comma (e.g., '0,4')")
-        subfolder_name = f"{args.model_name}_binary{args.binary_task}_{args.fold_strategy}_aug{args.aug_per_video}"
+        
+        # Determine class set for folder name
+        if args.binary_class_set:
+            class_set = args.binary_class_set
+            class_set_source = "explicit"
+        else:
+            max_class = max([int(c) for c in binary_classes])
+            if max_class <= 2:
+                class_set = 3
+            elif max_class <= 3:
+                class_set = 4
+            else:
+                class_set = 5
+            class_set_source = "auto"
+            
+        subfolder_name = f"{args.model_name}_binary{args.binary_task}_c{class_set}_{class_set_source}_{args.fold_strategy}_aug{args.aug_per_video}"
     else:
         subfolder_name = f"{args.model_name}_{args.n_classes}class_{args.fold_strategy}_aug{args.aug_per_video}"
     output_dir = os.path.join(args.output_dir, subfolder_name)
@@ -336,6 +354,17 @@ def main():
         
         if args.binary_task:
             f.write(f"- Classification task: Binary classification between classes {args.binary_task.replace(',', ' vs ')}\n")
+            if args.binary_class_set:
+                f.write(f"- Using {args.binary_class_set}-class label set (explicitly specified)\n")
+            else:
+                max_class = max([int(c) for c in args.binary_task.split(',')])
+                if max_class <= 2:
+                    class_set = 3
+                elif max_class <= 3:
+                    class_set = 4
+                else:
+                    class_set = 5
+                f.write(f"- Using {class_set}-class label set (automatically determined based on class indices)\n")
         else:
             f.write(f"- Number of classes: {args.n_classes}\n")
             
@@ -403,6 +432,7 @@ def main():
             results = classifier.train_model_binary(
                 model_name=model_name,
                 class_indices=binary_classes,
+                class_set=args.binary_class_set,
                 n_splits=args.n_splits,
                 fold_strategy=args.fold_strategy,
                 random_state=args.seed,

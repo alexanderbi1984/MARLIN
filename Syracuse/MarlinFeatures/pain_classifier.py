@@ -812,8 +812,8 @@ class MarlinPainClassifier:
         with open(input_path, 'r') as f:
             return json.load(f)
     
-    def train_model_binary(self, model_name: str, class_indices: List[int], n_splits: int = 3, 
-                          fold_strategy: str = 'stratified', random_state: int = 42,
+    def train_model_binary(self, model_name: str, class_indices: List[int], class_set: Optional[int] = None, 
+                          n_splits: int = 3, fold_strategy: str = 'stratified', random_state: int = 42,
                           aug_per_video: int = 1) -> Dict[str, Any]:
         """
         Train a model for binary classification between two specific classes.
@@ -821,6 +821,7 @@ class MarlinPainClassifier:
         Args:
             model_name: Name of the model to train
             class_indices: List of two class indices to include in binary classification
+            class_set: Which class set to use (3, 4, or 5). If None, will be determined automatically.
             n_splits: Number of cross-validation splits
             fold_strategy: Strategy for creating folds ('stratified', 'video_based', 'part_based', 'aug_aware')
             random_state: Random seed for reproducibility
@@ -840,20 +841,38 @@ class MarlinPainClassifier:
         class1, class2 = class_indices
         print(f"Binary classification between class {class1} and class {class2}")
         
-        # Determine which label set to use based on how many distinct classes we need
-        max_class = max(class1, class2)
-        if max_class <= 2:  # Both classes are in 3-class set
-            print("Using 3-class labels")
-            y_all = self.y_3
-            y_aug_all = self.y_3_aug
-        elif max_class <= 3:  # Both classes are in 4-class set
-            print("Using 4-class labels")
-            y_all = self.y_4
-            y_aug_all = self.y_4_aug
-        else:  # At least one class is in 5-class set
-            print("Using 5-class labels")
-            y_all = self.y_5
-            y_aug_all = self.y_5_aug
+        # Determine which label set to use
+        if class_set is not None:
+            # Use explicitly specified class set
+            if class_set == 3:
+                print(f"Using 3-class labels (explicitly specified)")
+                y_all = self.y_3
+                y_aug_all = self.y_3_aug
+            elif class_set == 4:
+                print(f"Using 4-class labels (explicitly specified)")
+                y_all = self.y_4
+                y_aug_all = self.y_4_aug
+            elif class_set == 5:
+                print(f"Using 5-class labels (explicitly specified)")
+                y_all = self.y_5
+                y_aug_all = self.y_5_aug
+            else:
+                raise ValueError(f"Invalid class set: {class_set}. Must be 3, 4, or 5.")
+        else:
+            # Automatically determine class set based on indices
+            max_class = max(class1, class2)
+            if max_class <= 2:  # Both classes are in 3-class set
+                print("Using 3-class labels (automatically determined)")
+                y_all = self.y_3
+                y_aug_all = self.y_3_aug
+            elif max_class <= 3:  # Both classes are in 4-class set
+                print("Using 4-class labels (automatically determined)")
+                y_all = self.y_4
+                y_aug_all = self.y_4_aug
+            else:  # At least one class is in 5-class set
+                print("Using 5-class labels (automatically determined)")
+                y_all = self.y_5
+                y_aug_all = self.y_5_aug
         
         # Filter data to include only the specified classes
         orig_indices = np.where((y_all == class1) | (y_all == class2))[0]
