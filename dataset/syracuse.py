@@ -41,46 +41,25 @@ class SyracuseLP(BioVidBase):
         temporal_reduction: str,
         name_list: List[str],
         metadata: Dict[str, Dict],
-        marlin_base_dir: str,          # Added: Path needed for MarlinFeatures
-        val_split_ratio: float = 0.15, # Ratio of *videos* for validation
-        test_split_ratio: float = 0.15, # Ratio of *videos* for testing
-        random_state: int = 42,        # For reproducibility of splits
     ):
-        super().__init__(root_dir, split, task, num_classes)
+        # Simplified super init assuming BioVidBase only needs minimal args
+        # super().__init__(root_dir, split, task, num_classes) # Call super if needed, adapt args
+        # Manually set necessary attributes if super is bypassed or insufficient
+        self.data_root = root_dir # Example of manual setting
+        self.split = split
+        self.task = task
+        self.num_classes = num_classes
+        
         self.feature_dir = feature_dir
         self.temporal_reduction = temporal_reduction
         self.name_list = name_list
         self.metadata = metadata
+
         print(f"SyracuseLP Dataset '{split}' initialized with {len(self.name_list)} clips.")
         if not self.metadata:
              print(f"Warning: Metadata dictionary for {split} dataset is empty!")
         elif not self.name_list:
              print(f"Warning: Name list for {split} dataset is empty!")
-        self.test_split_ratio = test_split_ratio
-        self.random_state = random_state
-        self.num_workers = num_workers
-        self.marlin_base_dir = marlin_base_dir # Store the base dir
-
-        # --- Data containers (will be populated in setup) ---
-        self.train_dataset = None
-        self.val_dataset = None
-        self.test_dataset = None
-        self.all_metadata = {} # To store metadata for all clips
-
-        # --- Initialize MarlinFeatures --- 
-        try:
-            print(f"Initializing MarlinFeatures with base directory: {self.marlin_base_dir}")
-            self.marlin_features = MarlinFeatures(self.marlin_base_dir)
-            print("MarlinFeatures initialized successfully.")
-        except FileNotFoundError as e:
-            print(f"Error initializing MarlinFeatures: {e}")
-            print("Please ensure the marlin_base_dir is correct and contains clips_json.json.")
-            # Decide if this should be a fatal error
-            # raise RuntimeError(f"Failed to initialize MarlinFeatures: {e}")
-            self.marlin_features = None # Indicate initialization failure
-        except Exception as e:
-             print(f"An unexpected error occurred during MarlinFeatures initialization: {e}")
-             self.marlin_features = None
 
     def _normalize_features(self, features: np.ndarray) -> np.ndarray:
         """
@@ -225,7 +204,6 @@ class SyracuseDataModule(LightningDataModule):
         num_classes: int,
         batch_size: int,
         feature_dir: str,
-        marlin_base_dir: str,          # Moved non-default arg before defaults
         temporal_reduction: str = "mean",
         val_split_ratio: float = 0.15,
         test_split_ratio: float = 0.15,
@@ -243,28 +221,12 @@ class SyracuseDataModule(LightningDataModule):
         self.test_split_ratio = test_split_ratio
         self.random_state = random_state
         self.num_workers = num_workers
-        self.marlin_base_dir = marlin_base_dir # Store the base dir
 
         # --- Data containers (will be populated in setup) ---
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
         self.all_metadata = {} # To store metadata for all clips
-
-        # --- Initialize MarlinFeatures --- 
-        try:
-            print(f"Initializing MarlinFeatures with base directory: {self.marlin_base_dir}")
-            self.marlin_features = MarlinFeatures(self.marlin_base_dir)
-            print("MarlinFeatures initialized successfully.")
-        except FileNotFoundError as e:
-            print(f"Error initializing MarlinFeatures: {e}")
-            print("Please ensure the marlin_base_dir is correct and contains clips_json.json.")
-            # Decide if this should be a fatal error
-            # raise RuntimeError(f"Failed to initialize MarlinFeatures: {e}")
-            self.marlin_features = None # Indicate initialization failure
-        except Exception as e:
-             print(f"An unexpected error occurred during MarlinFeatures initialization: {e}")
-             self.marlin_features = None
 
     def _load_and_prepare_metadata(self) -> bool:
         # --- Use initialized MarlinFeatures instance ---
