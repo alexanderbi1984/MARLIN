@@ -225,6 +225,7 @@ class SyracuseDataModule(LightningDataModule):
         num_classes: int,
         batch_size: int,
         feature_dir: str,
+        marlin_base_dir: str,          # Moved non-default arg before defaults
         temporal_reduction: str = "mean",
         val_split_ratio: float = 0.15,
         test_split_ratio: float = 0.15,
@@ -242,11 +243,28 @@ class SyracuseDataModule(LightningDataModule):
         self.test_split_ratio = test_split_ratio
         self.random_state = random_state
         self.num_workers = num_workers
+        self.marlin_base_dir = marlin_base_dir # Store the base dir
 
+        # --- Data containers (will be populated in setup) ---
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
-        self.all_metadata = {}
+        self.all_metadata = {} # To store metadata for all clips
+
+        # --- Initialize MarlinFeatures --- 
+        try:
+            print(f"Initializing MarlinFeatures with base directory: {self.marlin_base_dir}")
+            self.marlin_features = MarlinFeatures(self.marlin_base_dir)
+            print("MarlinFeatures initialized successfully.")
+        except FileNotFoundError as e:
+            print(f"Error initializing MarlinFeatures: {e}")
+            print("Please ensure the marlin_base_dir is correct and contains clips_json.json.")
+            # Decide if this should be a fatal error
+            # raise RuntimeError(f"Failed to initialize MarlinFeatures: {e}")
+            self.marlin_features = None # Indicate initialization failure
+        except Exception as e:
+             print(f"An unexpected error occurred during MarlinFeatures initialization: {e}")
+             self.marlin_features = None
 
     def _load_and_prepare_metadata(self) -> bool:
         # --- Use initialized MarlinFeatures instance ---
