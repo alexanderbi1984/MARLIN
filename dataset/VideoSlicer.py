@@ -1,3 +1,81 @@
+"""
+VideoSlicer.py
+
+A utility script for slicing videos into smaller clips with overlapping portions.
+This script is designed to process video files in bulk, cutting them into segments
+of specified duration with configurable overlap between segments.
+
+Key Features:
+- Process single videos or entire directories of videos
+- Recursive directory processing (optional)
+- Maintains original directory structure in output
+- Supports multiple video formats (.mp4, .mov)
+- Configurable clip duration and overlap
+- High-quality video processing with H.264 codec
+- Proper audio handling with AAC codec
+- Progress reporting and error handling
+
+Functions:
+    slice_video(input_path, output_dir, clip_duration=5, overlap=1):
+        Slice a single video into clips of specified duration with overlap.
+        
+        Args:
+            input_path (str): Path to the input video file
+            output_dir (str): Directory to save the output clips
+            clip_duration (int): Duration of each clip in seconds (default: 5)
+            overlap (int): Overlap between consecutive clips in seconds (default: 1)
+            
+        Returns:
+            None
+            
+        Output:
+            Creates multiple video clips in the output directory, named as:
+            {original_name}_clip_{number}.mp4
+
+    process_directory(input_dir, output_dir, clip_duration=5, overlap=1, recursive=True):
+        Process all video files in a directory (and optionally its subdirectories).
+        
+        Args:
+            input_dir (str): Input directory containing video files
+            output_dir (str): Directory to save the output clips
+            clip_duration (int): Duration of each clip in seconds (default: 5)
+            overlap (int): Overlap between consecutive clips in seconds (default: 1)
+            recursive (bool): Whether to process subdirectories recursively (default: True)
+            
+        Returns:
+            None
+            
+        Output:
+            Creates a directory structure matching the input, with sliced video clips
+            in each corresponding output directory.
+
+Command Line Usage:
+    python VideoSlicer.py --input_dir /path/to/videos --output_dir /path/to/output 
+                          --duration 10 --overlap 2 [--no-recursive]
+
+Arguments:
+    --input_dir: Directory containing video files (required)
+    --output_dir: Directory to save the clips (required)
+    --duration: Duration of each clip in seconds (default: 5)
+    --overlap: Overlap between consecutive clips in seconds (default: 1)
+    --no-recursive: Flag to disable recursive directory processing
+
+Dependencies:
+    - ffmpeg: Must be installed and available in system PATH
+    - ffprobe: Must be installed and available in system PATH
+
+Example:
+    To slice all videos in a directory into 10-second clips with 2-second overlaps:
+    python VideoSlicer.py --input_dir ./videos --output_dir ./clips --duration 10 --overlap 2
+
+Notes:
+    - Supported video formats: .mp4, .mov (case insensitive)
+    - Output videos use H.264 video codec and AAC audio codec
+    - Original directory structure is preserved in the output
+    - Progress is reported for each video being processed
+    - Errors are caught and reported without stopping the entire process
+"""
+
 import os
 import argparse
 import subprocess
@@ -93,18 +171,20 @@ def process_directory(input_dir, output_dir, clip_duration=5, overlap=1, recursi
     # Create a Path object for the input directory
     input_path = Path(input_dir)
 
-    # Pattern to match video files (case insensitive)
-    patterns = ['*.mp4', '*.mov', '*.MP4', '*.MOV']
-
-    # Get all video files
+    # Use a single pattern with case-insensitive matching
+    # This avoids counting the same files twice due to case differences
+    video_files = []
+    
     if recursive:
-        video_files = []
-        for pattern in patterns:
-            video_files.extend(list(input_path.glob(f"**/{pattern}")))
+        # For recursive search, use rglob with a case-insensitive pattern
+        for file_path in input_path.rglob("*"):
+            if file_path.suffix.lower() in ['.mp4', '.mov']:
+                video_files.append(file_path)
     else:
-        video_files = []
-        for pattern in patterns:
-            video_files.extend(list(input_path.glob(pattern)))
+        # For non-recursive search, use glob with a case-insensitive pattern
+        for file_path in input_path.glob("*"):
+            if file_path.suffix.lower() in ['.mp4', '.mov']:
+                video_files.append(file_path)
 
     if not video_files:
         print(f"No video files found in '{input_dir}'")
