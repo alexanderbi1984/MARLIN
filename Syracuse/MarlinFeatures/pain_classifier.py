@@ -1,3 +1,55 @@
+"""
+Pain Classifier Module
+
+This module provides functionality for pain classification from video clips using pre-extracted features.
+It implements robust machine learning approaches for multiclass and binary pain level classification
+with cross-validation, class balancing, and performance evaluation.
+
+Key Features:
+-----------
+- Loads pre-extracted MARLIN features from .npy files for machine learning classification
+- Supports multiple pain classification schemes (3, 4, or 5 class configurations)
+- Implements various cross-validation fold creation strategies:
+  * stratified - balanced class distribution across folds
+  * video_based - ensures clips from same video stay together
+  * part_based - ensures clips from same video part stay together
+  * aug_aware - creates folds with original videos while allowing augmented versions in training
+- Provides comprehensive machine learning models including:
+  * Linear models (Logistic Regression, Ridge Classifier)
+  * SVM models with different kernels (linear, RBF, polynomial, sigmoid)
+  * Neural networks (MLPs with various architectures)
+  * Custom Lasso regression classifier
+- Implements intelligent augmentation handling:
+  * Controls augmentation percentage (0%, 25%, 50%, 75%, or 100%)
+  * Employs class-weighted sampling for augmented clips to address class imbalance
+  * Maintains data integrity by keeping related clips together
+- Supports binary classification between any two pain classes
+- Provides detailed training statistics and evaluation metrics:
+  * Accuracy, AUC, precision, recall, F1 score
+  * Per-fold and average performance reporting
+  * Training/testing set distribution analysis
+
+Classes:
+-------
+- LassoClassifier: Custom classifier using Lasso regression, implementing scikit-learn's
+  estimator interface with multiclass support via one-vs-rest approach
+- MarlinPainClassifier: Main classifier class that handles data loading, fold creation,
+  model training, and evaluation for pain classification tasks
+
+Implementation Details:
+---------------------
+- Uses MarlinFeatures class to load pre-extracted features from a MARLIN base directory
+- Intelligently handles class imbalance through weighted sampling of augmented data
+- Supports various fold creation strategies to prevent data leakage
+- Implements cross-validation with comprehensive performance metrics
+- Provides methods for saving and loading classification results
+
+Dependencies:
+-----------
+- numpy, pandas, scikit-learn for data handling and ML algorithms
+- MarlinFeatures class for loading pre-extracted clip features
+"""
+
 import os
 import numpy as np
 import pandas as pd
@@ -17,35 +69,6 @@ import pickle
 import torch
 from pathlib import Path
 from marlin_features import MarlinFeatures
-
-"""
-Pain Classifier Module
-
-This module provides the MarlinPainClassifier class for pain classification from video clips.
-The class handles loading pre-extracted features from a marlin_base_dir, creating stratified
-cross-validation folds, and training/evaluating machine learning models.
-
-Key features:
-- Loads clip metadata and pre-extracted features from .npy files
-- Supports different pain classification schemes (3, 4, or 5 classes)
-- Provides multiple fold creation strategies: stratified, video-based, part-based, and augmentation-aware
-- Includes built-in classification models and metrics reporting
-- Handles training/test split creation with awareness of data augmentation
-- Controls augmentation percentage for training (25%, 50%, 75%, or 100%)
-- Implements class-weighted sampling for augmented clips to address class imbalance
-- Reports detailed training and testing statistics for each fold
-
-Class balancing strategy:
-- Analyzes class distribution in original training data
-- Computes inverse frequency weights for each class (giving more weight to minority classes)
-- Selects more augmented clips from underrepresented classes
-- Maintains overall augmentation percentage as specified by the user
-- Ensures final training data has more balanced class distribution
-
-Dependencies:
-- numpy, pandas, scikit-learn
-- marlin_features.MarlinFeatures for feature extraction
-"""
 
 class LassoClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, alpha=1.0, max_iter=1000, random_state=None):
