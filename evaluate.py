@@ -1,3 +1,76 @@
+"""
+MARLIN Model Evaluation Script
+
+This script handles training and evaluation for different datasets using MARLIN features
+or fine-tuning MARLIN models. It currently supports:
+
+1. BioVid Dataset (Linear Probing or Fine-tuning with Classifier)
+2. Syracuse Dataset (Linear Probing with CORAL Ordinal Classifier - LightningMLP)
+
+Workflow:
+----------
+1. Reads a configuration YAML file specified by `--config`.
+2. Determines the dataset ('biovid' or 'syracuse') from the config.
+3. Initializes the appropriate DataModule and Model based on the dataset and config.
+4. Trains the model (unless `--predict_only` is used).
+5. Evaluates the best checkpoint from training on the test set.
+6. Prints evaluation metrics and optionally saves predictions.
+
+Syracuse Dataset with CORAL (`LightningMLP`) Usage:
+--------------------------------------------------
+
+Command-line Arguments:
+
+*   `--config PATH`: **Required**. Path to the YAML configuration file.
+*   `--data_path PATH`: **Required**. Root directory of the Syracuse dataset. This directory
+    should contain the feature subdirectory specified in the config's `backbone` field.
+*   `--marlin_base_dir PATH`: **Required**. Path to the directory containing the
+    `clips_json.json` metadata file used by `MarlinFeatures`.
+*   `--n_gpus N`: (Optional) Number of GPUs (default: 1). Use 0 for CPU.
+*   `--batch_size N`: (Optional) Batch size (default: 32).
+*   `--num_workers N`: (Optional) Dataloader workers (default: 4).
+*   `--epochs N`: (Optional) Max training epochs (default: 100).
+*   `--precision P`: (Optional) Training precision ('32', '16', 'bf16') (default: '32').
+*   `--val_split_ratio F`: (Optional) Ratio of videos for validation (default: 0.15).
+*   `--test_split_ratio F`: (Optional) Ratio of videos for testing (default: 0.15).
+*   `--predict_only`: (Optional) Flag to skip metric calculation and only save predictions.
+    Requires `--output_path`.
+*   `--output_path PATH`: (Optional) Path to save prediction CSV file when using
+    `--predict_only` (defaults to 'syracuse_predictions.csv').
+
+Configuration YAML File Keys (`--config`):
+
+*   `dataset: syracuse` (**Required**)
+*   `model_name: <your_run_name>` (**Required**): Name for checkpoints/logs.
+*   `backbone: <feature_dir_name>` (**Required**): Name of the feature directory
+    (relative to `--data_path`) containing `.npy` files.
+    Example: `marlin_vit_small_patch16_224`
+*   `temporal_reduction: <mean|max|min>` (**Required**): How to aggregate the
+    (4, 768) features along the time dimension. The `LightningMLP` model
+    expects the resulting (768,) feature vector per sample.
+*   `learning_rate: <float>` (**Required**): Learning rate for the CORAL head.
+*   `task: multiclass` (**Required**): Tells the DataModule to fetch ordinal labels
+    (e.g., 'class_3', 'class_5') based on `num_classes`.
+*   `num_classes: <int>` (**Required**): Number of ordinal levels/classes (e.g., 3, 4, 5).
+    Determines the model output size and which label column is used.
+*   `finetune: false` (Recommended): Explicitly state it's linear probing.
+
+Example Command:
+
+```bash
+python evaluate.py \
+    --config configs/syracuse_coral_5cls.yaml \
+    --data_path /path/to/syracuse_features_root \
+    --marlin_base_dir /path/to/syracuse_metadata \
+    --n_gpus 1 \
+    --batch_size 64 \
+    --epochs 50
+```
+
+Note: The `predict_from_features` mode (triggered by providing `--feature_dir`,
+`--checkpoint_path`, and `--output_path`) is separate and currently commented out
+in the main execution block.
+"""
 import argparse
 import torch
 torch.set_float32_matmul_precision('high')
@@ -6,19 +79,21 @@ import torch
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from tqdm.auto import tqdm
-from torch.nn.functional import softmax
+from torch.nn.functional import softmax, sigmoid
 import pandas as pd
 from dataset.celebv_hq import CelebvHqDataModule
 from dataset.biovid import BioVidDataModule
+from dataset.syracuse import SyracuseDataModule
 from model.config import resolve_config
 # from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import read_yaml
 from model.classifier import Classifier
+from model.CORAL import LightningMLP
+from coral_pytorch.dataset import proba_to_label
 from util.earlystop_lr import EarlyStoppingLR
 from util.lr_logger import LrLogger
 from util.seed import Seed
 from util.system_stats_logger import SystemStatsLogger
-from torch.nn.functional import softmax
 from sklearn.metrics import roc_auc_score, confusion_matrix, classification_report, mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
 from tqdm import tqdm
@@ -108,7 +183,6 @@ def train_celebvhq(args, config):
 
 def train_biovid(args, config):
     data_path = args.data_path
-    resume_ckpt = args.resume
     n_gpus = args.n_gpus
     max_epochs = args.epochs
 
@@ -162,10 +236,6 @@ def train_biovid(args, config):
                 temporal_reduction=config["temporal_reduction"]
             )
 
-    if args.skip_train:
-        dm.setup()
-        return resume_ckpt, dm
-
     strategy = 'auto' if n_gpus <= 1 else "ddp"
     accelerator = "cpu" if n_gpus == 0 else "gpu"
 
@@ -184,30 +254,23 @@ def train_biovid(args, config):
         filename=ckpt_filename,
         monitor=ckpt_monitor,
         mode="max")
-## the way to resume training from a checkpoint has changed. The resume_from_checkpoint argument was removed in favor of a different approach.
-    # trainer = Trainer(log_every_n_steps=1, devices=n_gpus, accelerator=accelerator, benchmark=True,
-    #     logger=True, precision=precision, max_epochs=max_epochs,
-    #     strategy=strategy, resume_from_checkpoint=resume_ckpt,
-    #     callbacks=[ckpt_callback, LrLogger(), EarlyStoppingLR(1e-6), SystemStatsLogger()])
-    # trainer.fit(model, dm)
-    # Initialize the Trainer
+
     trainer = Trainer(
-        log_every_n_steps=1,  # Log every n steps
-        devices=n_gpus,  # Number of GPUs to use
-        accelerator=accelerator,  # Accelerator type (e.g., 'gpu', 'cpu')
-        benchmark=True,  # Enable benchmark mode
-        logger=True,  # Whether to log
-        precision=precision,  # Precision (e.g., 16 or 32)
-        max_epochs=max_epochs,  # Maximum number of epochs
-        strategy=strategy,  # Distributed strategy
-        callbacks=[ckpt_callback, LrLogger(), EarlyStoppingLR(1e-8), SystemStatsLogger()]  # List of callbacks
+        log_every_n_steps=1,
+        devices=n_gpus,
+        accelerator=accelerator,
+        benchmark=True,
+        logger=True,
+        precision=precision,
+        max_epochs=max_epochs,
+        strategy=strategy,
+        callbacks=[ckpt_callback, LrLogger(), EarlyStoppingLR(1e-8), SystemStatsLogger()]
     )
 
-    # Fit the model, passing the checkpoint path if resuming training
-    if resume_ckpt:  # Check if a checkpoint path is provided
-        trainer.fit(model, dm, ckpt_path=resume_ckpt)  # Resume training from the checkpoint
-    else:
-        trainer.fit(model, dm)  # Start training from scratch
+    print("Starting BioVid training from scratch...")
+    trainer.fit(model, dm)
+
+    print(f"Training finished. Best model checkpoint: {ckpt_callback.best_model_path}")
     return ckpt_callback.best_model_path, dm
 
 def evaluate_celebvhq(args, ckpt, dm):
@@ -594,6 +657,267 @@ def evaluate_biovid(args, ckpt, dm, config):
 
     return results
 
+def train_syracuse(args, config):
+    print("--- Starting Syracuse Training --- ")
+    data_path = args.data_path # root_dir for SyracuseDataModule
+    n_gpus = args.n_gpus
+    max_epochs = args.epochs
+
+    # Syracuse uses feature-based approach (Linear Probing)
+    finetune = False # Hardcoded as SyracuseDataModule is for features
+    learning_rate = config["learning_rate"]
+    task = config["task"]
+
+    # For CORAL (LightningMLP), num_classes is the primary parameter defining the output structure.
+    # The 'task' variable might still be used by the DataModule to fetch the correct label column.
+    num_classes = config.get("num_classes")
+    if num_classes is None:
+         raise ValueError("config['num_classes'] must be specified in the config file for the Syracuse/CORAL workflow.")
+    if not isinstance(num_classes, int) or num_classes <= 1:
+         raise ValueError(f"config['num_classes'] must be an integer greater than 1 for CORAL. Found: {num_classes}")
+         
+    print(f"Using {num_classes} classes/levels for CORAL model.")
+
+    # Instantiate LightningMLP model for CORAL
+    print(f"Instantiating LightningMLP model with lr={learning_rate}")
+    model = LightningMLP(
+        num_classes=num_classes,
+        learning_rate=learning_rate,
+        distributed=args.n_gpus > 1
+    )
+
+    # Instantiate SyracuseDataModule
+    print("Instantiating SyracuseDataModule...")
+    if not args.marlin_base_dir:
+        raise ValueError("Missing required argument: --marlin_base_dir must be provided for Syracuse dataset.")
+
+    dm = SyracuseDataModule(
+        root_dir=data_path,
+        task=task,
+        num_classes=num_classes,
+        batch_size=args.batch_size,
+        feature_dir=config["backbone"], # Directory where .npy features are stored (relative to root_dir)
+        temporal_reduction=config["temporal_reduction"],
+        marlin_base_dir=args.marlin_base_dir, # Path containing clips_json.json etc.
+        val_split_ratio=args.val_split_ratio,
+        test_split_ratio=args.test_split_ratio,
+        random_state=42, # Or use args.seed if available
+        num_workers=args.num_workers
+    )
+
+    strategy = 'auto' if n_gpus <= 1 else "ddp"
+    accelerator = "cpu" if n_gpus == 0 else "gpu"
+
+    # CORAL typically uses MAE for validation monitoring
+    ckpt_monitor = "val_mae" # Changed monitor metric
+    mode = "min" # Minimize MAE
+    ckpt_filename = config["model_name"] + f"-syracuse-{{epoch}}-{{{ckpt_monitor}:.3f}}"
+
+    try:
+        precision = int(args.precision)
+    except ValueError:
+        precision = args.precision
+
+    ckpt_callback = ModelCheckpoint(
+        dirpath=f"ckpt/{config['model_name']}_syracuse", # Add suffix to ckpt dir
+        save_last=True,
+        filename=ckpt_filename,
+        monitor=ckpt_monitor,
+        mode=mode # Use 'min' for regression (MSE), 'max' otherwise (AUC)
+    )
+
+    # Use a reasonable patience for EarlyStopping, e.g., 10 epochs
+    early_stop_patience = 10
+    print(f"Using EarlyStopping with patience={early_stop_patience}, monitoring '{ckpt_monitor}' ({mode})")
+
+    trainer = Trainer(
+        log_every_n_steps=1,
+        devices=n_gpus,
+        accelerator=accelerator,
+        benchmark=True,
+        logger=True,
+        precision=precision,
+        max_epochs=max_epochs,
+        strategy=strategy,
+        callbacks=[
+            ckpt_callback,
+            LrLogger(),
+            EarlyStoppingLR(patience=early_stop_patience, monitor=ckpt_monitor, mode=mode), # Monitor val_mae
+            SystemStatsLogger()
+        ]
+    )
+
+    # Always start training from scratch
+    print("Starting Syracuse training from scratch...")
+    trainer.fit(model, dm)
+
+    print(f"Syracuse training finished. Best model checkpoint: {ckpt_callback.best_model_path}")
+    return ckpt_callback.best_model_path, dm
+
+def evaluate_syracuse(args, ckpt, dm, config):
+    print("--- Starting Syracuse Evaluation --- ")
+    print(f"Loading checkpoint: {ckpt}")
+
+    try:
+        # Load the LightningMLP model from checkpoint
+        model = LightningMLP.load_from_checkpoint(ckpt)
+    except Exception as e:
+        print(f"Error loading checkpoint {ckpt}: {e}")
+        # Attempt to load ignoring strict=False if it might be a partial save
+        try:
+             print("Attempting to load checkpoint with strict=False")
+             model = LightningMLP.load_from_checkpoint(ckpt, strict=False)
+        except Exception as e2:
+             print(f"Failed to load checkpoint even with strict=False: {e2}")
+             raise RuntimeError(f"Could not load checkpoint: {ckpt}")
+
+    accelerator = "cpu" if args.n_gpus == 0 else "gpu"
+    trainer = Trainer(
+        log_every_n_steps=1,
+        devices=1 if args.n_gpus > 0 else 0,
+        accelerator=accelerator,
+        benchmark=True,
+        logger=False,
+        enable_checkpointing=False,
+    )
+    Seed.set(42)
+    model.eval()
+    task = config["task"]
+    num_classes = model.num_classes # Get num_classes from the loaded model
+
+    # --- Prediction Phase --- 
+    print("Running prediction on the test set (manual loop for CORAL)...")
+    # Manual prediction loop for CORAL model
+    all_preds = [] 
+    all_probas = [] # Store probabilities if needed
+    all_logits = [] # Store raw logits if needed
+    all_true_labels = []
+    test_loader = dm.test_dataloader()
+
+    with torch.no_grad():
+        for batch in tqdm(test_loader, desc="Predicting"): 
+            features, true_labels = batch
+            features = features.to(accelerator)
+
+            # Forward pass to get logits
+            logits = model(features)
+            
+            # Convert logits to probabilities and then to labels using CORAL logic
+            probas = torch.sigmoid(logits)
+            predicted_labels = proba_to_label(probas)
+
+            all_preds.append(predicted_labels.cpu())
+            all_true_labels.append(true_labels.cpu()) # Keep original labels
+            # Optionally store logits/probas if needed for analysis
+            all_logits.append(logits.cpu())
+            all_probas.append(probas.cpu())
+
+    if not all_preds:
+        print("Error: Prediction list is empty after manual loop.")
+        return {}
+        
+    preds_tensor = torch.cat(all_preds)
+    ys = torch.cat(all_true_labels)
+    logits_tensor = torch.cat(all_logits)
+    probas_tensor = torch.cat(all_probas)
+
+    # --- Ground Truth Collection --- 
+    # Ground truth (ys) collected during the prediction loop above
+     
+    # Ensure preds and ys have compatible shapes/lengths
+    if preds_tensor.shape[0] != ys.shape[0]:
+        print(f"Warning: Mismatch between number of predictions ({preds_tensor.shape[0]}) and ground truth labels ({ys.shape[0]}). Check dataloader/prediction process.")
+        # Attempt to truncate to the shorter length
+        min_len = min(preds_tensor.shape[0], ys.shape[0])
+        preds_tensor = preds_tensor[:min_len]
+        ys = ys[:min_len]
+        if min_len == 0:
+            print("Error: No matching predictions and labels found.")
+            return {}
+
+    # --- Prediction Post-processing & Saving (if predict_only) --- 
+    if args.predict_only:
+        print("Predict only mode: Saving predictions...")
+        # For CORAL, the direct prediction is the label from proba_to_label
+        pred_classes = preds_tensor # Already calculated labels
+        raw_logits_np = logits_tensor.cpu().numpy() # Save logits
+        probas_np = probas_tensor.cpu().numpy() # Save sigmoid probabilities
+
+        # Assuming dm.test_dataset.name_list contains filenames corresponding to ys/preds
+        filenames = dm.test_dataset.name_list if hasattr(dm, 'test_dataset') and hasattr(dm.test_dataset, 'name_list') else [f"item_{i}" for i in range(len(ys))]
+        if len(filenames) != len(ys):
+             print(f"Warning: Filename list length ({len(filenames)}) doesn't match label count ({len(ys)}). Using generic names.")
+             filenames = [f"item_{i}" for i in range(len(ys))]
+
+        results_df = pd.DataFrame({
+            'filename': filenames,
+            'true_label': ys.cpu().numpy().tolist(),
+            'predicted_label': pred_classes.tolist(),
+            'raw_logits': raw_logits_np.tolist(),
+            'probabilities': probas_np.tolist(), # Sigmoid outputs from CORAL layer
+        })
+        results_df.to_csv(args.output_path or 'syracuse_predictions.csv', index=False)
+        print(f"Predictions saved to {args.output_path or 'syracuse_predictions.csv'}")
+        # Return metrics calculation part if needed, or just the df
+        # For predict_only, maybe return basic info or the df itself
+        return {"status": "Predictions saved", "path": args.output_path or 'syracuse_predictions.csv'}
+
+    # --- Metrics Calculation --- 
+    print("Calculating evaluation metrics...")
+    results = {}
+    y_true_np = ys.cpu().numpy()
+
+    # CORAL is for ordinal classification (task should be multiclass conceptually)
+    if task == "multiclass" or task == "regression" or task == "binary": # Handle all cases, but metrics differ
+        print(f"Calculating metrics for task: {task} using CORAL predictions...")
+        pred_classes = preds_tensor.cpu().numpy()
+
+        # --- Key Metric: MAE ---
+        mae = mean_absolute_error(y_true_np, pred_classes)
+        results['mae'] = mae
+        print(f"  Mean Absolute Error (MAE): {mae:.4f}")
+        
+        # --- Accuracy ---
+        acc = np.mean(pred_classes == y_true_np)
+        results['accuracy'] = acc
+        print(f"  Accuracy: {acc:.4f}")
+
+        # --- AUC (Not standard for CORAL, skip or use with caution) ---
+        # probas_np = probas_tensor.cpu().numpy()
+        # try:
+        #      # Calculate AUC if needed, but interpret carefully
+        #      # auc = roc_auc_score(y_true_np, probas_np, multi_class='ovr', average='weighted') 
+        #      # print(f"  AUC (Weighted OvR - experimental): {auc:.4f}")
+        #      # results['auc_experimental'] = auc
+        # except ValueError as e:
+        #      print(f"  AUC calculation failed: {e}")
+        print("  AUC calculation skipped (not standard for CORAL output).")
+
+        # Confusion Matrix & Classification Report
+        print("\nConfusion Matrix:")
+        cm = confusion_matrix(y_true_np, pred_classes)
+        print(cm)
+        results['confusion_matrix'] = cm.tolist()
+
+        print("\nClassification Report:")
+        target_names = [f"Class_{i}" for i in range(num_classes)] if task == "multiclass" else ["Class_0", "Class_1"]
+        # Ensure labels in report match actual classes present
+        unique_labels = np.unique(np.concatenate((y_true_np, pred_classes))) 
+        filtered_target_names = [f"Class_{i}" for i in unique_labels]
+        try:
+             report = classification_report(y_true_np, pred_classes, labels=unique_labels, target_names=filtered_target_names, output_dict=True, zero_division=0)
+             print(classification_report(y_true_np, pred_classes, labels=unique_labels, target_names=filtered_target_names, zero_division=0))
+             results['classification_report'] = report
+        except Exception as e:
+            print(f"Could not generate classification report: {e}")
+            results['classification_report'] = {}
+
+    else:
+        raise ValueError(f"Unsupported task type: {task}")
+
+    print("--- Syracuse Evaluation Complete ---")
+    return results
+
 def predict_from_features(args, config):
     """
     Make predictions using pre-extracted MARLIN features.
@@ -692,51 +1016,79 @@ def predict_from_features(args, config):
     return results_df
 
 def evaluate(args):
+    print(f"Loading config from: {args.config}")
     config = read_yaml(args.config)
     dataset_name = config["dataset"]
+    print(f"Dataset specified in config: {dataset_name}")
 
     if dataset_name == "celebvhq":
-        ckpt, dm = train_celebvhq(args, config)
-        evaluate_celebvhq(args, ckpt, dm)
+        print("Running evaluation for CelebVHQ...")
+        # ckpt, dm = train_celebvhq(args, config)
+        # evaluate_celebvhq(args, ckpt, dm)
+        print("CelebVHQ part currently commented out.")
+        pass
     elif dataset_name == "biovid":
-        # implement biovid evaluation here
+        print("Running evaluation for BioVid...")
         ckpt, dm = train_biovid(args, config)
-        evaluate_biovid(args, ckpt, dm, config)
-        # pass
-
+        if not args.predict_only:
+            evaluate_biovid(args, ckpt, dm, config)
+        else:
+             # Handle predict_only for biovid if needed, or rely on the evaluate_biovid logic
+             evaluate_biovid(args, ckpt, dm, config) # evaluate_biovid handles predict_only
+    elif dataset_name == "syracuse": # Added Syracuse block
+        print("Running evaluation for Syracuse...")
+        ckpt, dm = train_syracuse(args, config)
+        # Evaluate the best checkpoint saved from the training run
+        if ckpt: # Ensure training produced a checkpoint
+             evaluate_syracuse(args, ckpt, dm, config)
+        else:
+            print("Warning: No checkpoint available from training. Cannot evaluate.")
     else:
         raise NotImplementedError(f"Dataset {dataset_name} not implemented")
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser("CelebV-HQ evaluation")
-    parser.add_argument("--config", type=str, help="Path to CelebV-HQ evaluation config file.")
-    parser.add_argument("--data_path", type=str, help="Path to CelebV-HQ dataset.")
+    parser = argparse.ArgumentParser("MARLIN Model Evaluation")
+    parser.add_argument("--config", type=str, required=True, help="Path to evaluation config file.")
+    parser.add_argument("--data_path", type=str, required=True, help="Path to dataset root directory.")
     parser.add_argument("--marlin_ckpt", type=str, default=None,
-        help="Path to MARLIN checkpoint. Default: None, load from online.")
-    parser.add_argument("--n_gpus", type=int, default=1)
-    parser.add_argument("--precision", type=str, default="32")
-    parser.add_argument("--num_workers", type=int, default=8)
-    parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--epochs", type=int, default=2000, help="Max epochs to train.")
-    parser.add_argument("--resume", type=str, default=None, help="Path to checkpoint to resume training.")
-    parser.add_argument("--skip_train", action="store_true", default=False,
-        help="Skip training and evaluate only.")
+        help="Path to MARLIN checkpoint (often unused for LP). Default: None, load from online.")
+    parser.add_argument("--marlin_base_dir", type=str, default=None, # Added for Syracuse
+                        help="Base directory for MARLIN features and metadata (required for Syracuse dataset).")
+    parser.add_argument("--n_gpus", type=int, default=1, help="Number of GPUs to use (0 for CPU).")
+    parser.add_argument("--precision", type=str, default="32", help="Training precision (e.g., 32, 16, bf16).")
+    parser.add_argument("--num_workers", type=int, default=4, help="Number of dataloader workers.")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training and evaluation.")
+    parser.add_argument("--epochs", type=int, default=100, help="Max epochs to train.") # Reduced default epochs
     parser.add_argument("--predict_only", action="store_true", default=False,
-                        help="Skip evaluation. Save prediction results only.")
-    parser.add_argument("--augmentation", action="store_true", default=False,)
-    parser.add_argument("--feature_dir", type=str, help="Directory containing pre-extracted MARLIN features")
-    parser.add_argument("--checkpoint_path", type=str, help="Path to the trained model checkpoint")
-    parser.add_argument("--output_path", type=str, help="Path to save the predictions CSV")
+                        help="Skip evaluation metrics. Save prediction results only (uses checkpoint from training).")
+    parser.add_argument("--augmentation", action="store_true", default=False, 
+                        help="Enable feature augmentation for BioVid LP (not used for Syracuse).")
+    parser.add_argument("--val_split_ratio", type=float, default=0.15, # Added for Syracuse
+                        help="Ratio of videos for the validation set (Syracuse only).")
+    parser.add_argument("--test_split_ratio", type=float, default=0.15, # Added for Syracuse
+                        help="Ratio of videos for the test set (Syracuse only).")
+    # Deprecated/Moved prediction-specific args to a separate mode maybe?
+    # Keep them for now as predict_from_features uses them.
+    parser.add_argument("--feature_dir", type=str, help="Directory containing pre-extracted MARLIN features (for predict_from_features mode).")
+    parser.add_argument("--checkpoint_path", type=str, help="Path to the trained model checkpoint (for predict_from_features mode).")
+    parser.add_argument("--output_path", type=str, help="Path to save the predictions CSV (for predict_only or predict_from_features mode).")
 
     args = parser.parse_args()
-    if args.skip_train:
-        assert args.resume is not None
 
-    if args.feature_dir and args.checkpoint_path and args.output_path:
-        # If feature_dir is provided, run prediction on pre-extracted features
+    # Decide execution mode
+    if args.feature_dir and args.checkpoint_path:
+        print("--- Running Prediction from Features Mode ---")
+        # Ensure output path is provided for this mode
+        if not args.output_path:
+             parser.error("Prediction from features mode requires --output_path.")
         config = read_yaml(args.config)
-        predict_from_features(args, config)
+        # predict_from_features(args, config) # This function seems separate, maybe call it directly?
+        print("Predict from features function call currently commented out.")
     else:
-        # Regular evaluation flow
+        print("--- Running Standard Training/Evaluation Mode ---")
+        # Check for Syracuse specific requirement
+        config_check = read_yaml(args.config)
+        if config_check.get("dataset") == "syracuse" and not args.marlin_base_dir:
+             parser.error("Syracuse dataset requires --marlin_base_dir to be specified.")
         evaluate(args)
