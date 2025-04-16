@@ -742,7 +742,7 @@ def train_syracuse(args, config):
         callbacks=[
             ckpt_callback,
             LrLogger(),
-            EarlyStoppingLR(patience=early_stop_patience, monitor=ckpt_monitor, mode=mode), # Monitor val_mae
+            EarlyStoppingLR(1e-8), # Assuming 1e-8 is the intended LR threshold, adjust if needed
             SystemStatsLogger()
         ]
     )
