@@ -1215,3 +1215,4 @@ class MarlinPainClassifier:
         print(f"Mean F1 score: {results['mean_f1']:.3f} ± {results['std_f1']:.3f}")
         
         return results 
+
