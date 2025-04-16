@@ -26,6 +26,7 @@ class LightningMLP(LightningModule):
 
         self.learning_rate = learning_rate
         self.num_classes = num_classes
+        self.distributed = distributed
         # Save settings and hyperparameters
         # Important: Add input_dim and hidden_dim if you want them logged
         self.save_hyperparameters("num_classes", "learning_rate", "input_dim", "hidden_dim")
