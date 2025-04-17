@@ -786,6 +786,33 @@ def evaluate_syracuse(args, ckpt, dm, config):
     num_classes = model.num_classes # Get num_classes from the loaded model
 
     # --- Prediction Phase --- 
+    print("\n--- Running Validation Set Prediction (for plotting) --- ")
+    val_loader = dm.val_dataloader()
+    val_filenames = dm.val_dataset.name_list
+    all_val_preds = []
+    all_val_true = []
+    if not val_loader or not val_filenames:
+         print("Warning: Validation loader or filenames not available. Skipping validation plot.")
+    else:
+        with torch.no_grad():
+            for batch in tqdm(val_loader, desc="Predicting Validation Set"): 
+                features, true_labels = batch
+                features = features.to(eval_device)
+                logits = model(features)
+                probas = torch.sigmoid(logits)
+                predicted_labels = proba_to_label(probas)
+                all_val_preds.append(predicted_labels.cpu())
+                all_val_true.append(true_labels.cpu())
+        
+        if all_val_preds:
+             val_preds_tensor = torch.cat(all_val_preds)
+             val_true_tensor = torch.cat(all_val_true)
+             # Generate validation plot
+             _plot_pain_vs_class(val_preds_tensor.numpy(), val_true_tensor.numpy(), val_filenames, dm, config, "Validation")
+        else:
+             print("Warning: No predictions generated for validation set. Skipping validation plot.")
+    # --------------------------------------------------------- 
+
     print("Running prediction on the test set (manual loop for CORAL)...")
     # Manual prediction loop for CORAL model
     all_preds = [] 
@@ -914,81 +941,9 @@ def evaluate_syracuse(args, ckpt, dm, config):
 
         # --- Generate True vs. Predicted Plot --- 
         try:
-            fig, ax = plt.subplots(figsize=(8, 8))
-            
-            # --- Get True Pain Levels --- 
+            # Generate plot for Test set using the helper function
             test_filenames = dm.test_dataset.name_list
-            true_pain_levels_list = []
-            valid_indices_for_plot = [] # Keep track of indices where pain level is valid
-            skipped_pain_level = 0
-
-            if len(test_filenames) != len(y_true_np):
-                print(f"\nWarning: Mismatch between test filenames ({len(test_filenames)}) and true labels ({len(y_true_np)}). Cannot generate accurate pain level plot.")
-            else:
-                print("\nExtracting true pain levels for plotting...")
-                for idx, filename in enumerate(test_filenames):
-                    meta = dm.all_metadata.get(filename)
-                    pain_level = None
-                    if meta and 'meta_info' in meta:
-                        pain_level_val = meta['meta_info'].get('pain_level')
-                        if pain_level_val is not None:
-                            try:
-                                pain_level = float(pain_level_val)
-                                true_pain_levels_list.append(pain_level)
-                                valid_indices_for_plot.append(idx) # Store index if valid
-                            except (ValueError, TypeError):
-                                pain_level = None # Treat conversion error as missing
-                    
-                    if pain_level is None:
-                        skipped_pain_level += 1
-                        # Optionally append NaN or skip this index for plotting
-                        # true_pain_levels_list.append(np.nan)
-                
-                if skipped_pain_level > 0:
-                     print(f"  (Skipped {skipped_pain_level} clips for plot due to missing/invalid 'pain_level' in metadata)")
-
-            # Convert to numpy array and filter predictions accordingly
-            true_pain_levels_np = np.array(true_pain_levels_list)
-            # Filter predicted classes to only include those where true pain level was valid
-            pred_classes_for_plot = pred_classes[valid_indices_for_plot] 
-
-            if len(true_pain_levels_np) == 0:
-                 print("\nWarning: No valid true pain levels found. Skipping plot generation.")
-            else:
-                 # Optional: Add jitter for better visualization of overlapping points
-                 jitter_strength_x = 0.1 # Jitter for pain level may need different scale
-                 jitter_strength_y = 0.1
-                 x_jitter = true_pain_levels_np + np.random.uniform(-jitter_strength_x, jitter_strength_x, size=true_pain_levels_np.shape)
-                 y_jitter = pred_classes_for_plot + np.random.uniform(-jitter_strength_y, jitter_strength_y, size=pred_classes_for_plot.shape)
- 
-                 ax.scatter(x_jitter, y_jitter, alpha=0.5, label='Predicted Class Level')
- 
-                 # Add reference line (y=x) - Less meaningful here, maybe remove or change
-                 # min_val = min(true_pain_levels_np.min(), pred_classes_for_plot.min()) - 1
-                 # max_val = max(true_pain_levels_np.max(), pred_classes_for_plot.max()) + 1
-                 # ax.plot([min_val, max_val], [min_val, max_val], 'r--', label='y=x (Reference)')
- 
-                 ax.set_xlabel("True Pain Level (from Metadata)")
-                 ax.set_ylabel("Predicted Ordinal Class Level")
-                 ax.set_title(f"True Pain Level vs. Predicted Class (Syracuse - {config.get('model_name', 'Unknown')})")
- 
-                 # Set integer ticks for Y axis (predicted class)
-                 # X axis (pain level) might be float, adjust locator if needed
-                 # ax.xaxis.set_major_locator(MaxNLocator(integer=True)) # Only if true pain levels are integers
-                 ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-                 # Adjust limits based on actual data ranges
-                 ax.set_xlim(np.nanmin(true_pain_levels_np) - 0.5, np.nanmax(true_pain_levels_np) + 0.5)
-                 ax.set_ylim(np.nanmin(pred_classes_for_plot) - 0.5, np.nanmax(pred_classes_for_plot) + 0.5)
-                 
-                 ax.legend()
-                 ax.grid(True)
-                 
-                 # Save the plot
-                 plot_filename = f"{config.get('model_name', 'syracuse')}_true_pain_vs_pred_class.png"
-                 plt.savefig(plot_filename)
-                 print(f"\nSaved True Pain Level vs. Predicted Class plot to: {plot_filename}")
-                 plt.close(fig) # Close the figure to free memory
-            
+            _plot_pain_vs_class(pred_classes, y_true_np, test_filenames, dm, config, "Test")
         except Exception as plot_e:
             print(f"\nWarning: Failed to generate True vs. Predicted plot. Error: {plot_e}")
         # -------------------------------------
@@ -1127,6 +1082,82 @@ def evaluate(args):
     else:
         raise NotImplementedError(f"Dataset {dataset_name} not implemented")
 
+# --- Helper Function for Plotting ---
+def _plot_pain_vs_class(predicted_class_levels, true_class_levels, filenames, dm, config, split_name):
+    """Generates and saves a plot of true pain level vs. predicted class level."""
+    print(f"\n--- Generating True Pain vs. Predicted Class plot for {split_name} Set ---")
+    try:
+        # --- Get True Pain Levels from Metadata ---
+        true_pain_levels_list = []
+        valid_indices_for_plot = [] # Keep track of indices where pain level is valid
+        skipped_pain_level = 0
+
+        if len(filenames) != len(true_class_levels):
+            print(f"  Warning: Mismatch between {split_name} filenames ({len(filenames)}) and true labels ({len(true_class_levels)}). Cannot generate accurate plot.")
+            return # Skip plotting if counts don't match
+        else:
+            print(f"  Extracting true pain levels for {split_name} set...")
+            for idx, filename in enumerate(filenames):
+                meta = dm.all_metadata.get(filename)
+                pain_level = None
+                if meta and 'meta_info' in meta:
+                    pain_level_val = meta['meta_info'].get('pain_level')
+                    if pain_level_val is not None:
+                        try:
+                            pain_level = float(pain_level_val)
+                            true_pain_levels_list.append(pain_level)
+                            valid_indices_for_plot.append(idx) # Store index if valid
+                        except (ValueError, TypeError):
+                            pain_level = None # Treat conversion error as missing
+                
+                if pain_level is None:
+                    skipped_pain_level += 1
+            
+            if skipped_pain_level > 0:
+                 print(f"    (Skipped {skipped_pain_level} clips for plot due to missing/invalid 'pain_level' in metadata)")
+
+        # Convert to numpy array and filter predictions accordingly
+        true_pain_levels_np = np.array(true_pain_levels_list)
+        # Filter predicted classes to only include those where true pain level was valid
+        pred_classes_for_plot = predicted_class_levels[valid_indices_for_plot]
+
+        if len(true_pain_levels_np) == 0:
+             print("  Warning: No valid true pain levels found. Skipping plot generation.")
+             return
+
+        # --- Create Plot ---
+        fig, ax = plt.subplots(figsize=(8, 8))
+        
+        # Optional: Add jitter
+        jitter_strength_x = 0.1 
+        jitter_strength_y = 0.1
+        x_jitter = true_pain_levels_np + np.random.uniform(-jitter_strength_x, jitter_strength_x, size=true_pain_levels_np.shape)
+        y_jitter = pred_classes_for_plot + np.random.uniform(-jitter_strength_y, jitter_strength_y, size=pred_classes_for_plot.shape)
+
+        ax.scatter(x_jitter, y_jitter, alpha=0.5, label='Predicted Class Level')
+
+        ax.set_xlabel("True Pain Level (from Metadata)")
+        ax.set_ylabel("Predicted Ordinal Class Level")
+        ax.set_title(f"True Pain Level vs. Predicted Class ({split_name} Set - {config.get('model_name', 'Unknown')})")
+
+        # Set integer ticks for Y axis 
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        # Adjust limits based on actual data ranges
+        ax.set_xlim(np.nanmin(true_pain_levels_np) - 0.5, np.nanmax(true_pain_levels_np) + 0.5)
+        ax.set_ylim(np.nanmin(pred_classes_for_plot) - 0.5, np.nanmax(pred_classes_for_plot) + 0.5)
+        
+        ax.legend()
+        ax.grid(True)
+        
+        # Save the plot
+        plot_filename = f"{config.get('model_name', 'syracuse')}_{split_name.lower()}_true_pain_vs_pred_class.png"
+        plt.savefig(plot_filename)
+        print(f"  Saved plot to: {plot_filename}")
+        plt.close(fig) # Close the figure to free memory
+            
+    except Exception as plot_e:
+        print(f"\n  Warning: Failed to generate True Pain vs. Predicted plot for {split_name} set. Error: {plot_e}")
+# ----------------------------------
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("MARLIN Model Evaluation")
