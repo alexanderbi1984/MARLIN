@@ -776,17 +776,10 @@ def evaluate_syracuse(args, ckpt, dm, config):
              print(f"Failed to load checkpoint even with strict=False: {e2}")
              raise RuntimeError(f"Could not load checkpoint: {ckpt}")
 
-    accelerator = "cpu" if args.n_gpus == 0 else "gpu"
-    trainer = Trainer(
-        log_every_n_steps=1,
-        devices=1 if args.n_gpus > 0 else 0,
-        accelerator=accelerator,
-        benchmark=True,
-        logger=False,
-        enable_checkpointing=False,
-    )
-    Seed.set(42)
-    model.eval()
+    # Define device correctly for manual tensor movement
+    eval_device = torch.device("cuda" if args.n_gpus > 0 and torch.cuda.is_available() else "cpu")
+    print(f"Evaluation device set to: {eval_device}")
+    model = model.to(eval_device)
     task = config["task"]
     num_classes = model.num_classes # Get num_classes from the loaded model
 
@@ -802,7 +795,7 @@ def evaluate_syracuse(args, ckpt, dm, config):
     with torch.no_grad():
         for batch in tqdm(test_loader, desc="Predicting"): 
             features, true_labels = batch
-            features = features.to(accelerator)
+            features = features.to(eval_device)
 
             # Forward pass to get logits
             logits = model(features)
