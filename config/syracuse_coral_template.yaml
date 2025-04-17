@@ -17,4 +17,5 @@ num_classes: 4               # CHANGE ME: Number of ordinal levels (e.g., 3, 4, 
 finetune: false                # DO NOT CHANGE - This workflow uses pre-extracted features
 
 # --- Optional: Add other config params if needed by future model/script versions ---
+dropout_rate: 0.2             # Optional: Dropout rate in the MLP head (default in code is 0.2 if omitted)
 # e.g., weight_decay: 0.01 

@@ -684,10 +684,14 @@ def train_syracuse_cv(args, config):
 
     # Instantiate LightningMLP model for CORAL
     print(f"Instantiating LightningMLP model with lr={learning_rate}")
+    # Read dropout rate from config, with a default
+    dropout_rate = config.get("dropout_rate", 0.2) # Default to 0.2 if not in config
+
     model = LightningMLP(
         num_classes=num_classes,
         learning_rate=learning_rate,
-        distributed=args.n_gpus > 1
+        distributed=n_gpus > 1,
+        dropout_rate=dropout_rate # Pass the dropout rate
     )
 
     # Instantiate SyracuseDataModule
@@ -777,10 +781,14 @@ def train_syracuse_cv(args, config):
 
         # Instantiate a NEW model for each fold
         print(f"  Fold {fold_idx + 1}: Initializing new LightningMLP model...")
+        # Read dropout rate from config, with a default
+        dropout_rate = config.get("dropout_rate", 0.2) # Default to 0.2 if not in config
+
         model = LightningMLP(
             num_classes=num_classes,
             learning_rate=learning_rate,
-            distributed=n_gpus > 1
+            distributed=n_gpus > 1,
+            dropout_rate=dropout_rate # Pass the dropout rate
         )
 
         # --- Define checkpoint strategy for the fold --- 

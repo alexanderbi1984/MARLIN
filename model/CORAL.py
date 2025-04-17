@@ -20,22 +20,24 @@ class LightningMLP(LightningModule):
     def __init__(self,  num_classes: int, 
         learning_rate: float = 1e-5,
         input_dim: int = 768,
-        hidden_dim: int = 32,
-        distributed: bool = False):
+        hidden_dim: int = 256,
+        distributed: bool = False,
+        dropout_rate: float = 0.2):
         super().__init__()
 
         self.learning_rate = learning_rate
         self.num_classes = num_classes
         self.distributed = distributed
+        self.dropout_rate = dropout_rate
         # Save settings and hyperparameters
         # Important: Add input_dim and hidden_dim if you want them logged
-        self.save_hyperparameters("num_classes", "learning_rate", "input_dim", "hidden_dim")
+        self.save_hyperparameters("num_classes", "learning_rate", "input_dim", "hidden_dim", "dropout_rate")
 
         # --- Define the MLP Layers ---
         self.model = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.2), # Example dropout
+            nn.Dropout(self.dropout_rate),
             CoralLayer(size_in=hidden_dim, num_classes=num_classes) # Output for CORAL is num_classes - 1
         )
         # ---------------------------
