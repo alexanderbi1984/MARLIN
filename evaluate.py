@@ -103,6 +103,7 @@ import glob
 import matplotlib.pyplot as plt # Import matplotlib
 from matplotlib.ticker import MaxNLocator # For integer ticks
 from torch.utils.data import DataLoader # Add DataLoader import globally
+import json # Add json import
 
 
 
@@ -950,13 +951,15 @@ def evaluate(args):
         # Call the CV training function
         fold_results, dm = train_syracuse_cv(args, config) # Changed variable name
         print(f"\nCross-validation training complete.")
-        # --- DEBUG PRINT --- 
-        print(f"DEBUG: Type of fold_results: {type(fold_results)}")
-        if isinstance(fold_results, list) and len(fold_results) > 0:
-            print(f"DEBUG: Type of first item in fold_results: {type(fold_results[0])}")
-        # Print limited content for brevity if it's long
-        print(f"DEBUG: Content of fold_results (first few items): {str(fold_results)[:500]}") 
-        # ---------------------
+
+        # --- Prepare Hyperparameters for Saving ---
+        hyperparams_to_save = {
+            "config": config, # Save the whole config dict
+            "args": vars(args) # Save command line args as dict
+        }
+        # Remove potentially non-serializable items from args if necessary (e.g., functions)
+        # For this script, vars(args) should be mostly basic types.
+
         print(f"Fold results (ckpt_path, val_filenames count):")
         for i, res in enumerate(fold_results):
             print(f"  Fold {i}: Ckpt={os.path.basename(res['ckpt_path']) if res['ckpt_path'] else 'None'}, Val Files={len(res['val_filenames'])}")
@@ -992,6 +995,17 @@ def evaluate(args):
             print(f"Average Validation MAE across {len(all_fold_mae)} folds: {avg_mae:.4f} (+/- {std_mae:.4f})")
             print(f"Average Validation Accuracy across {len(all_fold_acc)} folds: {avg_acc:.4f} (+/- {std_acc:.4f})")
 
+            # Store summary results
+            cv_summary_results = {
+                "avg_val_mae": avg_mae,
+                "std_val_mae": std_mae,
+                "avg_val_acc": avg_acc,
+                "std_val_acc": std_acc,
+                "fold_mae_list": all_fold_mae,
+                "fold_acc_list": all_fold_acc,
+                "combined_val_confusion_matrix": None # Placeholder
+            }
+
             # Combined Confusion Matrix
             if all_fold_true and all_fold_pred:
                  print("\nCombined Confusion Matrix (Validation Sets):")
@@ -1000,6 +1014,7 @@ def evaluate(args):
                     all_fold_true_np = np.array(all_fold_true, dtype=int)
                     all_fold_pred_np = np.array(all_fold_pred, dtype=int)
                     combined_cm = confusion_matrix(all_fold_true_np, all_fold_pred_np)
+                    cv_summary_results["combined_val_confusion_matrix"] = combined_cm.tolist() # Save as list
                     print(combined_cm)
                     # Optional: Print classification report on combined data
                     # print("\nCombined Classification Report (Validation Sets):")
@@ -1011,13 +1026,30 @@ def evaluate(args):
 
         else:
             print("No valid fold results found to calculate average metrics or confusion matrix.")
+            cv_summary_results = {"message": "No valid fold results found."}
         # --------------------------------------
+
+        # --- Save Summary to File ---
+        summary_output_filename = f"{config.get('model_name', 'syracuse_cv')}_summary.json"
+        final_summary = {
+            "hyperparameters": hyperparams_to_save,
+            "cross_validation_results": cv_summary_results
+        }
+        try:
+            with open(summary_output_filename, 'w') as f:
+                json.dump(final_summary, f, indent=4)
+            print(f"\nSaved Cross-Validation summary and hyperparameters to: {summary_output_filename}")
+        except TypeError as e:
+            print(f"\nError: Could not serialize summary to JSON: {e}")
+            print("  Ensure all hyperparameters and results are JSON serializable.")
+            print(f"  Summary dictionary was: {final_summary}") # Print problematic dict
+        except IOError as e:
+            print(f"\nError: Could not write summary file {summary_output_filename}. Error: {e}")
+        # --------------------------
 
         # Remove the old single evaluation call
         # if ckpt:
         #      evaluate_syracuse(args, ckpt, dm, config) # This function is essentially replaced by the loop above
-        # else:
-        #     print("Warning: No checkpoint available from training. Cannot evaluate.")
     else:
         raise NotImplementedError(f"Dataset {dataset_name} not implemented")
 
