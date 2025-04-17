@@ -659,8 +659,8 @@ def evaluate_biovid(args, ckpt, dm, config):
 
     return results
 
-def train_syracuse(args, config):
-    print("--- Starting Syracuse Training --- ")
+def train_syracuse_cv(args, config):
+    print("--- Starting Syracuse Cross-Validation Training --- ")
     data_path = args.data_path # root_dir for SyracuseDataModule
     n_gpus = args.n_gpus
     max_epochs = args.epochs
@@ -707,59 +707,143 @@ def train_syracuse(args, config):
         num_workers=args.num_workers
     )
 
-    strategy = 'auto' if n_gpus <= 1 else "ddp"
-    accelerator = "cpu" if n_gpus == 0 else "gpu"
+    # Call setup to load all metadata
+    dm.setup()
 
-    # CORAL typically uses MAE for validation monitoring
-    ckpt_monitor = "val_mae" # Changed monitor metric
-    mode = "min" # Minimize MAE
-    ckpt_filename = config["model_name"] + f"-syracuse-{{epoch}}-{{{ckpt_monitor}:.3f}}"
+    # Get data needed for splitting
+    unique_video_ids = list(dm.video_id_labels.keys())
+    video_labels = [dm.video_id_labels[vid] for vid in unique_video_ids]
+    n_splits = 3 # Define number of folds
+    print(f"Preparing for {n_splits}-fold cross-validation on {len(unique_video_ids)} videos.")
 
-    try:
-        precision = int(args.precision)
-    except ValueError:
-        precision = args.precision
+    # Initialize StratifiedKFold
+    from sklearn.model_selection import StratifiedKFold
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42) # Use args.seed if available
 
-    ckpt_callback = ModelCheckpoint(
-        dirpath=f"ckpt/{config['model_name']}_syracuse", # Add suffix to ckpt dir
-        save_last=True,
-        filename=ckpt_filename,
-        monitor=ckpt_monitor,
-        mode=mode # Use 'min' for regression (MSE), 'max' otherwise (AUC)
-    )
+    all_best_checkpoints = []
 
-    # Use a reasonable patience for EarlyStopping, e.g., 10 epochs
-    early_stop_patience = 500
-    print(f"Using EarlyStopping with patience={early_stop_patience}, monitoring '{ckpt_monitor}' ({mode})")
+    # --- Cross-Validation Loop ---
+    for fold_idx, (train_vid_indices, val_vid_indices) in enumerate(skf.split(unique_video_ids, video_labels)):
+        print(f"\n===== Starting Fold {fold_idx + 1}/{n_splits} =====")
 
-    trainer = Trainer(
-        log_every_n_steps=1,
-        devices=n_gpus,
-        accelerator=accelerator,
-        benchmark=True,
-        logger=True,
-        precision=precision,
-        max_epochs=max_epochs,
-        strategy=strategy,
-        callbacks=[
-            ckpt_callback,
-            LrLogger(),
-            EarlyStopping(
-                monitor="val_mae",
-                mode="min",
-                patience=500,
-                verbose=True
-            ),
-            SystemStatsLogger()
-        ]
-    )
+        # Get video IDs for this fold
+        train_vids_np = np.array(unique_video_ids)[train_vid_indices]
+        val_vids_np = np.array(unique_video_ids)[val_vid_indices]
+        train_vids_set = set(train_vids_np)
+        val_vids_set = set(val_vids_np)
 
-    # Always start training from scratch
-    print("Starting Syracuse training from scratch...")
-    trainer.fit(model, dm)
+        print(f"  Fold {fold_idx + 1}: Train Video IDs: {len(train_vids_set)}, Val Video IDs: {len(val_vids_set)}")
 
-    print(f"Syracuse training finished. Best model checkpoint: {ckpt_callback.best_model_path}")
-    return ckpt_callback.best_model_path, dm
+        # Assign filenames for this fold
+        fold_train_names = []
+        fold_val_names = []
+
+        # Assign original clips
+        for clip in dm.original_clips:
+            if clip['video_id'] in train_vids_set:
+                fold_train_names.append(clip['filename'])
+            elif clip['video_id'] in val_vids_set:
+                fold_val_names.append(clip['filename']) # Val gets only originals
+
+        # Assign augmented clips to training
+        num_aug_added = 0
+        for clip in dm.augmented_clips:
+            if clip['video_id'] in train_vids_set:
+                fold_train_names.append(clip['filename'])
+                num_aug_added += 1
+
+        print(f"  Fold {fold_idx + 1}: Train clips: {len(fold_train_names)} ({num_aug_added} augmented), Val clips: {len(fold_val_names)}")
+
+        if not fold_train_names or not fold_val_names:
+             print(f"Warning: Fold {fold_idx + 1} resulted in empty train or val set. Skipping fold.")
+             all_best_checkpoints.append(None) # Add placeholder for skipped fold
+             continue
+
+        # Instantiate Datasets and DataLoaders for the current fold
+        common_lp_args = {
+            "root_dir": dm.root_dir,
+            "feature_dir": dm.feature_dir,
+            "task": dm.task,
+            "num_classes": dm.num_classes,
+            "temporal_reduction": dm.temporal_reduction,
+            "metadata": dm.all_metadata
+        }
+        fold_train_dataset = SyracuseLP(split=f"train_fold{fold_idx}", name_list=fold_train_names, **common_lp_args)
+        fold_val_dataset = SyracuseLP(split=f"val_fold{fold_idx}", name_list=fold_val_names, **common_lp_args)
+
+        from torch.utils.data import DataLoader # Ensure DataLoader is imported
+        fold_train_loader = DataLoader(fold_train_dataset, batch_size=dm.batch_size, shuffle=True, num_workers=dm.num_workers, pin_memory=True, drop_last=True, persistent_workers=dm.num_workers > 0)
+        fold_val_loader = DataLoader(fold_val_dataset, batch_size=dm.batch_size, shuffle=False, num_workers=dm.num_workers, pin_memory=True, drop_last=False, persistent_workers=dm.num_workers > 0)
+
+        # Instantiate a NEW model for each fold
+        print(f"  Fold {fold_idx + 1}: Initializing new LightningMLP model...")
+        model = LightningMLP(
+            num_classes=num_classes,
+            learning_rate=learning_rate,
+            distributed=n_gpus > 1
+        )
+
+        # Checkpoint callback for the current fold
+        fold_ckpt_dir = f"ckpt/{config['model_name']}_syracuse/fold_{fold_idx}"
+        print(f"  Fold {fold_idx + 1}: Checkpoints will be saved in: {fold_ckpt_dir}")
+        ckpt_callback = ModelCheckpoint(
+            dirpath=fold_ckpt_dir, # Use fold-specific directory
+            save_last=True,
+            filename=ckpt_filename, # Filename includes metric and epoch
+            monitor=ckpt_monitor,
+            mode=mode
+        )
+
+        # Trainer setup for the fold
+        strategy = 'auto' if n_gpus <= 1 else "ddp"
+        accelerator = "cpu" if n_gpus == 0 else "gpu"
+
+        # CORAL typically uses MAE for validation monitoring
+        ckpt_monitor = "val_mae" # Changed monitor metric
+        mode = "min" # Minimize MAE
+        ckpt_filename = config["model_name"] + f"-syracuse-{{epoch}}-{{{ckpt_monitor}:.3f}}"
+
+        try:
+            precision = int(args.precision)
+        except ValueError:
+            precision = args.precision
+
+        # Use a reasonable patience for EarlyStopping, e.g., 10 epochs
+        early_stop_patience = 500
+        print(f"Using EarlyStopping with patience={early_stop_patience}, monitoring '{ckpt_monitor}' ({mode})")
+
+        trainer = Trainer(
+            log_every_n_steps=1,
+            devices=n_gpus,
+            accelerator=accelerator,
+            benchmark=True,
+            logger=True,
+            precision=precision,
+            max_epochs=max_epochs,
+            strategy=strategy,
+            callbacks=[
+                ckpt_callback,
+                LrLogger(),
+                EarlyStopping(
+                    monitor="val_mae",
+                    mode="min",
+                    patience=500,
+                    verbose=True
+                ),
+                SystemStatsLogger()
+            ]
+        )
+
+        # Train the model for the current fold
+        print(f"  Fold {fold_idx + 1}: Starting training...")
+        trainer.fit(model, train_dataloaders=fold_train_loader, val_dataloaders=fold_val_loader)
+
+        print(f"  Fold {fold_idx + 1}: Training finished. Best model path: {ckpt_callback.best_model_path}")
+        all_best_checkpoints.append(ckpt_callback.best_model_path)
+        # --------------------------
+
+    print("\n===== Cross-Validation Training Complete =====")
+    return all_best_checkpoints, dm
 
 def evaluate_syracuse(args, ckpt, dm, config):
     print("--- Starting Syracuse Evaluation --- ")
@@ -1073,12 +1157,16 @@ def evaluate(args):
              evaluate_biovid(args, ckpt, dm, config) # evaluate_biovid handles predict_only
     elif dataset_name == "syracuse": # Added Syracuse block
         print("Running evaluation for Syracuse...")
-        ckpt, dm = train_syracuse(args, config)
-        # Evaluate the best checkpoint saved from the training run
-        if ckpt: # Ensure training produced a checkpoint
-             evaluate_syracuse(args, ckpt, dm, config)
-        else:
-            print("Warning: No checkpoint available from training. Cannot evaluate.")
+        # Call the CV training function
+        fold_checkpoints, dm = train_syracuse_cv(args, config)
+        print(f"\nCross-validation training complete.")
+        print(f"Best checkpoints per fold: {fold_checkpoints}")
+
+        # TODO: Implement cross-validation evaluation strategy
+        # This could involve loading each fold's checkpoint and evaluating on its corresponding
+        # validation set (or a separate held-out test set if available/desired).
+        # For now, we just print the checkpoint paths.
+        print("\nEvaluation across folds not yet implemented.")
     else:
         raise NotImplementedError(f"Dataset {dataset_name} not implemented")
 
@@ -1176,10 +1264,7 @@ if __name__ == '__main__':
                         help="Skip evaluation metrics. Save prediction results only (uses checkpoint from training).")
     parser.add_argument("--augmentation", action="store_true", default=False, 
                         help="Enable feature augmentation for BioVid LP (not used for Syracuse).")
-    parser.add_argument("--val_split_ratio", type=float, default=0.15, # Added for Syracuse
-                        help="Ratio of videos for the validation set (Syracuse only).")
-    parser.add_argument("--test_split_ratio", type=float, default=0.15, # Added for Syracuse
-                        help="Ratio of videos for the test set (Syracuse only).")
+    # Removed --val_split_ratio and --test_split_ratio as CV handles splits
     # Deprecated/Moved prediction-specific args to a separate mode maybe?
     # Keep them for now as predict_from_features uses them.
     parser.add_argument("--feature_dir", type=str, help="Directory containing pre-extracted MARLIN features (for predict_from_features mode).")
