@@ -99,6 +99,8 @@ import numpy as np
 from tqdm import tqdm
 import os
 import glob
+import matplotlib.pyplot as plt # Import matplotlib
+from matplotlib.ticker import MaxNLocator # For integer ticks
 
 
 
@@ -909,6 +911,87 @@ def evaluate_syracuse(args, ckpt, dm, config):
         except Exception as e:
             print(f"Could not generate classification report: {e}")
             results['classification_report'] = {}
+
+        # --- Generate True vs. Predicted Plot --- 
+        try:
+            fig, ax = plt.subplots(figsize=(8, 8))
+            
+            # --- Get True Pain Levels --- 
+            test_filenames = dm.test_dataset.name_list
+            true_pain_levels_list = []
+            valid_indices_for_plot = [] # Keep track of indices where pain level is valid
+            skipped_pain_level = 0
+
+            if len(test_filenames) != len(y_true_np):
+                print(f"\nWarning: Mismatch between test filenames ({len(test_filenames)}) and true labels ({len(y_true_np)}). Cannot generate accurate pain level plot.")
+            else:
+                print("\nExtracting true pain levels for plotting...")
+                for idx, filename in enumerate(test_filenames):
+                    meta = dm.all_metadata.get(filename)
+                    pain_level = None
+                    if meta and 'meta_info' in meta:
+                        pain_level_val = meta['meta_info'].get('pain_level')
+                        if pain_level_val is not None:
+                            try:
+                                pain_level = float(pain_level_val)
+                                true_pain_levels_list.append(pain_level)
+                                valid_indices_for_plot.append(idx) # Store index if valid
+                            except (ValueError, TypeError):
+                                pain_level = None # Treat conversion error as missing
+                    
+                    if pain_level is None:
+                        skipped_pain_level += 1
+                        # Optionally append NaN or skip this index for plotting
+                        # true_pain_levels_list.append(np.nan)
+                
+                if skipped_pain_level > 0:
+                     print(f"  (Skipped {skipped_pain_level} clips for plot due to missing/invalid 'pain_level' in metadata)")
+
+            # Convert to numpy array and filter predictions accordingly
+            true_pain_levels_np = np.array(true_pain_levels_list)
+            # Filter predicted classes to only include those where true pain level was valid
+            pred_classes_for_plot = pred_classes[valid_indices_for_plot] 
+
+            if len(true_pain_levels_np) == 0:
+                 print("\nWarning: No valid true pain levels found. Skipping plot generation.")
+            else:
+                 # Optional: Add jitter for better visualization of overlapping points
+                 jitter_strength_x = 0.1 # Jitter for pain level may need different scale
+                 jitter_strength_y = 0.1
+                 x_jitter = true_pain_levels_np + np.random.uniform(-jitter_strength_x, jitter_strength_x, size=true_pain_levels_np.shape)
+                 y_jitter = pred_classes_for_plot + np.random.uniform(-jitter_strength_y, jitter_strength_y, size=pred_classes_for_plot.shape)
+ 
+                 ax.scatter(x_jitter, y_jitter, alpha=0.5, label='Predicted Class Level')
+ 
+                 # Add reference line (y=x) - Less meaningful here, maybe remove or change
+                 # min_val = min(true_pain_levels_np.min(), pred_classes_for_plot.min()) - 1
+                 # max_val = max(true_pain_levels_np.max(), pred_classes_for_plot.max()) + 1
+                 # ax.plot([min_val, max_val], [min_val, max_val], 'r--', label='y=x (Reference)')
+ 
+                 ax.set_xlabel("True Pain Level (from Metadata)")
+                 ax.set_ylabel("Predicted Ordinal Class Level")
+                 ax.set_title(f"True Pain Level vs. Predicted Class (Syracuse - {config.get('model_name', 'Unknown')})")
+ 
+                 # Set integer ticks for Y axis (predicted class)
+                 # X axis (pain level) might be float, adjust locator if needed
+                 # ax.xaxis.set_major_locator(MaxNLocator(integer=True)) # Only if true pain levels are integers
+                 ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+                 # Adjust limits based on actual data ranges
+                 ax.set_xlim(np.nanmin(true_pain_levels_np) - 0.5, np.nanmax(true_pain_levels_np) + 0.5)
+                 ax.set_ylim(np.nanmin(pred_classes_for_plot) - 0.5, np.nanmax(pred_classes_for_plot) + 0.5)
+                 
+                 ax.legend()
+                 ax.grid(True)
+                 
+                 # Save the plot
+                 plot_filename = f"{config.get('model_name', 'syracuse')}_true_pain_vs_pred_class.png"
+                 plt.savefig(plot_filename)
+                 print(f"\nSaved True Pain Level vs. Predicted Class plot to: {plot_filename}")
+                 plt.close(fig) # Close the figure to free memory
+            
+        except Exception as plot_e:
+            print(f"\nWarning: Failed to generate True vs. Predicted plot. Error: {plot_e}")
+        # -------------------------------------
 
     else:
         raise ValueError(f"Unsupported task type: {task}")
