@@ -711,8 +711,8 @@ def train_syracuse(args, config):
     accelerator = "cpu" if n_gpus == 0 else "gpu"
 
     # CORAL typically uses MAE for validation monitoring
-    ckpt_monitor = "val_acc" # Changed monitor metric
-    mode = "max" # Minimize MAE
+    ckpt_monitor = "val_loss" # Changed monitor metric
+    mode = "min" # Minimize MAE
     ckpt_filename = config["model_name"] + f"-syracuse-{{epoch}}-{{{ckpt_monitor}:.3f}}"
 
     try:
@@ -745,8 +745,8 @@ def train_syracuse(args, config):
             ckpt_callback,
             LrLogger(),
             EarlyStopping(
-                monitor="val_acc",
-                mode="max",
+                monitor="val_loss",
+                mode="min",
                 patience=10,
                 verbose=True
             ),
