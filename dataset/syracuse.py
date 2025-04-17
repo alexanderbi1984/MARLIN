@@ -197,19 +197,19 @@ class SyracuseLP(BioVidBase):
 
 class SyracuseDataModule(LightningDataModule):
     """
-    DataModule for Syracuse dataset, similar to BioVidDataModule.
+    DataModule for Syracuse dataset implementing augmentation-aware splitting.
+    Validation and Test sets contain only original clips.
+    Training set contains original clips + corresponding augmented clips.
+    Splits are based on video IDs to prevent data leakage.
     """
 
-    def __init__(self, root_dir: str,
+    def __init__(self, root_dir: str,          # Root directory of data
         task: str,
         num_classes: int,
-        batch_size: int,
+        batch_size: int,             # Batch size (still needed for potential dataloaders)
         feature_dir: str,
         marlin_base_dir: str,          # REQUIRED for MarlinFeatures
         temporal_reduction: str = "mean",
-        val_split_ratio: float = 0.15,
-        test_split_ratio: float = 0.15,
-        random_state: int = 42,
         num_workers: int = 0
     ):
         super().__init__()
@@ -220,16 +220,14 @@ class SyracuseDataModule(LightningDataModule):
         self.feature_dir = feature_dir
         self.temporal_reduction = temporal_reduction
         self.marlin_base_dir = marlin_base_dir # Store the base dir
-        self.val_split_ratio = val_split_ratio
-        self.test_split_ratio = test_split_ratio
-        self.random_state = random_state
         self.num_workers = num_workers
 
         # --- Data containers (will be populated in setup) ---
-        self.train_dataset = None
-        self.val_dataset = None
-        self.test_dataset = None
-        self.all_metadata = {} # To store metadata for all clips
+        self.all_metadata = {}        # All metadata {filename: meta}
+        self.original_clips = []    # List of dicts for original clips {filename, video_id, label}
+        self.augmented_clips = []   # List of dicts for augmented clips {filename, video_id}
+        self.video_id_labels = {}   # Map {video_id: representative_label}
+        self.marlin_features = None # MarlinFeatures instance
 
         # --- Initialize MarlinFeatures --- 
         self.marlin_features = None # Default to None
@@ -269,9 +267,10 @@ class SyracuseDataModule(LightningDataModule):
         if not self._load_and_prepare_metadata() or not self.all_metadata:
             raise RuntimeError("Failed to load metadata. Cannot proceed with setup.")
 
-        original_clips = []
-        augmented_clips = []
-        video_id_labels = {}
+        # Clear lists before processing
+        self.original_clips = []
+        self.augmented_clips = []
+        self.video_id_labels = {}
 
         print("Processing metadata to separate original/augmented clips and get video labels...")
         processed_files = set()
@@ -310,158 +309,27 @@ class SyracuseDataModule(LightningDataModule):
                  continue
 
              if video_type == 'original':
-                 original_clips.append({'filename': filename, 'video_id': video_id, 'label': label})
-                 if video_id not in video_id_labels:
-                     video_id_labels[video_id] = label
+                 self.original_clips.append({'filename': filename, 'video_id': video_id, 'label': label})
+                 if video_id not in self.video_id_labels:
+                     self.video_id_labels[video_id] = label
              elif video_type == 'aug':
-                 augmented_clips.append({'filename': filename, 'video_id': video_id})
+                 self.augmented_clips.append({'filename': filename, 'video_id': video_id})
              else:
                  print(f"Warning: Unknown video_type '{video_type}' for clip {filename}. Skipping.")
 
              processed_files.add(filename)
 
         print(f"Finished processing metadata:")
-        print(f"  - Original clips found: {len(original_clips)}")
-        print(f"  - Augmented clips found: {len(augmented_clips)}")
-        print(f"  - Unique video IDs found: {len(video_id_labels)}")
+        print(f"  - Original clips found: {len(self.original_clips)}")
+        print(f"  - Augmented clips found: {len(self.augmented_clips)}")
+        print(f"  - Unique video IDs found: {len(self.video_id_labels)}")
         if clips_missing_info > 0: print(f"  - Clips skipped (missing info): {clips_missing_info}")
         if clips_missing_label > 0: print(f"  - Clips skipped (missing label): {clips_missing_label}")
 
-        if not original_clips:
+        if not self.original_clips:
             raise ValueError("No original clips found after processing metadata. Cannot create splits.")
-        if not video_id_labels:
+        if not self.video_id_labels:
              raise ValueError("No unique video IDs found. Cannot create splits.")
-
-        unique_video_ids = list(video_id_labels.keys())
-        video_labels = [video_id_labels[vid] for vid in unique_video_ids]
-
-        n_videos = len(unique_video_ids)
-        n_test = int(self.test_split_ratio * n_videos)
-        n_val = int(self.val_split_ratio * n_videos)
-        n_train = n_videos - n_test - n_val
-
-        if n_train <= 0 or n_val <= 0 or n_test <= 0:
-             raise ValueError(f"Split ratios result in 0 videos for one or more sets (Train: {n_train}, Val: {n_val}, Test: {n_test}). Adjust ratios.")
-
-        print(f"Splitting {n_videos} video IDs into Train ({n_train}), Val ({n_val}), Test ({n_test}) sets.")
-
-        try:
-            train_val_ids, test_ids = train_test_split(
-                unique_video_ids,
-                test_size=n_test,
-                stratify=[video_id_labels[vid] for vid in unique_video_ids],
-                random_state=self.random_state
-            )
-
-            val_size_adjusted = n_val / (n_train + n_val)
-            train_ids, val_ids = train_test_split(
-                train_val_ids,
-                test_size=val_size_adjusted,
-                stratify=[video_id_labels[vid] for vid in train_val_ids],
-                random_state=self.random_state
-            )
-        except ValueError as e:
-             print(f"Warning: Stratified split failed ({e}). Falling back to non-stratified split.")
-             train_val_ids, test_ids = train_test_split(unique_video_ids, test_size=n_test, random_state=self.random_state)
-             val_size_adjusted = n_val / (n_train + n_val)
-             train_ids, val_ids = train_test_split(train_val_ids, test_size=val_size_adjusted, random_state=self.random_state)
-
-        train_ids_set = set(train_ids)
-        val_ids_set = set(val_ids)
-        test_ids_set = set(test_ids)
-
-        print(f"Video ID split complete: Train={len(train_ids)}, Val={len(val_ids)}, Test={len(test_ids)}")
-
-        train_names = []
-        val_names = []
-        test_names = []
-
-        for clip in original_clips:
-            vid = clip['video_id']
-            fname = clip['filename']
-            if vid in train_ids_set:
-                train_names.append(fname)
-            elif vid in val_ids_set:
-                val_names.append(fname)
-            elif vid in test_ids_set:
-                test_names.append(fname)
-
-        num_aug_added = 0
-        for clip in augmented_clips:
-            vid = clip['video_id']
-            fname = clip['filename']
-            if vid in train_ids_set:
-                train_names.append(fname)
-                num_aug_added += 1
-
-        print(f"Assigned filenames to splits:")
-        print(f"  - Train: {len(train_names)} clips ({num_aug_added} augmented)")
-        print(f"  - Val:   {len(val_names)} clips (original only)")
-        print(f"  - Test:  {len(test_names)} clips (original only)")
-
-        if not train_names: print("Warning: Training set is empty after assigning filenames.")
-        if not val_names: print("Warning: Validation set is empty after assigning filenames.")
-        if not test_names: print("Warning: Test set is empty after assigning filenames.")
-
-        print("Instantiating SyracuseLP datasets for each split...")
-        common_args = {
-            "root_dir": self.root_dir,
-            "feature_dir": self.feature_dir,
-            "task": self.task,
-            "num_classes": self.num_classes,
-            "temporal_reduction": self.temporal_reduction,
-            "metadata": self.all_metadata
-        }
-
-        self.train_dataset = SyracuseLP(split="train", name_list=train_names, **common_args)
-        self.val_dataset = SyracuseLP(split="val", name_list=val_names, **common_args)
-        self.test_dataset = SyracuseLP(split="test", name_list=test_names, **common_args)
-
-        # --- Print Class Distributions --- 
-        print("\n--- Final Dataset Class Distributions ---")
-
-        def get_distribution(dataset: SyracuseLP) -> Counter:
-            label_counts = Counter()
-            label_key = 'pain_level' if dataset.task == 'regression' else f'class_{dataset.num_classes}'
-            if not dataset or not hasattr(dataset, 'name_list') or not dataset.name_list:
-                 print(f"Warning: Dataset {dataset.split if hasattr(dataset, 'split') else 'N/A'} is empty or invalid.")
-                 return label_counts
-            
-            skipped_missing_key = 0
-            skipped_conversion_error = 0
-            
-            for filename in dataset.name_list:
-                meta = self.all_metadata.get(filename)
-                if not meta or 'meta_info' not in meta:
-                    continue # Should not happen if setup logic is correct
-                
-                label_value = meta['meta_info'].get(label_key)
-                if label_value is None:
-                    skipped_missing_key += 1
-                    continue # Clip doesn't have the target label
-                
-                try:
-                    label = int(float(label_value))
-                    label_counts[label] += 1
-                except (ValueError, TypeError):
-                     skipped_conversion_error += 1
-                     continue # Label value is not a valid number
-                     
-            if skipped_missing_key > 0:
-                 print(f"  (Skipped {skipped_missing_key} clips in {dataset.split} set due to missing key '{label_key}')")
-            if skipped_conversion_error > 0:
-                 print(f"  (Skipped {skipped_conversion_error} clips in {dataset.split} set due to label conversion error)")
-                 
-            return label_counts
-
-        train_dist = get_distribution(self.train_dataset)
-        val_dist = get_distribution(self.val_dataset)
-        test_dist = get_distribution(self.test_dataset)
-
-        print(f"  Training Set ({self.train_dataset.__len__()} clips): {sorted(train_dist.items())}")
-        print(f"  Validation Set ({self.val_dataset.__len__()} clips): {sorted(val_dist.items())}")
-        print(f"  Test Set ({self.test_dataset.__len__()} clips): {sorted(test_dist.items())}")
-        # --------------------------------
 
         print("SyracuseDataModule setup complete.")
 
