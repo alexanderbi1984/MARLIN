@@ -102,6 +102,7 @@ import os
 import glob
 import matplotlib.pyplot as plt # Import matplotlib
 from matplotlib.ticker import MaxNLocator # For integer ticks
+from torch.utils.data import DataLoader # Add DataLoader import globally
 
 
 
@@ -771,7 +772,6 @@ def train_syracuse_cv(args, config):
         fold_train_dataset = SyracuseLP(split=f"train_fold{fold_idx}", name_list=fold_train_names, **common_lp_args)
         fold_val_dataset = SyracuseLP(split=f"val_fold{fold_idx}", name_list=fold_val_names, **common_lp_args)
 
-        from torch.utils.data import DataLoader # Ensure DataLoader is imported
         fold_train_loader = DataLoader(fold_train_dataset, batch_size=dm.batch_size, shuffle=True, num_workers=dm.num_workers, pin_memory=True, drop_last=True, persistent_workers=dm.num_workers > 0)
         fold_val_loader = DataLoader(fold_val_dataset, batch_size=dm.batch_size, shuffle=False, num_workers=dm.num_workers, pin_memory=True, drop_last=False, persistent_workers=dm.num_workers > 0)
 
