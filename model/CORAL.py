@@ -18,9 +18,9 @@ import torch.nn as nn
 # LightningModule that receives a PyTorch model as input
 class LightningMLP(LightningModule):
     def __init__(self,  num_classes: int, 
-        learning_rate: float = 1e-4,
+        learning_rate: float = 1e-6,
         input_dim: int = 768,
-        hidden_dim: int = 256,
+        hidden_dim: int = 32,
         distributed: bool = False):
         super().__init__()
 
@@ -35,7 +35,7 @@ class LightningMLP(LightningModule):
         self.model = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.5), # Example dropout
+            nn.Dropout(0.2), # Example dropout
             CoralLayer(size_in=hidden_dim, num_classes=num_classes) # Output for CORAL is num_classes - 1
         )
         # ---------------------------
@@ -141,6 +141,6 @@ class LightningMLP(LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": ReduceLROnPlateau(optimizer, factor=0.5, patience=7, verbose=True, min_lr=1e-8),
-                "monitor": "val_mae" # Monitor val_mae now
+                "monitor": "val_acc" # Monitor val_mae now
             }
         }

@@ -7,13 +7,13 @@ dataset: syracuse              # DO NOT CHANGE - Tells evaluate.py which workflo
 model_name: syracuse_coral_run # CHANGE ME: A descriptive name for your specific run (used for checkpoint dirs)
 
 # --- Feature & Preprocessing ---
-backbone: <feature_dir_name>   # CHANGE ME: Directory name under data_path containing .npy features (e.g., marlin_vit_base_patch16_224)
+backbone: multimodal_marlin_base # CHANGE ME: Directory name under data_path containing .npy features (e.g., marlin_vit_base_patch16_224)
 temporal_reduction: mean       # Options: mean, max, min - How to aggregate (4, 768) -> (768,)
 
 # --- Training Hyperparameters ---
-learning_rate: 1e-4            # CHANGE ME: Learning rate for the CORAL classifier head (e.g., 0.0001)
+learning_rate: 1.0e-6            # CHANGE ME: Learning rate for the CORAL classifier head (e.g., 0.0001)
 task: multiclass               # DO NOT CHANGE - Tells DataModule how to find labels based on num_classes
-num_classes: <N>               # CHANGE ME: Number of ordinal levels (e.g., 3, 4, or 5) - Determines which labels are used (class_3, class_4, class_5)
+num_classes: 5               # CHANGE ME: Number of ordinal levels (e.g., 3, 4, or 5) - Determines which labels are used (class_3, class_4, class_5)
 finetune: false                # DO NOT CHANGE - This workflow uses pre-extracted features
 
 # --- Optional: Add other config params if needed by future model/script versions ---
