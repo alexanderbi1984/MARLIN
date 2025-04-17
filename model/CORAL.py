@@ -141,6 +141,6 @@ class LightningMLP(LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": ReduceLROnPlateau(optimizer, factor=0.5, patience=7, verbose=True, min_lr=1e-8),
-                "monitor": "val_acc" # Monitor val_mae now
+                "monitor": "val_mae" # Monitor val_mae now
             }
         }
