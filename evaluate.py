@@ -935,6 +935,13 @@ def evaluate(args):
         # Call the CV training function
         fold_results, dm = train_syracuse_cv(args, config) # Changed variable name
         print(f"\nCross-validation training complete.")
+        # --- DEBUG PRINT --- 
+        print(f"DEBUG: Type of fold_results: {type(fold_results)}")
+        if isinstance(fold_results, list) and len(fold_results) > 0:
+            print(f"DEBUG: Type of first item in fold_results: {type(fold_results[0])}")
+        # Print limited content for brevity if it's long
+        print(f"DEBUG: Content of fold_results (first few items): {str(fold_results)[:500]}") 
+        # ---------------------
         print(f"Fold results (ckpt_path, val_filenames count):")
         for i, res in enumerate(fold_results):
             print(f"  Fold {i}: Ckpt={os.path.basename(res['ckpt_path']) if res['ckpt_path'] else 'None'}, Val Files={len(res['val_filenames'])}")
