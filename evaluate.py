@@ -809,7 +809,7 @@ def train_syracuse_cv(args, config):
             precision = args.precision
 
         # Use a reasonable patience for EarlyStopping, e.g., 10 epochs
-        early_stop_patience = 500
+        early_stop_patience = 50
         print(f"Using EarlyStopping with patience={early_stop_patience}, monitoring '{ckpt_monitor}' ({mode})")
 
         trainer = Trainer(
@@ -827,7 +827,7 @@ def train_syracuse_cv(args, config):
                 EarlyStopping(
                     monitor="val_mae",
                     mode="min",
-                    patience=500,
+                    patience=50,
                     verbose=True
                 ),
                 SystemStatsLogger()
@@ -845,41 +845,41 @@ def train_syracuse_cv(args, config):
     print("\n===== Cross-Validation Training Complete =====")
     return all_best_checkpoints, dm
 
-def evaluate_syracuse(args, ckpt, dm, config):
-    print("--- Starting Syracuse Evaluation --- ")
-    print(f"Loading checkpoint: {ckpt}")
+def _evaluate_fold_checkpoint(ckpt_path, val_filenames, dm, config):
+    """Loads a fold's checkpoint and evaluates on its validation set."""
+    print(f"\n--- Evaluating Fold Checkpoint: {os.path.basename(ckpt_path)} ---")
+    if not ckpt_path or not os.path.exists(ckpt_path):
+        print("  Warning: Invalid checkpoint path provided. Skipping evaluation for this fold.")
+        return None
 
     try:
-        # Load the LightningMLP model from checkpoint
-        model = LightningMLP.load_from_checkpoint(ckpt)
+        model = LightningMLP.load_from_checkpoint(ckpt_path)
+        model.eval()
+        eval_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = model.to(eval_device)
+        num_classes = model.num_classes
     except Exception as e:
-        print(f"Error loading checkpoint {ckpt}: {e}")
-        # Attempt to load ignoring strict=False if it might be a partial save
-        try:
-             print("Attempting to load checkpoint with strict=False")
-             model = LightningMLP.load_from_checkpoint(ckpt, strict=False)
-        except Exception as e2:
-             print(f"Failed to load checkpoint even with strict=False: {e2}")
-             raise RuntimeError(f"Could not load checkpoint: {ckpt}")
+        print(f"  Warning: Failed to load checkpoint {ckpt_path}. Error: {e}. Skipping evaluation for this fold.")
+        return None
 
-    # Define device correctly for manual tensor movement
-    eval_device = torch.device("cuda" if args.n_gpus > 0 and torch.cuda.is_available() else "cpu")
-    print(f"Evaluation device set to: {eval_device}")
-    model = model.to(eval_device)
-    task = config["task"]
-    num_classes = model.num_classes # Get num_classes from the loaded model
+    # Create validation dataset and dataloader for this fold
+    common_lp_args = {
+        "root_dir": dm.root_dir, "feature_dir": dm.feature_dir, "task": dm.task,
+        "num_classes": dm.num_classes, "temporal_reduction": dm.temporal_reduction,
+        "metadata": dm.all_metadata
+    }
+    fold_val_dataset = SyracuseLP(split="val_eval", name_list=val_filenames, **common_lp_args)
+    if not fold_val_dataset:
+        print("  Warning: Failed to create validation dataset for evaluation. Skipping fold.")
+        return None
+    fold_val_loader = DataLoader(fold_val_dataset, batch_size=dm.batch_size, shuffle=False, num_workers=dm.num_workers, pin_memory=True)
 
-    # --- Prediction Phase --- 
-    print("\n--- Running Validation Set Prediction (for plotting) --- ")
-    val_loader = dm.val_dataloader()
-    val_filenames = dm.val_dataset.name_list
+    # Manual prediction loop
     all_val_preds = []
     all_val_true = []
-    if not val_loader or not val_filenames:
-         print("Warning: Validation loader or filenames not available. Skipping validation plot.")
-    else:
+    try:
         with torch.no_grad():
-            for batch in tqdm(val_loader, desc="Predicting Validation Set"): 
+            for batch in tqdm(fold_val_loader, desc=f"Predicting Fold Validation Set"):
                 features, true_labels = batch
                 features = features.to(eval_device)
                 logits = model(features)
@@ -887,253 +887,28 @@ def evaluate_syracuse(args, ckpt, dm, config):
                 predicted_labels = proba_to_label(probas)
                 all_val_preds.append(predicted_labels.cpu())
                 all_val_true.append(true_labels.cpu())
-        
-        if all_val_preds:
-             val_preds_tensor = torch.cat(all_val_preds)
-             val_true_tensor = torch.cat(all_val_true)
-             # Generate validation plot
-             _plot_pain_vs_class(val_preds_tensor.numpy(), val_true_tensor.numpy(), val_filenames, dm, config, "Validation")
-        else:
-             print("Warning: No predictions generated for validation set. Skipping validation plot.")
-    # --------------------------------------------------------- 
+    except Exception as e:
+        print(f"  Warning: Error during prediction for this fold. Error: {e}. Skipping.")
+        return None
 
-    print("Running prediction on the test set (manual loop for CORAL)...")
-    # Manual prediction loop for CORAL model
-    all_preds = [] 
-    all_probas = [] # Store probabilities if needed
-    all_logits = [] # Store raw logits if needed
-    all_true_labels = []
-    test_loader = dm.test_dataloader()
+    if not all_val_preds:
+        print("  Warning: No predictions generated for this fold's validation set.")
+        return None
 
-    with torch.no_grad():
-        for batch in tqdm(test_loader, desc="Predicting"): 
-            features, true_labels = batch
-            features = features.to(eval_device)
+    preds_tensor = torch.cat(all_val_preds)
+    true_tensor = torch.cat(all_val_true)
+    y_true_np = true_tensor.numpy()
+    pred_classes = preds_tensor.numpy()
 
-            # Forward pass to get logits
-            logits = model(features)
-            
-            # Convert logits to probabilities and then to labels using CORAL logic
-            probas = torch.sigmoid(logits)
-            predicted_labels = proba_to_label(probas)
-
-            all_preds.append(predicted_labels.cpu())
-            all_true_labels.append(true_labels.cpu()) # Keep original labels
-            # Optionally store logits/probas if needed for analysis
-            all_logits.append(logits.cpu())
-            all_probas.append(probas.cpu())
-
-    if not all_preds:
-        print("Error: Prediction list is empty after manual loop.")
-        return {}
-        
-    preds_tensor = torch.cat(all_preds)
-    ys = torch.cat(all_true_labels)
-    logits_tensor = torch.cat(all_logits)
-    probas_tensor = torch.cat(all_probas)
-
-    # --- Ground Truth Collection --- 
-    # Ground truth (ys) collected during the prediction loop above
-     
-    # Ensure preds and ys have compatible shapes/lengths
-    if preds_tensor.shape[0] != ys.shape[0]:
-        print(f"Warning: Mismatch between number of predictions ({preds_tensor.shape[0]}) and ground truth labels ({ys.shape[0]}). Check dataloader/prediction process.")
-        # Attempt to truncate to the shorter length
-        min_len = min(preds_tensor.shape[0], ys.shape[0])
-        preds_tensor = preds_tensor[:min_len]
-        ys = ys[:min_len]
-        if min_len == 0:
-            print("Error: No matching predictions and labels found.")
-            return {}
-
-    # --- Prediction Post-processing & Saving (if predict_only) --- 
-    if args.predict_only:
-        print("Predict only mode: Saving predictions...")
-        # For CORAL, the direct prediction is the label from proba_to_label
-        pred_classes = preds_tensor # Already calculated labels
-        raw_logits_np = logits_tensor.cpu().numpy() # Save logits
-        probas_np = probas_tensor.cpu().numpy() # Save sigmoid probabilities
-
-        # Assuming dm.test_dataset.name_list contains filenames corresponding to ys/preds
-        filenames = dm.test_dataset.name_list if hasattr(dm, 'test_dataset') and hasattr(dm.test_dataset, 'name_list') else [f"item_{i}" for i in range(len(ys))]
-        if len(filenames) != len(ys):
-             print(f"Warning: Filename list length ({len(filenames)}) doesn't match label count ({len(ys)}). Using generic names.")
-             filenames = [f"item_{i}" for i in range(len(ys))]
-
-        results_df = pd.DataFrame({
-            'filename': filenames,
-            'true_label': ys.cpu().numpy().tolist(),
-            'predicted_label': pred_classes.tolist(),
-            'raw_logits': raw_logits_np.tolist(),
-            'probabilities': probas_np.tolist(), # Sigmoid outputs from CORAL layer
-        })
-        results_df.to_csv(args.output_path or 'syracuse_predictions.csv', index=False)
-        print(f"Predictions saved to {args.output_path or 'syracuse_predictions.csv'}")
-        # Return metrics calculation part if needed, or just the df
-        # For predict_only, maybe return basic info or the df itself
-        return {"status": "Predictions saved", "path": args.output_path or 'syracuse_predictions.csv'}
-
-    # --- Metrics Calculation --- 
-    print("Calculating evaluation metrics...")
-    results = {}
-    y_true_np = ys.cpu().numpy()
-
-    # CORAL is for ordinal classification (task should be multiclass conceptually)
-    if task == "multiclass" or task == "regression" or task == "binary": # Handle all cases, but metrics differ
-        print(f"Calculating metrics for task: {task} using CORAL predictions...")
-        pred_classes = preds_tensor.cpu().numpy()
-
-        # --- Key Metric: MAE ---
+    # Calculate metrics
+    try:
         mae = mean_absolute_error(y_true_np, pred_classes)
-        results['mae'] = mae
-        print(f"  Mean Absolute Error (MAE): {mae:.4f}")
-        
-        # --- Accuracy ---
         acc = np.mean(pred_classes == y_true_np)
-        results['accuracy'] = acc
-        print(f"  Accuracy: {acc:.4f}")
-
-        # --- AUC (Not standard for CORAL, skip or use with caution) ---
-        # probas_np = probas_tensor.cpu().numpy()
-        # try:
-        #      # Calculate AUC if needed, but interpret carefully
-        #      # auc = roc_auc_score(y_true_np, probas_np, multi_class='ovr', average='weighted') 
-        #      # print(f"  AUC (Weighted OvR - experimental): {auc:.4f}")
-        #      # results['auc_experimental'] = auc
-        # except ValueError as e:
-        #      print(f"  AUC calculation failed: {e}")
-        print("  AUC calculation skipped (not standard for CORAL output).")
-
-        # Confusion Matrix & Classification Report
-        print("\nConfusion Matrix:")
-        cm = confusion_matrix(y_true_np, pred_classes)
-        print(cm)
-        results['confusion_matrix'] = cm.tolist()
-
-        print("\nClassification Report:")
-        target_names = [f"Class_{i}" for i in range(num_classes)] if task == "multiclass" else ["Class_0", "Class_1"]
-        # Ensure labels in report match actual classes present
-        unique_labels = np.unique(np.concatenate((y_true_np, pred_classes))) 
-        filtered_target_names = [f"Class_{i}" for i in unique_labels]
-        try:
-             report = classification_report(y_true_np, pred_classes, labels=unique_labels, target_names=filtered_target_names, output_dict=True, zero_division=0)
-             print(classification_report(y_true_np, pred_classes, labels=unique_labels, target_names=filtered_target_names, zero_division=0))
-             results['classification_report'] = report
-        except Exception as e:
-            print(f"Could not generate classification report: {e}")
-            results['classification_report'] = {}
-
-        # --- Generate True vs. Predicted Plot --- 
-        try:
-            # Generate plot for Test set using the helper function
-            test_filenames = dm.test_dataset.name_list
-            _plot_pain_vs_class(pred_classes, y_true_np, test_filenames, dm, config, "Test")
-        except Exception as plot_e:
-            print(f"\nWarning: Failed to generate True vs. Predicted plot. Error: {plot_e}")
-        # -------------------------------------
-
-    else:
-        raise ValueError(f"Unsupported task type: {task}")
-
-    print("--- Syracuse Evaluation Complete ---")
-    return results
-
-def predict_from_features(args, config):
-    """
-    Make predictions using pre-extracted MARLIN features.
-    
-    Args:
-        args: Command line arguments containing:
-            - feature_dir: Directory containing .npy feature files
-            - checkpoint_path: Path to the trained model checkpoint
-            - output_path: Path to save the predictions CSV
-            - batch_size: Batch size for predictions
-            - n_gpus: Number of GPUs to use
-        config: Model configuration dictionary
-    """
-    print("Loading checkpoint", args.checkpoint_path)
-    model = Classifier.load_from_checkpoint(args.checkpoint_path)
-    model.eval()
-    
-    # Setup device
-    device = "cuda" if args.n_gpus > 0 else "cpu"
-    model = model.to(device)
-    
-    # Get list of all .npy files in feature directory
-    feature_files = glob.glob(os.path.join(args.feature_dir, "*.npy"))
-    print(f"Found {len(feature_files)} feature files")
-    
-    # Initialize lists to store results
-    filenames = []
-    predictions = []
-    probabilities = []
-    
-    # Process features in batches
-    batch_features = []
-    batch_files = []
-    
-    # Get temporal reduction method from config
-    temporal_reduction = config.get("temporal_reduction", "mean")
-    
-    for feature_file in tqdm(feature_files, desc="Processing features"):
-        try:
-            # Load feature
-            feature = np.load(feature_file)
-            feature = torch.from_numpy(feature).float()
-            
-            # Apply temporal reduction
-            if temporal_reduction == "mean":
-                feature = feature.mean(dim=0, keepdim=True)  # [T, D] -> [1, D]
-            elif temporal_reduction == "max":
-                feature = feature.max(dim=0, keepdim=True)[0]  # [T, D] -> [1, D]
-            else:
-                raise ValueError(f"Unsupported temporal reduction method: {temporal_reduction}")
-            
-            batch_features.append(feature)
-            batch_files.append(os.path.basename(feature_file))
-            
-            # Process when batch is full or on last item
-            if len(batch_features) == args.batch_size or feature_file == feature_files[-1]:
-                # Stack features into a batch
-                batch_tensor = torch.stack(batch_features).to(device)
-                batch_tensor = batch_tensor.squeeze(1)  # Remove temporal dimension after reduction
-                
-                # Get predictions
-                with torch.no_grad():
-                    batch_preds = model(batch_tensor)
-                    
-                    if config["task"] == "binary":
-                        batch_probs = torch.sigmoid(batch_preds)
-                        batch_pred_classes = (batch_probs > 0.5).int()
-                    else:  # multiclass
-                        batch_probs = softmax(batch_preds, dim=1)
-                        batch_pred_classes = torch.argmax(batch_probs, dim=1)
-                
-                # Store results
-                filenames.extend(batch_files)
-                predictions.extend(batch_pred_classes.cpu().numpy())
-                probabilities.extend(batch_probs.cpu().numpy())
-                
-                # Clear batch
-                batch_features = []
-                batch_files = []
-                
-        except Exception as e:
-            print(f"Error processing file {feature_file}: {str(e)}")
-            continue
-    
-    # Create DataFrame with results
-    results_df = pd.DataFrame({
-        'filename': filenames,
-        'predicted_label': predictions,
-        'probabilities': probabilities
-    })
-    
-    # Save to CSV
-    results_df.to_csv(args.output_path, index=False)
-    print(f"Predictions saved to {args.output_path}")
-    
-    return results_df
+        print(f"  Fold Validation Metrics: MAE={mae:.4f}, Accuracy={acc:.4f}")
+        return {'mae': mae, 'acc': acc, 'y_true': y_true_np, 'y_pred': pred_classes}
+    except Exception as e:
+        print(f"  Warning: Error calculating metrics for this fold. Error: {e}")
+        return None
 
 def evaluate(args):
     print(f"Loading config from: {args.config}")
@@ -1158,15 +933,69 @@ def evaluate(args):
     elif dataset_name == "syracuse": # Added Syracuse block
         print("Running evaluation for Syracuse...")
         # Call the CV training function
-        fold_checkpoints, dm = train_syracuse_cv(args, config)
+        fold_results, dm = train_syracuse_cv(args, config) # Changed variable name
         print(f"\nCross-validation training complete.")
-        print(f"Best checkpoints per fold: {fold_checkpoints}")
+        print(f"Fold results (ckpt_path, val_filenames count):")
+        for i, res in enumerate(fold_results):
+            print(f"  Fold {i}: Ckpt={os.path.basename(res['ckpt_path']) if res['ckpt_path'] else 'None'}, Val Files={len(res['val_filenames'])}")
 
-        # TODO: Implement cross-validation evaluation strategy
-        # This could involve loading each fold's checkpoint and evaluating on its corresponding
-        # validation set (or a separate held-out test set if available/desired).
-        # For now, we just print the checkpoint paths.
-        print("\nEvaluation across folds not yet implemented.")
+        # --- Aggregate and Report CV Metrics ---
+        all_fold_mae = []
+        all_fold_acc = []
+        all_fold_true = []
+        all_fold_pred = []
+
+        for fold_idx, result in enumerate(fold_results):
+            if result['ckpt_path']:
+                fold_metrics = _evaluate_fold_checkpoint(
+                    result['ckpt_path'],
+                    result['val_filenames'],
+                    dm,
+                    config
+                )
+                if fold_metrics:
+                    all_fold_mae.append(fold_metrics['mae'])
+                    all_fold_acc.append(fold_metrics['acc'])
+                    all_fold_true.extend(fold_metrics['y_true'])
+                    all_fold_pred.extend(fold_metrics['y_pred'])
+            else:
+                 print(f"Skipping evaluation for Fold {fold_idx} as no checkpoint was generated.")
+
+        print("\n--- Cross-Validation Summary ---")
+        if all_fold_mae:
+            avg_mae = np.mean(all_fold_mae)
+            std_mae = np.std(all_fold_mae)
+            avg_acc = np.mean(all_fold_acc)
+            std_acc = np.std(all_fold_acc)
+            print(f"Average Validation MAE across {len(all_fold_mae)} folds: {avg_mae:.4f} (+/- {std_mae:.4f})")
+            print(f"Average Validation Accuracy across {len(all_fold_acc)} folds: {avg_acc:.4f} (+/- {std_acc:.4f})")
+
+            # Combined Confusion Matrix
+            if all_fold_true and all_fold_pred:
+                 print("\nCombined Confusion Matrix (Validation Sets):")
+                 try:
+                    # Ensure labels are integers for confusion matrix if necessary
+                    all_fold_true_np = np.array(all_fold_true, dtype=int)
+                    all_fold_pred_np = np.array(all_fold_pred, dtype=int)
+                    combined_cm = confusion_matrix(all_fold_true_np, all_fold_pred_np)
+                    print(combined_cm)
+                    # Optional: Print classification report on combined data
+                    # print("\nCombined Classification Report (Validation Sets):")
+                    # print(classification_report(all_fold_true_np, all_fold_pred_np, zero_division=0))
+                 except Exception as cm_e:
+                      print(f"  Warning: Could not generate combined confusion matrix. Error: {cm_e}")
+            else:
+                 print("\nCould not generate combined confusion matrix (no labels collected).")
+
+        else:
+            print("No valid fold results found to calculate average metrics or confusion matrix.")
+        # --------------------------------------
+
+        # Remove the old single evaluation call
+        # if ckpt:
+        #      evaluate_syracuse(args, ckpt, dm, config) # This function is essentially replaced by the loop above
+        # else:
+        #     print("Warning: No checkpoint available from training. Cannot evaluate.")
     else:
         raise NotImplementedError(f"Dataset {dataset_name} not implemented")
 
