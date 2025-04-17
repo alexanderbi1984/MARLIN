@@ -84,6 +84,7 @@ import pandas as pd
 from dataset.celebv_hq import CelebvHqDataModule
 from dataset.biovid import BioVidDataModule
 from dataset.syracuse import SyracuseDataModule
+from dataset.syracuse import SyracuseLP
 from model.config import resolve_config
 # from marlin_pytorch.config import resolve_config
 from marlin_pytorch.util import read_yaml
