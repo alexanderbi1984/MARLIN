@@ -77,7 +77,7 @@ torch.set_float32_matmul_precision('high')
 
 import torch
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from tqdm.auto import tqdm
 from torch.nn.functional import softmax, sigmoid
 import pandas as pd
@@ -709,7 +709,7 @@ def train_syracuse(args, config):
     accelerator = "cpu" if n_gpus == 0 else "gpu"
 
     # CORAL typically uses MAE for validation monitoring
-    ckpt_monitor = "val_mae" # Changed monitor metric
+    ckpt_monitor = "val_acc" # Changed monitor metric
     mode = "min" # Minimize MAE
     ckpt_filename = config["model_name"] + f"-syracuse-{{epoch}}-{{{ckpt_monitor}:.3f}}"
 
@@ -742,7 +742,12 @@ def train_syracuse(args, config):
         callbacks=[
             ckpt_callback,
             LrLogger(),
-            EarlyStoppingLR(1e-8), # Assuming 1e-8 is the intended LR threshold, adjust if needed
+            EarlyStopping(
+                monitor="val_acc",
+                mode="max",
+                patience=10,
+                verbose=True
+            ),
             SystemStatsLogger()
         ]
     )
