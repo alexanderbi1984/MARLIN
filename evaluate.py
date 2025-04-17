@@ -784,8 +784,8 @@ def train_syracuse_cv(args, config):
         )
 
         # --- Define checkpoint strategy for the fold --- 
-        ckpt_monitor = "val_mae" # Metric to monitor
-        mode = "min"             # 'min' because lower MAE is better
+        ckpt_monitor = "val_acc" # Metric to monitor
+        mode = "max"             # 'min' because lower MAE is better
         # Include fold index in the filename pattern
         ckpt_filename = config["model_name"] + f"-syracuse-fold{fold_idx}-{{epoch}}-{{{ckpt_monitor}:.3f}}" 
         # ----------------------------------------------
@@ -827,8 +827,8 @@ def train_syracuse_cv(args, config):
                 ckpt_callback,
                 LrLogger(),
                 EarlyStopping(
-                    monitor="val_mae",
-                    mode="min",
+                    monitor="val_acc",
+                    mode="max",
                     patience=50,
                     verbose=True
                 ),
