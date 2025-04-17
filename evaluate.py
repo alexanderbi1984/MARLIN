@@ -719,6 +719,8 @@ def train_syracuse_cv(args, config):
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42) # Use args.seed if available
 
     all_best_checkpoints = []
+    # Rename list for clarity - it stores more than just checkpoints now
+    fold_results_list = [] 
 
     # --- Cross-Validation Loop ---
     for fold_idx, (train_vid_indices, val_vid_indices) in enumerate(skf.split(unique_video_ids, video_labels)):
@@ -839,11 +841,16 @@ def train_syracuse_cv(args, config):
         trainer.fit(model, train_dataloaders=fold_train_loader, val_dataloaders=fold_val_loader)
 
         print(f"  Fold {fold_idx + 1}: Training finished. Best model path: {ckpt_callback.best_model_path}")
-        all_best_checkpoints.append(ckpt_callback.best_model_path)
+        # Store results for this fold as a dictionary
+        fold_results_list.append({
+            'ckpt_path': ckpt_callback.best_model_path,
+            'val_filenames': fold_val_names # Make sure fold_val_names is correctly populated
+        })
         # --------------------------
 
     print("\n===== Cross-Validation Training Complete =====")
-    return all_best_checkpoints, dm
+    # Return the list of dictionaries
+    return fold_results_list, dm
 
 def _evaluate_fold_checkpoint(ckpt_path, val_filenames, dm, config):
     """Loads a fold's checkpoint and evaluates on its validation set."""
