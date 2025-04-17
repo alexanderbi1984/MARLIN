@@ -18,7 +18,7 @@ import torch.nn as nn
 # LightningModule that receives a PyTorch model as input
 class LightningMLP(LightningModule):
     def __init__(self,  num_classes: int, 
-        learning_rate: float = 1e-6,
+        learning_rate: float = 1e-5,
         input_dim: int = 768,
         hidden_dim: int = 32,
         distributed: bool = False):

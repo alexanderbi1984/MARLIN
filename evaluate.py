@@ -710,7 +710,7 @@ def train_syracuse(args, config):
 
     # CORAL typically uses MAE for validation monitoring
     ckpt_monitor = "val_acc" # Changed monitor metric
-    mode = "min" # Minimize MAE
+    mode = "max" # Minimize MAE
     ckpt_filename = config["model_name"] + f"-syracuse-{{epoch}}-{{{ckpt_monitor}:.3f}}"
 
     try:
