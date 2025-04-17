@@ -689,7 +689,7 @@ def train_syracuse_cv(args, config):
     )
 
     # Instantiate SyracuseDataModule
-    print("Instantiating SyracuseDataModule...")
+    print(f"Instantiating SyracuseDataModule with marlin_base_dir: {args.marlin_base_dir}")
     if not args.marlin_base_dir:
         raise ValueError("Missing required argument: --marlin_base_dir must be provided for Syracuse dataset.")
 
@@ -701,9 +701,6 @@ def train_syracuse_cv(args, config):
         feature_dir=config["backbone"], # Directory where .npy features are stored (relative to root_dir)
         temporal_reduction=config["temporal_reduction"],
         marlin_base_dir=args.marlin_base_dir, # Path containing clips_json.json etc.
-        val_split_ratio=args.val_split_ratio,
-        test_split_ratio=args.test_split_ratio,
-        random_state=42, # Or use args.seed if available
         num_workers=args.num_workers
     )
 
