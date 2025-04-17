@@ -781,6 +781,13 @@ def train_syracuse_cv(args, config):
             distributed=n_gpus > 1
         )
 
+        # --- Define checkpoint strategy for the fold --- 
+        ckpt_monitor = "val_mae" # Metric to monitor
+        mode = "min"             # 'min' because lower MAE is better
+        # Include fold index in the filename pattern
+        ckpt_filename = config["model_name"] + f"-syracuse-fold{fold_idx}-{{epoch}}-{{{ckpt_monitor}:.3f}}" 
+        # ----------------------------------------------
+
         # Checkpoint callback for the current fold
         fold_ckpt_dir = f"ckpt/{config['model_name']}_syracuse/fold_{fold_idx}"
         print(f"  Fold {fold_idx + 1}: Checkpoints will be saved in: {fold_ckpt_dir}")
@@ -789,17 +796,12 @@ def train_syracuse_cv(args, config):
             save_last=True,
             filename=ckpt_filename, # Filename includes metric and epoch
             monitor=ckpt_monitor,
-            mode=mode
+            mode=mode # Mode should match the monitored metric
         )
 
         # Trainer setup for the fold
         strategy = 'auto' if n_gpus <= 1 else "ddp"
         accelerator = "cpu" if n_gpus == 0 else "gpu"
-
-        # CORAL typically uses MAE for validation monitoring
-        ckpt_monitor = "val_mae" # Changed monitor metric
-        mode = "min" # Minimize MAE
-        ckpt_filename = config["model_name"] + f"-syracuse-{{epoch}}-{{{ckpt_monitor}:.3f}}"
 
         try:
             precision = int(args.precision)
