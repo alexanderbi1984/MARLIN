@@ -6,6 +6,7 @@ from pytorch_lightning import LightningDataModule
 from typing import Optional, List, Dict, Tuple, Any
 from collections import defaultdict
 from sklearn.model_selection import train_test_split
+from collections import Counter
 
 # Import the actual BioVidBase class
 from dataset.biovid import BioVidBase
@@ -415,6 +416,52 @@ class SyracuseDataModule(LightningDataModule):
         self.train_dataset = SyracuseLP(split="train", name_list=train_names, **common_args)
         self.val_dataset = SyracuseLP(split="val", name_list=val_names, **common_args)
         self.test_dataset = SyracuseLP(split="test", name_list=test_names, **common_args)
+
+        # --- Print Class Distributions --- 
+        print("\n--- Final Dataset Class Distributions ---")
+
+        def get_distribution(dataset: SyracuseLP) -> Counter:
+            label_counts = Counter()
+            label_key = 'pain_level' if dataset.task == 'regression' else f'class_{dataset.num_classes}'
+            if not dataset or not hasattr(dataset, 'name_list') or not dataset.name_list:
+                 print(f"Warning: Dataset {dataset.split if hasattr(dataset, 'split') else 'N/A'} is empty or invalid.")
+                 return label_counts
+            
+            skipped_missing_key = 0
+            skipped_conversion_error = 0
+            
+            for filename in dataset.name_list:
+                meta = self.all_metadata.get(filename)
+                if not meta or 'meta_info' not in meta:
+                    continue # Should not happen if setup logic is correct
+                
+                label_value = meta['meta_info'].get(label_key)
+                if label_value is None:
+                    skipped_missing_key += 1
+                    continue # Clip doesn't have the target label
+                
+                try:
+                    label = int(float(label_value))
+                    label_counts[label] += 1
+                except (ValueError, TypeError):
+                     skipped_conversion_error += 1
+                     continue # Label value is not a valid number
+                     
+            if skipped_missing_key > 0:
+                 print(f"  (Skipped {skipped_missing_key} clips in {dataset.split} set due to missing key '{label_key}')")
+            if skipped_conversion_error > 0:
+                 print(f"  (Skipped {skipped_conversion_error} clips in {dataset.split} set due to label conversion error)")
+                 
+            return label_counts
+
+        train_dist = get_distribution(self.train_dataset)
+        val_dist = get_distribution(self.val_dataset)
+        test_dist = get_distribution(self.test_dataset)
+
+        print(f"  Training Set ({self.train_dataset.__len__()} clips): {sorted(train_dist.items())}")
+        print(f"  Validation Set ({self.val_dataset.__len__()} clips): {sorted(val_dist.items())}")
+        print(f"  Test Set ({self.test_dataset.__len__()} clips): {sorted(test_dist.items())}")
+        # --------------------------------
 
         print("SyracuseDataModule setup complete.")
 
