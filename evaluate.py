@@ -793,8 +793,8 @@ def train_syracuse_cv(args, config):
         )
 
         # --- Define checkpoint strategy for the fold --- 
-        ckpt_monitor = "val_acc" # Metric to monitor
-        mode = "max"             # 'min' because lower MAE is better
+        ckpt_monitor = "val_mae" # Metric to monitor
+        mode = "min"             # 'min' because lower MAE is better
         # Include fold index in the filename pattern
         ckpt_filename = config["model_name"] + f"-syracuse-fold{fold_idx}-{{epoch}}-{{{ckpt_monitor}:.3f}}" 
         # ----------------------------------------------
@@ -820,7 +820,7 @@ def train_syracuse_cv(args, config):
             precision = args.precision
 
         # Use a reasonable patience for EarlyStopping, e.g., 10 epochs
-        early_stop_patience = 50
+        early_stop_patience = 200
         print(f"Using EarlyStopping with patience={early_stop_patience}, monitoring '{ckpt_monitor}' ({mode})")
 
         trainer = Trainer(
@@ -836,9 +836,9 @@ def train_syracuse_cv(args, config):
                 ckpt_callback,
                 LrLogger(),
                 EarlyStopping(
-                    monitor="val_acc",
-                    mode="max",
-                    patience=50,
+                    monitor="val_mae",
+                    mode="min",
+                    patience=early_stop_patience,
                     verbose=True
                 ),
                 SystemStatsLogger()

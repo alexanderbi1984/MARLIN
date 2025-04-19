@@ -11,11 +11,11 @@ backbone: multimodal_marlin_base # CHANGE ME: Directory name under data_path con
 temporal_reduction: mean       # Options: mean, max, min - How to aggregate (4, 768) -> (768,)
 
 # --- Training Hyperparameters ---
-learning_rate: 1.0e-4            # CHANGE ME: Learning rate for the CORAL classifier head (e.g., 0.0001)
+learning_rate: 1.0e-3            # CHANGE ME: Learning rate for the CORAL classifier head (e.g., 0.0001)
 task: multiclass               # DO NOT CHANGE - Tells DataModule how to find labels based on num_classes
-num_classes: 4               # CHANGE ME: Number of ordinal levels (e.g., 3, 4, or 5) - Determines which labels are used (class_3, class_4, class_5)
+num_classes: 5               # CHANGE ME: Number of ordinal levels (e.g., 3, 4, or 5) - Determines which labels are used (class_3, class_4, class_5)
 finetune: false                # DO NOT CHANGE - This workflow uses pre-extracted features
 
 # --- Optional: Add other config params if needed by future model/script versions ---
-dropout_rate: 0.2             # Optional: Dropout rate in the MLP head (default in code is 0.2 if omitted)
+dropout_rate: 0.1             # Optional: Dropout rate in the MLP head (default in code is 0.2 if omitted)
 # e.g., weight_decay: 0.01 

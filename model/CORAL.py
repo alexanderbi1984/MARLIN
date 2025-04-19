@@ -41,6 +41,14 @@ class LightningMLP(LightningModule):
             CoralLayer(size_in=hidden_dim, num_classes=num_classes) # Output for CORAL is num_classes - 1
         )
         # ---------------------------
+        # self.model = nn.Sequential(
+        #     nn.Linear(input_dim, 512),
+        #     nn.ReLU(),
+        #     nn.Dropout(self.dropout_rate),
+        #     nn.Linear(512, 256),
+        #     nn.ReLU(),
+        #     CoralLayer(256, num_classes)
+        # )
 
         # Set up metrics
         self.train_mae = torchmetrics.MeanAbsoluteError()
