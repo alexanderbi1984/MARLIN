@@ -1,0 +1,31 @@
+# configs/multitask_coral_template.yaml
+
+# --- Required --- 
+model_name: multitask_pain_stimulus_run_01  # Name for checkpoints and logs
+
+num_pain_classes: 5  # Number of ordinal pain levels (Syracuse)
+num_stimulus_classes: 5  # Number of ordinal stimulus levels (BioVid)
+
+# Feature directory names (relative to the respective data paths provided via CLI)
+syracuse_feature_dir: marlin_vit_small_patch16_224 # Example: Feature directory for Syracuse
+biovid_feature_dir: marlin_vit_small_patch16_224   # Example: Feature directory for BioVid (can be the same or different)
+
+temporal_reduction: mean  # How to aggregate features temporally (mean, max, min, none)
+
+learning_rate: 1e-4      # Learning rate for the optimizer
+
+# --- Optional: Model & Loss Weights --- 
+pain_loss_weight: 1.0  # Weight for the pain task loss in the combined loss
+stim_loss_weight: 1.0  # Weight for the stimulus task loss in the combined loss
+
+# Optional: Define hidden layers for the shared MLP encoder
+# If null or empty, a single Linear layer is used.
+encoder_hidden_dims: [512, 256] # Example: [hidden1_size, hidden2_size]
+# encoder_hidden_dims: null
+
+# --- Optional: Data Balancing --- 
+balance_sources: false           # Set to true to sample BioVid to match Syracuse training set size
+balance_stimulus_classes: false # Set to true to apply class balancing within the BioVid training samples
+
+# --- Optional: Add other parameters if needed by model/datamodule ---
+# Example: optimizer_name: AdamW (if you add this option to the model) 
