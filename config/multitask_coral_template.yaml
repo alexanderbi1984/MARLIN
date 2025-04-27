@@ -12,7 +12,7 @@ biovid_feature_dir: marlin_vit_small_patch16_224   # Example: Feature directory 
 
 temporal_reduction: mean  # How to aggregate features temporally (mean, max, min, none)
 
-learning_rate: 1e-4      # Learning rate for the optimizer
+learning_rate: 1.0e-4      # Learning rate for the optimizer
 
 # --- Optional: Model & Loss Weights --- 
 pain_loss_weight: 1.0  # Weight for the pain task loss in the combined loss
