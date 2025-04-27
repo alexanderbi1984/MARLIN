@@ -474,8 +474,9 @@ def run_multitask_cv(args, config):
         syracuse_val_filenames = []
 
         # Process original clips
-        for filename in original_clips:
+        for clip_data in original_clips:
             try:
+                filename = clip_data['filename'] # Access filename from the dictionary
                 # Assumes filename format like: videoID_clipID_...
                 video_id = filename.split('_')[0]
                 if video_id in fold_train_video_ids_set:
@@ -484,16 +485,25 @@ def run_multitask_cv(args, config):
                     syracuse_val_filenames.append(filename) # Validation uses only originals
             except IndexError:
                  print(f"Warning: Could not parse video ID from original clip filename: {filename}")
+            except KeyError:
+                 print(f"Warning: 'filename' key not found in original clip data: {clip_data}")
+            except TypeError:
+                 print(f"Warning: Original clip data is not a dictionary as expected: {clip_data}")
 
         # Process augmented clips (add only to training set)
-        for filename in augmented_clips:
+        for clip_data in augmented_clips:
             try:
+                filename = clip_data['filename'] # Access filename from the dictionary
                 # Assumes filename format like: videoID_clipID_...
                 video_id = filename.split('_')[0]
                 if video_id in fold_train_video_ids_set:
                     syracuse_train_filenames.append(filename)
             except IndexError:
                  print(f"Warning: Could not parse video ID from augmented clip filename: {filename}")
+            except KeyError:
+                 print(f"Warning: 'filename' key not found in augmented clip data: {clip_data}")
+            except TypeError:
+                 print(f"Warning: Augmented clip data is not a dictionary as expected: {clip_data}")
 
         # Note: fold_val_filenames was populated during the original_clips loop
         fold_val_filenames.append(syracuse_val_filenames) # Store for later evaluation
