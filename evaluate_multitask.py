@@ -194,7 +194,8 @@ def run_multitask_evaluation(args, config):
             LrLogger(),
             SystemStatsLogger()
         ],
-        benchmark=True if n_gpus > 0 else False
+        benchmark=True if n_gpus > 0 else False,
+        num_sanity_val_steps=0
     )
 
     # --- Training --- 
