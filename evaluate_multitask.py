@@ -171,7 +171,7 @@ def run_multitask_evaluation(args, config):
     )
 
     # Early stopping callback
-    early_stop_patience = 20 # Example patience
+    early_stop_patience = 200 # Example patience
     print(f"Using EarlyStopping with patience={early_stop_patience}, monitoring '{ckpt_monitor}' ({ckpt_mode})")
     early_stop_callback = EarlyStopping(
         monitor=ckpt_monitor,
