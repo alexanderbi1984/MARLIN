@@ -12,7 +12,7 @@ biovid_feature_dir: multimodal_marlin_base   # Example: Feature directory for Bi
 
 temporal_reduction: mean  # How to aggregate features temporally (mean, max, min, none)
 
-learning_rate: 1.0e-5      # Learning rate for the optimizer
+learning_rate: 3.0e-5      # Learning rate for the optimizer
 
 # --- Optional: Model & Loss Weights --- 
 pain_loss_weight: 1.0  # Weight for the pain task loss in the combined loss

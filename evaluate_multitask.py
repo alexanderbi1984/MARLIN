@@ -158,13 +158,14 @@ def run_multitask_evaluation(args, config):
     precision = args.precision
 
     # Checkpoint callback: Monitor validation performance on the pain task (Syracuse)
-    ckpt_monitor = "val_pain_MAE"
-    ckpt_mode = "min" # Lower MAE is better
+    # ckpt_monitor = "val_pain_MAE"
+    ckpt_monitor = "val_pain_QWK"
+    ckpt_mode = "max" # Higher QWK is better
     ckpt_filename = model_name + "-{epoch}-{" + ckpt_monitor + ":.3f}"
     checkpoint_dir = f"ckpt/{model_name}_multitask"
     print(f"Checkpoints will be saved in: {checkpoint_dir}")
     ckpt_callback = ModelCheckpoint(
-        dirpath=checkpoint_dir,
+        dirpath=checkpoint_dir, 
         save_last=True,
         filename=ckpt_filename,
         monitor=ckpt_monitor,

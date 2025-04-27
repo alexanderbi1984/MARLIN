@@ -51,20 +51,38 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         self.distributed = distributed # Store the attribute
 
         # --- Shared Encoder ---
+        # if encoder_hidden_dims is None or len(encoder_hidden_dims) == 0:
+        #     self.shared_encoder = nn.Linear(input_dim, input_dim) # Simple linear projection
+        #     encoder_output_dim = input_dim
+        #     # print(f"Using simple Linear layer as shared encoder (In: {input_dim}, Out: {encoder_output_dim})") # Optional logging
+        # else:
+        #     layers = []
+        #     current_dim = input_dim
+        #     for h_dim in encoder_hidden_dims:
+        #         layers.append(nn.Linear(current_dim, h_dim))
+        #         layers.append(nn.ReLU())
+        #         current_dim = h_dim
+        #     self.shared_encoder = nn.Sequential(*layers)
+        #     encoder_output_dim = current_dim
+        #     # print(f"Using MLP shared encoder (In: {input_dim}, Hidden: {encoder_hidden_dims}, Out: {encoder_output_dim})") # Optional logging
+
         if encoder_hidden_dims is None or len(encoder_hidden_dims) == 0:
-            self.shared_encoder = nn.Linear(input_dim, input_dim) # Simple linear projection
+            self.shared_encoder = nn.Sequential(
+                nn.Linear(input_dim, input_dim),
+                nn.ReLU(),
+                nn.Dropout(0.5)  # 🔥 Add Dropout here
+            )
             encoder_output_dim = input_dim
-            # print(f"Using simple Linear layer as shared encoder (In: {input_dim}, Out: {encoder_output_dim})") # Optional logging
         else:
             layers = []
             current_dim = input_dim
             for h_dim in encoder_hidden_dims:
                 layers.append(nn.Linear(current_dim, h_dim))
                 layers.append(nn.ReLU())
+                layers.append(nn.Dropout(0.5))  # 🔥 Add Dropout after each layer
                 current_dim = h_dim
             self.shared_encoder = nn.Sequential(*layers)
             encoder_output_dim = current_dim
-            # print(f"Using MLP shared encoder (In: {input_dim}, Hidden: {encoder_hidden_dims}, Out: {encoder_output_dim})") # Optional logging
 
 
         # --- CORAL Heads ---
