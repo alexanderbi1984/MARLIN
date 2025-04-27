@@ -477,6 +477,12 @@ def run_multitask_cv(args, config):
         # Map indices back to video IDs
         fold_train_video_ids = [unique_video_ids[i] for i in train_vid_idx_indices]
         fold_val_video_ids = [unique_video_ids[i] for i in val_vid_idx_indices]
+        
+        # DEBUGGING - Print fold data statistics
+        print(f"\nFOLD DEBUG: Total unique video IDs: {len(unique_video_ids)}")
+        print(f"FOLD DEBUG: Train set should be ~{(n_splits-1)/n_splits:.1%} of videos")
+        print(f"FOLD DEBUG: Actual train/val video split: {len(fold_train_video_ids)}/{len(fold_val_video_ids)} = {len(fold_train_video_ids)/len(unique_video_ids):.1%}/{len(fold_val_video_ids)/len(unique_video_ids):.1%}")
+        
         print(f"  Train Video IDs: {len(fold_train_video_ids)}, Val Video IDs: {len(fold_val_video_ids)}")
 
         # DEBUG: Inspect video IDs and types
@@ -514,6 +520,31 @@ def run_multitask_cv(args, config):
                 syracuse_train_filenames.append(filename)
 
         print(f"  Syracuse Train Files: {len(syracuse_train_filenames)}, Val Files: {len(syracuse_val_filenames)}")
+        # Count files per video ID in each set
+        train_files_per_vid = {}
+        val_files_per_vid = {}
+        for clip in original_clips:
+            vid = clip.get('video_id')
+            if vid in fold_train_video_ids_set:
+                train_files_per_vid[vid] = train_files_per_vid.get(vid, 0) + 1
+            elif vid in fold_val_video_ids_set:
+                val_files_per_vid[vid] = val_files_per_vid.get(vid, 0) + 1
+        
+        for clip in augmented_clips:
+            vid = clip.get('video_id')
+            if vid in fold_train_video_ids_set:
+                train_files_per_vid[vid] = train_files_per_vid.get(vid, 0) + 1
+        
+        print(f"FOLD DEBUG: Avg files per train video: {sum(train_files_per_vid.values())/len(train_files_per_vid) if train_files_per_vid else 0:.1f}")
+        print(f"FOLD DEBUG: Avg files per val video: {sum(val_files_per_vid.values())/len(val_files_per_vid) if val_files_per_vid else 0:.1f}")
+        print(f"FOLD DEBUG: Total clips ratio (train/all): {len(syracuse_train_filenames)/(len(syracuse_train_filenames)+len(syracuse_val_filenames)):.1%}")
+        
+        # Calculate expected batches per epoch
+        expected_batches = len(syracuse_train_filenames) // args.batch_size
+        if len(syracuse_train_filenames) % args.batch_size != 0:
+            expected_batches += 1
+        print(f"FOLD DEBUG: Expected batches per epoch: {expected_batches} (train_size={len(syracuse_train_filenames)}, batch_size={args.batch_size})")
+        
         # Skip folds with empty train or validation splits
         if not syracuse_train_filenames or not syracuse_val_filenames:
             print(f"  WARNING: Fold {fold_idx + 1} has empty train or validation file list. Skipping this fold.")
