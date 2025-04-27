@@ -143,6 +143,7 @@ def run_multitask_evaluation(args, config):
         pain_loss_weight=pain_loss_weight,
         stim_loss_weight=stim_loss_weight,
         encoder_hidden_dims=encoder_hidden_dims,
+        distributed=(args.n_gpus > 1), # Pass the distributed flag
         # optimizer_name can be added to config/args if needed
     )
     
