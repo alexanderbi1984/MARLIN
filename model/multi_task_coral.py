@@ -170,9 +170,22 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             mae_metric.update(pain_preds, valid_pain_labels)
             # acc_metric = getattr(self, f"{stage}_pain_acc") # If using accuracy
             # acc_metric(pain_preds, valid_pain_labels) #
-
+            
+            # --- DEBUGGING --- 
+            try:
+                 computed_mae = mae_metric.compute()
+                 print(f"[DEBUG {stage}] Computed Pain MAE: {computed_mae}, Type: {type(computed_mae)}")
+                 # Log computed value directly
+                 self.log(f"{stage}_pain_MAE", computed_mae, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            except Exception as e_mae:
+                 print(f"[DEBUG {stage}] Error computing pain MAE: {e_mae}")
+                 # Log a placeholder if compute fails
+                 self.log(f"{stage}_pain_MAE", -1.0, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            # --- END DEBUGGING --- 
+            
             self.log(f"{stage}_pain_loss", pain_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
-            self.log(f"{stage}_pain_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            # Original MAE log (commented out for debugging)
+            # self.log(f"{stage}_pain_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
             # self.log(f"{stage}_pain_Acc", acc_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True) #
 
         # --- Stimulus Task ---
@@ -191,9 +204,22 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             mae_metric.update(stim_preds, valid_stim_labels)
             # acc_metric = getattr(self, f"{stage}_stim_acc") # If using accuracy
             # acc_metric(stim_preds, valid_stim_labels) #
+            
+            # --- DEBUGGING --- 
+            try:
+                 computed_mae = mae_metric.compute()
+                 print(f"[DEBUG {stage}] Computed Stim MAE: {computed_mae}, Type: {type(computed_mae)}")
+                 # Log computed value directly
+                 self.log(f"{stage}_stim_MAE", computed_mae, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            except Exception as e_mae:
+                 print(f"[DEBUG {stage}] Error computing stim MAE: {e_mae}")
+                 # Log a placeholder if compute fails
+                 self.log(f"{stage}_stim_MAE", -1.0, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            # --- END DEBUGGING --- 
 
             self.log(f"{stage}_stim_loss", stim_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
-            self.log(f"{stage}_stim_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            # Original MAE log (commented out for debugging)
+            # self.log(f"{stage}_stim_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
             # self.log(f"{stage}_stim_Acc", acc_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True) #
 
         # --- Combine Losses ---
