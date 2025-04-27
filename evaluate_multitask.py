@@ -397,8 +397,8 @@ def run_multitask_cv(args, config):
     input_dim = 768 # Assuming same as before, adjust if needed
     data_ratio = config.get("data_ratio", 1.0) # Use from config if available
     take_train = config.get("take_train", None)
-    patience = config.get("patience", 10)
-    monitor_metric = config.get("monitor_metric", "val_pain_MAE") # QWK or MAE
+    patience = config.get("patience", 100)
+    monitor_metric = config.get("monitor_metric", "val_pain_QWK") # QWK or MAE
     monitor_mode = "min" if "MAE" in monitor_metric else "max"
 
     # --- Load Syracuse Metadata (once) --- 
