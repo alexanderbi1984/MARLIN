@@ -579,9 +579,25 @@ def run_multitask_cv(args, config):
         wrapped_syracuse_train = MultiTaskWrapper(syracuse_train_set, 'pain')
         wrapped_syracuse_val = MultiTaskWrapper(syracuse_val_set, 'pain')
         
+        # Add BioVid data to the training set (as this is a multi-task model)
+        wrapped_biovid_train = MultiTaskWrapper(full_biovid_train_set, 'stimulus')
+        
+        # Combine Syracuse and BioVid for training
+        print(f"  Creating combined training dataset:")
+        print(f"    - Syracuse train: {len(wrapped_syracuse_train)} samples")
+        print(f"    - BioVid train: {len(wrapped_biovid_train)} samples")
+        combined_train_dataset = ConcatDataset([wrapped_syracuse_train, wrapped_biovid_train])
+        print(f"    - Combined training set: {len(combined_train_dataset)} samples")
+        
+        # Calculate new expected batches with combined dataset
+        combined_expected_batches = len(combined_train_dataset) // args.batch_size
+        if len(combined_train_dataset) % args.batch_size != 0:
+            combined_expected_batches += 1
+        print(f"FOLD DEBUG: Expected batches with combined data: {combined_expected_batches}")
+        
         # Create DataLoaders with the wrapped datasets
         fold_train_loader = DataLoader(
-            wrapped_syracuse_train, 
+            combined_train_dataset,  # Now using the combined dataset
             batch_size=args.batch_size, 
             shuffle=True, 
             num_workers=args.num_workers, 
