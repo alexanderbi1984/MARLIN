@@ -542,46 +542,26 @@ def run_multitask_cv(args, config):
             syracuse_val_filenames,       # name_list of validation filenames
             all_syracuse_metadata         # metadata dict
         )
-        
-        # Handle BioVid data (balance if needed)
-        biovid_train_set_fold = full_biovid_train_set # Use the full set by default
-        if balance_sources:
-             # Balance BioVid against Syracuse TRAIN filenames for this fold
-             target_size = len(syracuse_train_filenames)
-             print(f"  Balancing BioVid training data to target size: {target_size}")
-             # biovid_train_set_fold, _ = balance_source_datasets(full_biovid_train_set, target_size) # Commented out: function missing
-             print("    WARNING: Source balancing is enabled but 'balance_source_datasets' function is missing. Using full BioVid set.")
-             # Reassign just in case logic changes later
-             biovid_train_set_fold = full_biovid_train_set 
-             # print(f"    Balanced BioVid train size for fold: {len(biovid_train_set_fold)}") # Can't print length if not balanced
-             
-        # Wrap datasets
-        wrapped_syracuse_train = MultiTaskWrapper(syracuse_train_set, 'syracuse')
-        wrapped_syracuse_val = MultiTaskWrapper(syracuse_val_set, 'syracuse')
-        wrapped_biovid_train = MultiTaskWrapper(biovid_train_set_fold, 'biovid', balance_classes=balance_stimulus_classes)
-        
-        # Concatenate training datasets
-        fold_train_dataset = ConcatDataset([wrapped_syracuse_train, wrapped_biovid_train])
-        fold_val_dataset = wrapped_syracuse_val # Validation is only on Syracuse
-        print(f"  Fold Train Dataset Size: {len(fold_train_dataset)}, Fold Val Dataset Size: {len(fold_val_dataset)}")
 
-        # Create DataLoaders
-        train_sampler = None
-        if balance_sources or balance_stimulus_classes:
-            # print("  Using BalanceSampler for training.") # Commented out: Sampler missing
-            # Need labels for balancing; get them from the wrapped datasets
-            # This requires MultiTaskWrapper to expose labels or have a method
-            # For now, assuming MultiTaskWrapper adds necessary attributes or methods
-            # Placeholder: Implement label extraction for BalanceSampler if needed
-            # train_labels = [item['pain_label'] for item in fold_train_dataset] # Example structure
-            # train_sampler = BalanceSampler(train_labels, mode='downsample') # Adjust mode as needed
-            print("  WARNING: BalanceSampler integration needs verification with MultiTaskWrapper structure (and Sampler is currently missing).")
-            # Fallback to standard shuffling if sampler fails
-            train_loader = DataLoader(fold_train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
-        else:
-             train_loader = DataLoader(fold_train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
-
-        val_loader = DataLoader(fold_val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True)
+        # Create DataLoaders directly from Syracuse datasets (following evaluate.py pattern)
+        # For CV we'll use Syracuse only for both training and validation to simplify
+        fold_train_loader = DataLoader(
+            syracuse_train_set, 
+            batch_size=args.batch_size, 
+            shuffle=True, 
+            num_workers=args.num_workers, 
+            pin_memory=True
+        )
+        
+        fold_val_loader = DataLoader(
+            syracuse_val_set, 
+            batch_size=args.batch_size, 
+            shuffle=False, 
+            num_workers=args.num_workers,
+            pin_memory=True
+        )
+        
+        print(f"  Created DataLoaders for fold {fold_idx + 1}")
         
         # --- Configure Model & Trainer for the Fold --- 
         model = MultiTaskCoralClassifier(
@@ -628,7 +608,8 @@ def run_multitask_cv(args, config):
         
         # --- Train the Fold ---
         print(f"  Starting training for fold {fold_idx + 1}...")
-        trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+        # Align with evaluate.py's parameter style
+        trainer.fit(model, train_dataloaders=fold_train_loader, val_dataloaders=fold_val_loader)
 
         # --- Store Best Checkpoint Path ---
         best_ckpt_path = checkpoint_callback.best_model_path
@@ -732,7 +713,7 @@ def run_multitask_cv(args, config):
     except Exception as e:
         print(f"Error saving aggregated CV results: {e}")
 
-# Need helper function to evaluate a specific fold checkpoint
+
 def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, config):
     """Loads a model from a checkpoint and evaluates it on the given validation filenames."""
     if not checkpoint_path or not os.path.exists(checkpoint_path) or not val_filenames:
@@ -791,44 +772,53 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
             metadata                    # metadata dict
         )
         
-        # Wrap the Syracuse dataset
-        wrapped_syracuse_val = MultiTaskWrapper(syracuse_val_set, 'syracuse')
-        
-        # Create a DataLoader
-        val_loader = DataLoader(wrapped_syracuse_val, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+        # Create a regular DataLoader without MultiTaskWrapper
+        val_loader = DataLoader(
+            syracuse_val_set, 
+            batch_size=args.batch_size, 
+            shuffle=False, 
+            num_workers=args.num_workers,
+            pin_memory=True
+        )
 
-        # Run predictions
+        # Manual prediction loop
         all_pain_preds = []
         all_pain_labels = []
-        all_stim_preds = []
-        all_stim_labels = []
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
 
         with torch.no_grad():
-            for batch in tqdm(val_loader, desc=f"Fold Validation", leave=False):
-                features = batch['feature'].to(device)
-                pain_labels = batch['pain_label'].to(device)
-                # Stimulus labels might not be present or needed for Syr val, handle carefully
-                # stimulus_labels = batch['stimulus_label'].to(device) 
+            for batch in tqdm(val_loader, desc=f"Fold Validation"):
+                features, true_labels = batch  # SyracuseLP returns (features, labels)
+                features = features.to(device)
                 
-                outputs = model(features)
-                pain_logits = outputs['pain_logits']
-                # stimulus_logits = outputs['stimulus_logits']
+                # Get pain predictions - model returns tuple (pain_logits, stim_logits)
+                pain_logits, _ = model(features)
+                pain_probas = torch.sigmoid(pain_logits)
+                
+                # Get predicted classes using threshold method
+                predicted_classes = torch.sum(pain_probas > 0.5, dim=1)
+                
+                # Add batch results to lists for aggregation
+                all_pain_preds.append(predicted_classes.cpu())
+                all_pain_labels.append(true_labels.cpu())
 
-                pain_preds = torch.sum(pain_logits > 0.5, dim=1) # Convert CORAL output to class
-                
-                all_pain_preds.extend(pain_preds.cpu().numpy())
-                all_pain_labels.extend(pain_labels.cpu().numpy())
-                # We only care about pain task metrics for Syracuse validation in CV
-                # all_stim_preds.extend(torch.argmax(stimulus_logits, dim=1).cpu().numpy())
-                # all_stim_labels.extend(stimulus_labels.cpu().numpy())
+        # Convert prediction lists to numpy arrays
+        if not all_pain_preds:
+            print(f"  No predictions were generated for evaluation.")
+            return None
+            
+        pain_preds_tensor = torch.cat(all_pain_preds)
+        pain_labels_tensor = torch.cat(all_pain_labels)
+        
+        y_true = pain_labels_tensor.numpy()
+        y_pred = pain_preds_tensor.numpy()
 
         # Calculate metrics for the pain task
-        mae = mean_absolute_error(all_pain_labels, all_pain_preds)
-        accuracy = accuracy_score(all_pain_labels, all_pain_preds)
-        qwk = cohen_kappa_score(all_pain_labels, all_pain_preds, weights='quadratic')
-        cm = confusion_matrix(all_pain_labels, all_pain_preds, labels=list(range(num_pain_classes)))
+        mae = mean_absolute_error(y_true, y_pred)
+        accuracy = accuracy_score(y_true, y_pred)
+        qwk = cohen_kappa_score(y_true, y_pred, weights='quadratic')
+        cm = confusion_matrix(y_true, y_pred, labels=list(range(num_pain_classes)))
 
         print(f"    Fold Validation Results - MAE: {mae:.4f}, Acc: {accuracy:.4f}, QWK: {qwk:.4f}")
         
