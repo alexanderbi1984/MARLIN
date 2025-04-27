@@ -83,12 +83,12 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         self.test_stim_mae = torchmetrics.MeanAbsoluteError(**metric_args)
 
         # QWK Metrics
-        self.train_pain_qwk = CohenKappa(num_classes=self.hparams.num_pain_classes, weights='quadratic', **metric_args)
-        self.val_pain_qwk = CohenKappa(num_classes=self.hparams.num_pain_classes, weights='quadratic', **metric_args)
-        self.test_pain_qwk = CohenKappa(num_classes=self.hparams.num_pain_classes, weights='quadratic', **metric_args)
-        self.train_stim_qwk = CohenKappa(num_classes=self.hparams.num_stimulus_classes, weights='quadratic', **metric_args)
-        self.val_stim_qwk = CohenKappa(num_classes=self.hparams.num_stimulus_classes, weights='quadratic', **metric_args)
-        self.test_stim_qwk = CohenKappa(num_classes=self.hparams.num_stimulus_classes, weights='quadratic', **metric_args)
+        self.train_pain_qwk = CohenKappa(task="multiclass", num_classes=self.hparams.num_pain_classes, weights='quadratic', **metric_args)
+        self.val_pain_qwk = CohenKappa(task="multiclass", num_classes=self.hparams.num_pain_classes, weights='quadratic', **metric_args)
+        self.test_pain_qwk = CohenKappa(task="multiclass", num_classes=self.hparams.num_pain_classes, weights='quadratic', **metric_args)
+        self.train_stim_qwk = CohenKappa(task="multiclass", num_classes=self.hparams.num_stimulus_classes, weights='quadratic', **metric_args)
+        self.val_stim_qwk = CohenKappa(task="multiclass", num_classes=self.hparams.num_stimulus_classes, weights='quadratic', **metric_args)
+        self.test_stim_qwk = CohenKappa(task="multiclass", num_classes=self.hparams.num_stimulus_classes, weights='quadratic', **metric_args)
 
         # Add Accuracy if desired
         # self.train_pain_acc = torchmetrics.Accuracy(task="multiclass", num_classes=num_pain_classes, average='macro', **metric_args)
