@@ -1,4 +1,4 @@
-# configs/multitask_coral_template.yaml
+# config/multitask_coral_template.yaml
 
 # --- Required --- 
 model_name: multitask_pain_stimulus_run_01  # Name for checkpoints and logs

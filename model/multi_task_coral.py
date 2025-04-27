@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 import torchmetrics
 import torch.optim as optim
+from typing import Union, List
 
 # --------------------------------------------------------------------
 # Multi-Task CORAL Lightning Module
@@ -30,7 +31,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         input_dim: int,
         num_pain_classes: int,
         num_stimulus_classes: int,
-        encoder_hidden_dims: list[int] | None = None,
+        encoder_hidden_dims: Union[List[int], None] = None,
         learning_rate: float = 1e-4,
         optimizer_name: str = 'AdamW',
         pain_loss_weight: float = 1.0,
