@@ -68,10 +68,10 @@ from marlin_pytorch.util import read_yaml # Assuming this is available
 from util.lr_logger import LrLogger
 from util.seed import Seed
 from util.system_stats_logger import SystemStatsLogger
-from dataset.syracuse import SyracuseLP
+from dataset.syracuse import SyracuseLP, SyracuseDataModule
 from dataset.biovid import BioVidLP
 # from dataset.utils import BalanceSampler, balance_source_datasets # Commented out: Module not found
-from torch.utils.data import ConcatDataset
+from torch.utils.data import ConcatDataset, DataLoader
 
 
 def run_multitask_evaluation(args, config):
@@ -404,27 +404,25 @@ def run_multitask_cv(args, config):
     # --- Load Syracuse Metadata (once) --- 
     print("  Loading Syracuse metadata for splitting...")
     try:
-        # Use DataModule to load metadata
-        syracuse_meta_loader = MultiTaskDataModule(
-            syracuse_root_dir=args.syracuse_data_path,
-            syracuse_feature_dir=syracuse_feature_dir, 
-            syracuse_marlin_base_dir=args.syracuse_marlin_base_dir,
-            num_pain_classes=num_pain_classes,
-            biovid_root_dir=args.biovid_data_path, # Provide dummy paths
-            biovid_feature_dir=biovid_feature_dir, 
-            num_stimulus_classes=num_stimulus_classes,
-            batch_size=1, # Dummy
-            num_workers=0,
+        # Instantiate SyracuseDataModule directly to load metadata
+        syracuse_dm_for_meta = SyracuseDataModule(
+            root_dir=args.syracuse_data_path,
+            task='multiclass', # Task/num_classes needed for label extraction
+            num_classes=num_pain_classes,
+            batch_size=1, # Dummy value
+            feature_dir=syracuse_feature_dir,
+            marlin_base_dir=args.syracuse_marlin_base_dir,
             temporal_reduction=temporal_reduction,
-            balance_sources=False, # Don't balance here, just load metadata
-            balance_stimulus_classes=False
+            num_workers=0 # Dummy value
         )
         # Call setup just to load metadata and parse it
-        syracuse_meta_loader.setup(stage=None) 
-        all_syracuse_metadata = syracuse_meta_loader.all_syracuse_metadata
-        original_clips = syracuse_meta_loader.original_clips # dict: video_id -> [filenames]
-        augmented_clips = syracuse_meta_loader.augmented_clips # dict: video_id -> [filenames]
-        video_id_labels = syracuse_meta_loader.video_id_labels # dict: video_id -> label
+        syracuse_dm_for_meta.setup(stage=None) # Use stage=None to load everything
+        # Access attributes from the SyracuseDataModule instance
+        # Note: It's syracuse_dm_for_meta.all_metadata, not all_syracuse_metadata
+        all_syracuse_metadata = syracuse_dm_for_meta.all_metadata 
+        original_clips = syracuse_dm_for_meta.original_clips # dict: video_id -> [filenames]
+        augmented_clips = syracuse_dm_for_meta.augmented_clips # dict: video_id -> [filenames]
+        video_id_labels = syracuse_dm_for_meta.video_id_labels # dict: video_id -> label
         if not video_id_labels:
             raise ValueError("video_id_labels empty after Syracuse metadata setup.")
     except Exception as e:
