@@ -293,17 +293,21 @@ class MultiTaskCoralClassifier(pl.LightningModule):
 
     def configure_optimizers(self):
         """Choose what optimizers and learning-rate schedulers to use."""
-        if self.hparams.optimizer_name.lower() == 'adam':
-            optimizer = optim.Adam(self.parameters(), lr=self.hparams.learning_rate) # Add weight_decay=self.hparams.weight_decay if needed
-        elif self.hparams.optimizer_name.lower() == 'adamw':
-            optimizer = optim.AdamW(self.parameters(), lr=self.hparams.learning_rate) # Add weight_decay=self.hparams.weight_decay if needed
-        else:
-            raise ValueError(f"Unsupported optimizer: {self.hparams.optimizer_name}")
-
-        # Example LR scheduler (optional)
-        # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5)
-        # return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "monitor": "val_loss"}}
-
+        # Simple optimizer for debugging
+        print("[DEBUG] Configuring simplified Adam optimizer...")
+        optimizer = optim.Adam(self.parameters(), lr=1e-4) 
+        # --- Original Code ---
+        # if self.hparams.optimizer_name.lower() == 'adam':
+        #     optimizer = optim.Adam(self.parameters(), lr=self.hparams.learning_rate) # Add weight_decay=self.hparams.weight_decay if needed
+        # elif self.hparams.optimizer_name.lower() == 'adamw':
+        #     optimizer = optim.AdamW(self.parameters(), lr=self.hparams.learning_rate) # Add weight_decay=self.hparams.weight_decay if needed
+        # else:
+        #     raise ValueError(f"Unsupported optimizer: {self.hparams.optimizer_name}")
+        #
+        # # Example LR scheduler (optional)
+        # # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5)
+        # # return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "monitor": "val_loss"}}
+        # -- End Original Code ---
         return optimizer
 
 # Remove the old if __name__ == '__main__': block if it exists
