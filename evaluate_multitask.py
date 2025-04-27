@@ -51,6 +51,8 @@ import numpy as np
 import pandas as pd
 import json
 from tqdm.auto import tqdm
+# Add scikit-learn imports for metrics
+from sklearn.metrics import accuracy_score, confusion_matrix
 
 torch.set_float32_matmul_precision('high')
 from pytorch_lightning import Trainer
@@ -221,19 +223,97 @@ def run_multitask_evaluation(args, config):
     # --- Testing --- 
     if best_ckpt_path:
         print("--- Starting Testing (on Syracuse Test Set) --- ")
-        # test() automatically loads the best checkpoint
+        # test() automatically loads the best checkpoint and logs metrics defined in test_step
         test_results = trainer.test(model, datamodule=dm, ckpt_path=best_ckpt_path)
-        print("Test Set Results (Pain Task Metrics):")
-        print(json.dumps(test_results, indent=4))
-        
-        # Save test results
-        results_filename = os.path.join(checkpoint_dir, f"{model_name}_test_results.json")
+        print("Test Set Results (Logged Metrics):")
+        # test_results is a list containing one dictionary
+        if test_results:
+            print(json.dumps(test_results[0], indent=4)) 
+            # Save logged test results
+            results_filename = os.path.join(checkpoint_dir, f"{model_name}_test_results_logged.json")
+            try:
+                with open(results_filename, 'w') as f:
+                    json.dump(test_results[0], f, indent=4)
+                print(f"Logged test results saved to: {results_filename}")
+            except Exception as e:
+                print(f"Error saving logged test results: {e}")
+        else:
+            print("No logged test results returned by trainer.test().")
+
+        # --- Manual Calculation for Accuracy and Confusion Matrix --- 
+        print("--- Calculating Accuracy & Confusion Matrix (Syracuse Test Set) --- ")
+        # Load the best model again or reuse the one loaded by trainer.test
+        # It's safer to load explicitly to ensure we have the correct weights
         try:
-            with open(results_filename, 'w') as f:
-                json.dump(test_results, f, indent=4)
-            print(f"Test results saved to: {results_filename}")
+            model = MultiTaskCoralClassifier.load_from_checkpoint(best_ckpt_path)
+            model.eval()
+            device = torch.device("cuda" if args.n_gpus > 0 else "cpu")
+            model.to(device)
+
+            all_true_pain_labels = []
+            all_pred_pain_labels = []
+            
+            # Get the test dataloader again
+            dm.setup('test') # Ensure test dataset/loader is ready
+            test_loader = dm.test_dataloader()
+            if test_loader is None:
+                 raise ValueError("Test dataloader is None, cannot proceed with manual evaluation.")
+
+            with torch.no_grad():
+                for batch in tqdm(test_loader, desc="Manual Test Prediction"):
+                    features, pain_labels, _ = batch # We only need pain labels from test set
+                    
+                    # Ensure only valid pain labels are considered (should be all in test set)
+                    valid_mask = pain_labels != -1
+                    if not valid_mask.any(): continue # Skip batch if no valid labels somehow
+                    
+                    features = features[valid_mask].to(device)
+                    true_labels = pain_labels[valid_mask]
+                    
+                    pain_logits, _ = model(features)
+                    pain_probs = torch.sigmoid(pain_logits)
+                    # Use the static method directly for clarity
+                    pred_labels = MultiTaskCoralClassifier.prob_to_label(pain_probs) 
+                    
+                    all_true_pain_labels.append(true_labels.cpu().numpy())
+                    all_pred_pain_labels.append(pred_labels.cpu().numpy())
+            
+            # Concatenate results from all batches
+            if all_true_pain_labels:
+                y_true = np.concatenate(all_true_pain_labels)
+                y_pred = np.concatenate(all_pred_pain_labels)
+                
+                # Calculate Metrics
+                accuracy = accuracy_score(y_true, y_pred)
+                cm = confusion_matrix(y_true, y_pred)
+                
+                print(f"\nManual Test Set Calculation Results (Pain Task):")
+                print(f"  Accuracy: {accuracy:.4f}")
+                print("  Confusion Matrix:")
+                print(cm)
+                
+                # Optionally save these too
+                manual_results = {
+                    'test_pain_accuracy': accuracy,
+                    'test_pain_confusion_matrix': cm.tolist() # Convert numpy array to list for JSON
+                }
+                manual_results_filename = os.path.join(checkpoint_dir, f"{model_name}_test_results_manual.json")
+                try:
+                    with open(manual_results_filename, 'w') as f:
+                        json.dump(manual_results, f, indent=4)
+                    print(f"Manual test results saved to: {manual_results_filename}")
+                except Exception as e:
+                    print(f"Error saving manual test results: {e}")
+                    
+            else:
+                 print("No valid pain labels found in the test set during manual calculation.")
+
         except Exception as e:
-            print(f"Error saving test results: {e}")
+             print(f"Error during manual test evaluation: {e}")
+             # Optionally re-raise if debugging
+             # raise e
+        # ------------------------------------------------------------
+
     else:
         print("Skipping testing because no valid checkpoint was found.")
 

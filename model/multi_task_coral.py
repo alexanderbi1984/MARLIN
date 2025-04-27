@@ -217,7 +217,6 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        print("[DEBUG] Entering validation_step...")
         features, pain_labels, stimulus_labels = batch
         pain_logits, stimulus_logits = self(features)
         self._calculate_loss_and_metrics(pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage='val')
