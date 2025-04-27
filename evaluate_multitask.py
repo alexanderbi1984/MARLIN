@@ -479,49 +479,47 @@ def run_multitask_cv(args, config):
         fold_val_video_ids = [unique_video_ids[i] for i in val_vid_idx_indices]
         print(f"  Train Video IDs: {len(fold_train_video_ids)}, Val Video IDs: {len(fold_val_video_ids)}")
 
-        # Get Syracuse filenames for this fold based on the split video IDs
-        # Need to iterate through the full lists and filter by video ID
+        # DEBUG: Inspect video IDs and types
+        print("DEBUG: fold_train_video_ids (first 10):", fold_train_video_ids[:10])
+        print("DEBUG: type of video IDs in fold_train_video_ids:", type(fold_train_video_ids[0]) if fold_train_video_ids else None)
+        print("DEBUG: sample original_clips video_id values (first 5):", [clip['video_id'] for clip in original_clips[:5]])
+
+        # Filter Syracuse filenames for this fold based on clip_data['video_id']
         fold_train_video_ids_set = set(fold_train_video_ids)
         fold_val_video_ids_set = set(fold_val_video_ids)
 
+        print("DEBUG: fold_train_video_ids_set (first 10):", list(fold_train_video_ids_set)[:10])
+        print("DEBUG: check membership for first 5 original_clips:")
+        for clip in original_clips[:5]:
+            vid = clip.get('video_id')
+            print(f"    clip video_id={vid}({type(vid)}), in train_set? {vid in fold_train_video_ids_set}")
+        
         syracuse_train_filenames = []
         syracuse_val_filenames = []
-
-        # Process original clips
+        
+        # Process original clips (assign to train or val based on video_id)
         for clip_data in original_clips:
-            try:
-                filename = clip_data['filename'] # Access filename from the dictionary
-                # Assumes filename format like: videoID_clipID_...
-                video_id = filename.split('_')[0]
-                if video_id in fold_train_video_ids_set:
-                    syracuse_train_filenames.append(filename)
-                if video_id in fold_val_video_ids_set:
-                    syracuse_val_filenames.append(filename) # Validation uses only originals
-            except IndexError:
-                 print(f"Warning: Could not parse video ID from original clip filename: {filename}")
-            except KeyError:
-                 print(f"Warning: 'filename' key not found in original clip data: {clip_data}")
-            except TypeError:
-                 print(f"Warning: Original clip data is not a dictionary as expected: {clip_data}")
+            vid = clip_data.get('video_id')
+            filename = clip_data.get('filename')
+            if vid in fold_train_video_ids_set:
+                syracuse_train_filenames.append(filename)
+            elif vid in fold_val_video_ids_set:
+                syracuse_val_filenames.append(filename)
 
-        # Process augmented clips (add only to training set)
+        # Process augmented clips (only add to train if video_id matches)
         for clip_data in augmented_clips:
-            try:
-                filename = clip_data['filename'] # Access filename from the dictionary
-                # Assumes filename format like: videoID_clipID_...
-                video_id = filename.split('_')[0]
-                if video_id in fold_train_video_ids_set:
-                    syracuse_train_filenames.append(filename)
-            except IndexError:
-                 print(f"Warning: Could not parse video ID from augmented clip filename: {filename}")
-            except KeyError:
-                 print(f"Warning: 'filename' key not found in augmented clip data: {clip_data}")
-            except TypeError:
-                 print(f"Warning: Augmented clip data is not a dictionary as expected: {clip_data}")
+            vid = clip_data.get('video_id')
+            filename = clip_data.get('filename')
+            if vid in fold_train_video_ids_set:
+                syracuse_train_filenames.append(filename)
 
-        # Note: fold_val_filenames was populated during the original_clips loop
-        fold_val_filenames.append(syracuse_val_filenames) # Store for later evaluation
         print(f"  Syracuse Train Files: {len(syracuse_train_filenames)}, Val Files: {len(syracuse_val_filenames)}")
+        # Skip folds with empty train or validation splits
+        if not syracuse_train_filenames or not syracuse_val_filenames:
+            print(f"  WARNING: Fold {fold_idx + 1} has empty train or validation file list. Skipping this fold.")
+            continue
+        # Store validation filenames for later evaluation
+        fold_val_filenames.append(syracuse_val_filenames)
 
         # Create Syracuse datasets for the fold using correct SyracuseLP signature
         syracuse_train_set = SyracuseLP(
@@ -648,9 +646,13 @@ def run_multitask_cv(args, config):
                  print(f"  ERROR: Could not find any checkpoint for fold {fold_idx + 1}")
                  fold_checkpoint_paths.append(None) # Mark as failed/missing
 
+    # After processing all folds, ensure at least one fold ran successfully
+    if not fold_val_filenames or not fold_checkpoint_paths:
+        print(f"\nWARNING: No valid folds were executed (train or val splits empty). Cross-validation aborted.")
+        return
+    print(f"\n===== Cross-Validation Finished =====")
 
     # --- Aggregate and Evaluate CV Results ---
-    print(f"\n===== Cross-Validation Finished =====")
     print(f"Stored best checkpoint paths for {len(fold_checkpoint_paths)} folds.")
     print(f"Validation filenames stored for {len(fold_val_filenames)} folds.")
 
