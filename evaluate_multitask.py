@@ -189,8 +189,8 @@ def run_multitask_evaluation(args, config):
         precision=precision,
         logger=True, # Use default TensorBoardLogger
         callbacks=[
-            ckpt_callback,
-            early_stop_callback,
+            # ckpt_callback, # Temporarily disable for debugging
+            # early_stop_callback, # Temporarily disable for debugging
             LrLogger(),
             SystemStatsLogger()
         ],
