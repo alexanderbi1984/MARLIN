@@ -7,8 +7,8 @@ num_pain_classes: 5  # Number of ordinal pain levels (Syracuse)
 num_stimulus_classes: 5  # Number of ordinal stimulus levels (BioVid)
 
 # Feature directory names (relative to the respective data paths provided via CLI)
-syracuse_feature_dir: marlin_vit_small_patch16_224 # Example: Feature directory for Syracuse
-biovid_feature_dir: marlin_vit_small_patch16_224   # Example: Feature directory for BioVid (can be the same or different)
+syracuse_feature_dir: multimodal_marlin_base # Example: Feature directory for Syracuse
+biovid_feature_dir: multimodal_marlin_base   # Example: Feature directory for BioVid (can be the same or different)
 
 temporal_reduction: mean  # How to aggregate features temporally (mean, max, min, none)
 
