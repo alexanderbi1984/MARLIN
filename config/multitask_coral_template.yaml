@@ -12,7 +12,7 @@ biovid_feature_dir: multimodal_marlin_base   # Example: Feature directory for Bi
 
 temporal_reduction: mean  # How to aggregate features temporally (mean, max, min, none)
 
-learning_rate: 1.0e-4      # Learning rate for the optimizer
+learning_rate: 1.0e-5      # Learning rate for the optimizer
 
 # --- Optional: Model & Loss Weights --- 
 pain_loss_weight: 1.0  # Weight for the pain task loss in the combined loss
@@ -20,7 +20,7 @@ stim_loss_weight: 1.0  # Weight for the stimulus task loss in the combined loss
 
 # Optional: Define hidden layers for the shared MLP encoder
 # If null or empty, a single Linear layer is used.
-encoder_hidden_dims: [512, 256] # Example: [hidden1_size, hidden2_size]
+encoder_hidden_dims: [256] # Example: [hidden1_size, hidden2_size]
 # encoder_hidden_dims: null
 
 # --- Optional: Data Balancing --- 
