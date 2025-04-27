@@ -70,7 +70,7 @@ from util.seed import Seed
 from util.system_stats_logger import SystemStatsLogger
 from dataset.syracuse import SyracuseLP
 from dataset.biovid import BioVidLP
-from dataset.utils import BalanceSampler, balance_source_datasets
+# from dataset.utils import BalanceSampler, balance_source_datasets # Commented out: Module not found
 from torch.utils.data import ConcatDataset
 
 
@@ -509,8 +509,11 @@ def run_multitask_cv(args, config):
              # Balance BioVid against Syracuse TRAIN filenames for this fold
              target_size = len(syracuse_train_filenames)
              print(f"  Balancing BioVid training data to target size: {target_size}")
-             biovid_train_set_fold, _ = balance_source_datasets(full_biovid_train_set, target_size)
-             print(f"    Balanced BioVid train size for fold: {len(biovid_train_set_fold)}")
+             # biovid_train_set_fold, _ = balance_source_datasets(full_biovid_train_set, target_size) # Commented out: function missing
+             print("    WARNING: Source balancing is enabled but 'balance_source_datasets' function is missing. Using full BioVid set.")
+             # Reassign just in case logic changes later
+             biovid_train_set_fold = full_biovid_train_set 
+             # print(f"    Balanced BioVid train size for fold: {len(biovid_train_set_fold)}") # Can't print length if not balanced
              
         # Wrap datasets
         wrapped_syracuse_train = MultiTaskWrapper(syracuse_train_set, 'syracuse')
@@ -525,14 +528,14 @@ def run_multitask_cv(args, config):
         # Create DataLoaders
         train_sampler = None
         if balance_sources or balance_stimulus_classes:
-            print("  Using BalanceSampler for training.")
+            # print("  Using BalanceSampler for training.") # Commented out: Sampler missing
             # Need labels for balancing; get them from the wrapped datasets
             # This requires MultiTaskWrapper to expose labels or have a method
             # For now, assuming MultiTaskWrapper adds necessary attributes or methods
             # Placeholder: Implement label extraction for BalanceSampler if needed
             # train_labels = [item['pain_label'] for item in fold_train_dataset] # Example structure
             # train_sampler = BalanceSampler(train_labels, mode='downsample') # Adjust mode as needed
-            print("  WARNING: BalanceSampler integration needs verification with MultiTaskWrapper structure.")
+            print("  WARNING: BalanceSampler integration needs verification with MultiTaskWrapper structure (and Sampler is currently missing).")
             # Fallback to standard shuffling if sampler fails
             train_loader = DataLoader(fold_train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
         else:
