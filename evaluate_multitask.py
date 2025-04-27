@@ -405,15 +405,17 @@ def run_multitask_cv(args, config):
     print("  Loading Syracuse metadata for splitting...")
     try:
         # Instantiate SyracuseDataModule directly to load metadata
+        # Using positional arguments for required ones to avoid potential kwarg issues
         syracuse_dm_for_meta = SyracuseDataModule(
-            root_dir=args.syracuse_data_path,
-            task='multiclass', # Task/num_classes needed for label extraction
-            num_classes=num_pain_classes,
-            batch_size=1, # Dummy value
-            feature_dir=syracuse_feature_dir,
-            marlin_base_dir=args.syracuse_marlin_base_dir,
+            args.syracuse_data_path,       # root_dir
+            'multiclass',                 # task
+            num_pain_classes,             # num_classes
+            1,                            # batch_size (dummy)
+            syracuse_feature_dir,         # feature_dir
+            args.syracuse_marlin_base_dir, # marlin_base_dir 
+            # Optional args as keywords
             temporal_reduction=temporal_reduction,
-            num_workers=0 # Dummy value
+            num_workers=0                 # num_workers (dummy)
         )
         # Call setup just to load metadata and parse it
         syracuse_dm_for_meta.setup(stage=None) # Use stage=None to load everything
