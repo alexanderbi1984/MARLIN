@@ -404,6 +404,18 @@ def run_multitask_cv(args, config):
     # --- Load Syracuse Metadata (once) --- 
     print("  Loading Syracuse metadata for splitting...")
     try:
+        # DEBUG: Inspect SyracuseDataModule signature and arguments
+        import inspect
+        print("DEBUG: SyracuseDataModule __init__ signature:", inspect.signature(SyracuseDataModule.__init__))
+        print("DEBUG: Preparing args for SyracuseDataModule:")
+        print("    root_dir=", args.syracuse_data_path)
+        print("    task=multiclass")
+        print("    num_classes=", num_pain_classes)
+        print("    batch_size=", 1)
+        print("    feature_dir=", syracuse_feature_dir)
+        print("    marlin_base_dir=", args.syracuse_marlin_base_dir)
+        print("    temporal_reduction=", temporal_reduction)
+        print("    num_workers=", 0)
         # Instantiate SyracuseDataModule directly to load metadata
         # Using positional arguments for required ones to avoid potential kwarg issues
         syracuse_dm_for_meta = SyracuseDataModule(
