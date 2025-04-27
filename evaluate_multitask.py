@@ -523,26 +523,26 @@ def run_multitask_cv(args, config):
         fold_val_filenames.append(syracuse_val_filenames) # Store for later evaluation
         print(f"  Syracuse Train Files: {len(syracuse_train_filenames)}, Val Files: {len(syracuse_val_filenames)}")
 
-        # Create Syracuse datasets for the fold
+        # Create Syracuse datasets for the fold using correct SyracuseLP signature
         syracuse_train_set = SyracuseLP(
-            root_dir=args.syracuse_data_path,
-            marlin_base_dir=args.syracuse_marlin_base_dir,
-            feature_dir=syracuse_feature_dir,
-            split='train', # Use 'train' logic internally
-            task='multiclass',
-            num_classes=num_pain_classes,
-            temporal_reduction=temporal_reduction,
-            specific_filenames=syracuse_train_filenames
+            args.syracuse_data_path,      # root_dir
+            syracuse_feature_dir,         # feature_dir
+            'train',                      # split
+            'multiclass',                 # task
+            num_pain_classes,             # num_classes
+            temporal_reduction,           # temporal_reduction
+            syracuse_train_filenames,     # name_list of specific filenames
+            all_syracuse_metadata         # metadata dict from SyracuseDataModule
         )
         syracuse_val_set = SyracuseLP(
-            root_dir=args.syracuse_data_path,
-            marlin_base_dir=args.syracuse_marlin_base_dir,
-            feature_dir=syracuse_feature_dir,
-            split='val', # Use 'val' logic internally
-            task='multiclass',
-            num_classes=num_pain_classes,
-            temporal_reduction=temporal_reduction,
-            specific_filenames=syracuse_val_filenames
+            args.syracuse_data_path,      # root_dir
+            syracuse_feature_dir,         # feature_dir
+            'val',                        # split
+            'multiclass',                 # task
+            num_pain_classes,             # num_classes
+            temporal_reduction,           # temporal_reduction
+            syracuse_val_filenames,       # name_list of validation filenames
+            all_syracuse_metadata         # metadata dict
         )
         
         # Handle BioVid data (balance if needed)
@@ -763,16 +763,30 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
         )
         model.eval()
         
-        # Create the validation dataset for this fold
-        syracuse_val_set = SyracuseLP(
-            root_dir=args.syracuse_data_path,
-            marlin_base_dir=args.syracuse_marlin_base_dir,
-            feature_dir=syracuse_feature_dir,
-            split='val', # Use 'val' logic internally
-            task='multiclass',
-            num_classes=num_pain_classes,
+        # --- Load Syracuse metadata for evaluation ---
+        syracuse_dm_meta = SyracuseDataModule(
+            args.syracuse_data_path,
+            'multiclass',
+            num_pain_classes,
+            1,
+            syracuse_feature_dir,
+            args.syracuse_marlin_base_dir,
             temporal_reduction=temporal_reduction,
-            specific_filenames=val_filenames # Load only the specified files
+            num_workers=args.num_workers
+        )
+        syracuse_dm_meta.setup(stage=None)
+        metadata = syracuse_dm_meta.all_metadata
+
+        # Create the validation dataset for this fold with correct SyracuseLP signature
+        syracuse_val_set = SyracuseLP(
+            args.syracuse_data_path,    # root_dir
+            syracuse_feature_dir,       # feature_dir
+            'val',                      # split
+            'multiclass',               # task
+            num_pain_classes,           # num_classes
+            temporal_reduction,         # temporal_reduction
+            val_filenames,              # name_list for this fold
+            metadata                    # metadata dict
         )
         
         # Wrap the Syracuse dataset
