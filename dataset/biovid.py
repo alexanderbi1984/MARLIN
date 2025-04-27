@@ -225,7 +225,7 @@ class BioVidLP(BioVidBase):
                 y = int(float(y))
             except ValueError:
                 print(f"Warning: Could not convert y to int: {y}")
-                # y = -1  # Set to a default value or handle error appropriately
+                y = -1 # Set to a default value or handle error appropriately
 
         # --- DEBUGGING --- 
         print(f"[DEBUG BioVidLP] Filename: {self.name_list[index]}, Label Type: {type(y)}, Label Value: {y}")
