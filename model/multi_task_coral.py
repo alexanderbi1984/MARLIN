@@ -5,6 +5,7 @@ import pytorch_lightning as pl
 import torchmetrics
 import torch.optim as optim
 from typing import Union, List
+from torchmetrics.classification import CohenKappa
 
 # --------------------------------------------------------------------
 # Multi-Task CORAL Lightning Module
@@ -80,6 +81,14 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         self.train_stim_mae = torchmetrics.MeanAbsoluteError(**metric_args)
         self.val_stim_mae = torchmetrics.MeanAbsoluteError(**metric_args)
         self.test_stim_mae = torchmetrics.MeanAbsoluteError(**metric_args)
+
+        # QWK Metrics
+        self.train_pain_qwk = CohenKappa(num_classes=self.hparams.num_pain_classes, weights='quadratic', **metric_args)
+        self.val_pain_qwk = CohenKappa(num_classes=self.hparams.num_pain_classes, weights='quadratic', **metric_args)
+        self.test_pain_qwk = CohenKappa(num_classes=self.hparams.num_pain_classes, weights='quadratic', **metric_args)
+        self.train_stim_qwk = CohenKappa(num_classes=self.hparams.num_stimulus_classes, weights='quadratic', **metric_args)
+        self.val_stim_qwk = CohenKappa(num_classes=self.hparams.num_stimulus_classes, weights='quadratic', **metric_args)
+        self.test_stim_qwk = CohenKappa(num_classes=self.hparams.num_stimulus_classes, weights='quadratic', **metric_args)
 
         # Add Accuracy if desired
         # self.train_pain_acc = torchmetrics.Accuracy(task="multiclass", num_classes=num_pain_classes, average='macro', **metric_args)
@@ -170,10 +179,12 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             pain_preds = self.prob_to_label(pain_probs)
             mae_metric = getattr(self, f"{stage}_pain_mae")
             mae_metric.update(pain_preds, valid_pain_labels)
+            qwk_metric = getattr(self, f"{stage}_pain_qwk")
+            qwk_metric.update(pain_preds, valid_pain_labels)
             
             self.log(f"{stage}_pain_loss", pain_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
-            # Restore original MAE log
             self.log(f"{stage}_pain_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            self.log(f"{stage}_pain_QWK", qwk_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
         # --- Stimulus Task ---
         valid_stim_mask = stimulus_labels != -1
@@ -188,10 +199,12 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             stim_preds = self.prob_to_label(stim_probs)
             mae_metric = getattr(self, f"{stage}_stim_mae")
             mae_metric.update(stim_preds, valid_stim_labels)
+            qwk_metric = getattr(self, f"{stage}_stim_qwk")
+            qwk_metric.update(stim_preds, valid_stim_labels)
             
             self.log(f"{stage}_stim_loss", stim_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
-            # Restore original MAE log
             self.log(f"{stage}_stim_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            self.log(f"{stage}_stim_QWK", qwk_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
         # --- Combine Losses ---
         # Weighted sum using hyperparameters

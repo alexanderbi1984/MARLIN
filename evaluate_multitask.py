@@ -52,7 +52,7 @@ import pandas as pd
 import json
 from tqdm.auto import tqdm
 # Add scikit-learn imports for metrics
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, cohen_kappa_score
 
 torch.set_float32_matmul_precision('high')
 from pytorch_lightning import Trainer
@@ -183,7 +183,7 @@ def run_multitask_evaluation(args, config):
     )
 
     trainer = Trainer(
-        log_every_n_steps=10, # Log less frequently than every step
+        log_every_n_steps=1, # Log less frequently than every step
         devices=n_gpus,
         accelerator=accelerator,
         strategy=strategy,
@@ -197,7 +197,7 @@ def run_multitask_evaluation(args, config):
             SystemStatsLogger() 
         ],
         benchmark=True if n_gpus > 0 else False,
-        num_sanity_val_steps=0
+        num_sanity_val_steps=0 # Keep sanity check disabled for now, can re-enable later
     )
 
     # --- Training --- 
@@ -240,8 +240,8 @@ def run_multitask_evaluation(args, config):
         else:
             print("No logged test results returned by trainer.test().")
 
-        # --- Manual Calculation for Accuracy and Confusion Matrix --- 
-        print("--- Calculating Accuracy & Confusion Matrix (Syracuse Test Set) --- ")
+        # --- Manual Calculation for Accuracy, Confusion Matrix, and QWK --- 
+        print("--- Calculating Accuracy, CM & QWK (Syracuse Test Set) --- ")
         # Load the best model again or reuse the one loaded by trainer.test
         # It's safer to load explicitly to ensure we have the correct weights
         try:
@@ -286,16 +286,19 @@ def run_multitask_evaluation(args, config):
                 # Calculate Metrics
                 accuracy = accuracy_score(y_true, y_pred)
                 cm = confusion_matrix(y_true, y_pred)
+                qwk = cohen_kappa_score(y_true, y_pred, weights='quadratic')
                 
                 print(f"\nManual Test Set Calculation Results (Pain Task):")
                 print(f"  Accuracy: {accuracy:.4f}")
+                print(f"  Quadratic Weighted Kappa (QWK): {qwk:.4f}")
                 print("  Confusion Matrix:")
                 print(cm)
                 
                 # Optionally save these too
                 manual_results = {
                     'test_pain_accuracy': accuracy,
-                    'test_pain_confusion_matrix': cm.tolist() # Convert numpy array to list for JSON
+                    'test_pain_qwk': qwk,
+                    'test_pain_confusion_matrix': cm.tolist()
                 }
                 manual_results_filename = os.path.join(checkpoint_dir, f"{model_name}_test_results_manual.json")
                 try:
