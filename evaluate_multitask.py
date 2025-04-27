@@ -191,8 +191,8 @@ def run_multitask_evaluation(args, config):
         callbacks=[
             # ckpt_callback, # Temporarily disable for debugging
             # early_stop_callback, # Temporarily disable for debugging
-            # LrLogger(), # Temporarily disable for debugging
-            # SystemStatsLogger() # Temporarily disable for debugging
+            LrLogger(), # Restore this callback
+            SystemStatsLogger() # Restore this callback
         ],
         benchmark=True if n_gpus > 0 else False,
         num_sanity_val_steps=0
