@@ -46,6 +46,7 @@ python evaluate_multitask.py \
 
 import argparse
 import torch
+torch.set_float32_matmul_precision('high')
 import os
 import numpy as np
 import pandas as pd
@@ -57,7 +58,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, cohen_kappa_score,
 from sklearn.model_selection import StratifiedKFold
 from dataset.multitask import MultiTaskWrapper # Ensure wrapper is imported
 
-torch.set_float32_matmul_precision('high')
+import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
@@ -72,7 +73,6 @@ from dataset.syracuse import SyracuseLP, SyracuseDataModule
 from dataset.biovid import BioVidLP
 # from dataset.utils import BalanceSampler, balance_source_datasets # Commented out: Module not found
 from torch.utils.data import ConcatDataset, DataLoader
-
 
 def run_multitask_evaluation(args, config):
     """Configures and runs the multi-task training and evaluation pipeline."""
