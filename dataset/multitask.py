@@ -5,7 +5,7 @@ import random
 from sklearn.model_selection import train_test_split # Import train_test_split
 from torch.utils.data import DataLoader, ConcatDataset, Dataset, Subset
 from pytorch_lightning import LightningDataModule
-from typing import Optional, Tuple, List, Dict, Any
+from typing import Optional, Tuple, List, Dict, Any, Union
 
 # Need to import the underlying Dataset classes and DataModule setup logic
 # Assuming BioVidLP and SyracuseLP/SyracuseDataModule are accessible
@@ -26,34 +26,32 @@ class MultiTaskDataModule(LightningDataModule):
     """
     def __init__(
         self,
+        # --- Required Non-Default Arguments First ---
         # Syracuse Specific Params
         syracuse_root_dir: str,
         syracuse_feature_dir: str,
         syracuse_marlin_base_dir: str,
         num_pain_classes: int, # Corresponds to Syracuse task
-        syracuse_val_ratio: float = 0.15, # Ratio for validation set from Syracuse video IDs
-        syracuse_test_ratio: float = 0.15, # Ratio for test set from Syracuse video IDs
-
         # BioVid Specific Params
         biovid_root_dir: str,
         biovid_feature_dir: str,
         num_stimulus_classes: int, # Corresponds to BioVid task
-
         # Common Params
         batch_size: int,
+        
+        # --- Optional Arguments with Defaults ---
+        # Syracuse Split Ratios
+        syracuse_val_ratio: float = 0.15, # Ratio for validation set from Syracuse video IDs
+        syracuse_test_ratio: float = 0.15, # Ratio for test set from Syracuse video IDs
+        # Common Params
         num_workers: int = 0,
         temporal_reduction: str = "mean", # Assuming same reduction for both feature sets
-        
         # Training Set Balancing Options
         balance_sources: bool = False,  # Whether to balance Syracuse vs BioVid in training
         balance_stimulus_classes: bool = False,  # Whether to balance stimulus classes in BioVid portion
-        
         # Data subset params (optional)
         data_ratio: float = 1.0,
         take_train: Optional[int] = None,
-        # take_val and take_test are now effectively controlled by syracuse_val/test_ratio
-        # take_val: Optional[int] = None, 
-        # take_test: Optional[int] = None, 
     ):
         super().__init__()
         self.syracuse_root_dir = syracuse_root_dir
@@ -77,8 +75,6 @@ class MultiTaskDataModule(LightningDataModule):
         
         self.data_ratio = data_ratio # Applied to BioVid train set
         self.take_train = take_train # Applied to BioVid train set
-        # self.take_val = take_val # Removed
-        # self.take_test = take_test # Removed
 
         # Placeholders for the combined datasets
         self.train_dataset: Optional[ConcatDataset] = None
@@ -86,7 +82,6 @@ class MultiTaskDataModule(LightningDataModule):
         self.test_dataset: Optional[MultiTaskWrapper] = None # Will be only wrapped Syracuse test
 
         # Save hyperparameters for logging/checkpointing
-        # Ensure all relevant parameters passed to __init__ are captured
         self.save_hyperparameters()
 
     def _balance_biovid_by_class(self, biovid_dataset: BioVidLP, target_count: int) -> List[int]:
