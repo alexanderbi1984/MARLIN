@@ -164,29 +164,13 @@ class MultiTaskCoralClassifier(pl.LightningModule):
 
             # Update Metrics
             pain_probs = torch.sigmoid(valid_pain_logits)
-            # Use static method via self
             pain_preds = self.prob_to_label(pain_probs)
             mae_metric = getattr(self, f"{stage}_pain_mae")
             mae_metric.update(pain_preds, valid_pain_labels)
-            # acc_metric = getattr(self, f"{stage}_pain_acc") # If using accuracy
-            # acc_metric(pain_preds, valid_pain_labels) #
-            
-            # --- DEBUGGING --- 
-            try:
-                 computed_mae = mae_metric.compute()
-                 print(f"[DEBUG {stage}] Computed Pain MAE: {computed_mae}, Type: {type(computed_mae)}")
-                 # Log computed value directly
-                 self.log(f"{stage}_pain_MAE", computed_mae, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-            except Exception as e_mae:
-                 print(f"[DEBUG {stage}] Error computing pain MAE: {e_mae}")
-                 # Log a placeholder if compute fails
-                 self.log(f"{stage}_pain_MAE", -1.0, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-            # --- END DEBUGGING --- 
             
             self.log(f"{stage}_pain_loss", pain_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
-            # Original MAE log (commented out for debugging)
-            # self.log(f"{stage}_pain_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-            # self.log(f"{stage}_pain_Acc", acc_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True) #
+            # Restore original MAE log
+            self.log(f"{stage}_pain_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
         # --- Stimulus Task ---
         valid_stim_mask = stimulus_labels != -1
@@ -198,29 +182,13 @@ class MultiTaskCoralClassifier(pl.LightningModule):
 
             # Update Metrics
             stim_probs = torch.sigmoid(valid_stim_logits)
-            # Use static method via self
             stim_preds = self.prob_to_label(stim_probs)
             mae_metric = getattr(self, f"{stage}_stim_mae")
             mae_metric.update(stim_preds, valid_stim_labels)
-            # acc_metric = getattr(self, f"{stage}_stim_acc") # If using accuracy
-            # acc_metric(stim_preds, valid_stim_labels) #
             
-            # --- DEBUGGING --- 
-            try:
-                 computed_mae = mae_metric.compute()
-                 print(f"[DEBUG {stage}] Computed Stim MAE: {computed_mae}, Type: {type(computed_mae)}")
-                 # Log computed value directly
-                 self.log(f"{stage}_stim_MAE", computed_mae, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-            except Exception as e_mae:
-                 print(f"[DEBUG {stage}] Error computing stim MAE: {e_mae}")
-                 # Log a placeholder if compute fails
-                 self.log(f"{stage}_stim_MAE", -1.0, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-            # --- END DEBUGGING --- 
-
             self.log(f"{stage}_stim_loss", stim_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
-            # Original MAE log (commented out for debugging)
-            # self.log(f"{stage}_stim_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-            # self.log(f"{stage}_stim_Acc", acc_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True) #
+            # Restore original MAE log
+            self.log(f"{stage}_stim_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
         # --- Combine Losses ---
         # Weighted sum using hyperparameters
@@ -298,13 +266,21 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         # optimizer = optim.Adam(self.parameters(), lr=1e-4) 
         
         # --- Restore Original Code ---
-        print(f"[DEBUG configure_optimizers] Optimizer Name: {self.hparams.optimizer_name}, Type: {type(self.hparams.optimizer_name)}")
-        print(f"[DEBUG configure_optimizers] Learning Rate: {self.hparams.learning_rate}, Type: {type(self.hparams.learning_rate)}")
+        # Remove debug prints
+        # print(f"[DEBUG configure_optimizers] Optimizer Name: {self.hparams.optimizer_name}, Type: {type(self.hparams.optimizer_name)}")
+        # print(f"[DEBUG configure_optimizers] Learning Rate: {self.hparams.learning_rate}, Type: {type(self.hparams.learning_rate)}")
         
+        # Explicitly cast learning rate to float
+        try:
+            lr = float(self.hparams.learning_rate)
+        except ValueError:
+            print(f"Error: Could not convert learning rate '{self.hparams.learning_rate}' to float!")
+            raise # Re-raise the error
+            
         if self.hparams.optimizer_name.lower() == 'adam':
-            optimizer = optim.Adam(self.parameters(), lr=self.hparams.learning_rate) # Add weight_decay=self.hparams.weight_decay if needed
+            optimizer = optim.Adam(self.parameters(), lr=lr) # Use the float lr
         elif self.hparams.optimizer_name.lower() == 'adamw':
-            optimizer = optim.AdamW(self.parameters(), lr=self.hparams.learning_rate) # Add weight_decay=self.hparams.weight_decay if needed
+            optimizer = optim.AdamW(self.parameters(), lr=lr) # Use the float lr
         else:
             raise ValueError(f"Unsupported optimizer: {self.hparams.optimizer_name}")
         
