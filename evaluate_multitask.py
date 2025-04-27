@@ -392,13 +392,24 @@ if __name__ == '__main__':
     # --- Control --- 
     parser.add_argument("--predict_only", action="store_true", default=False,
                         help="Skip training, load best/last checkpoint and run testing/prediction.")
+    parser.add_argument("--cv_folds", type=int, default=0, 
+                        help="Number of folds for cross-validation. If > 1, runs CV mode instead of train/val/test split. Default: 0 (disabled).")
 
     args = parser.parse_args()
 
     # --- Run Evaluation --- 
     try:
         config = read_yaml(args.config)
-        run_multitask_evaluation(args, config)
+        # Check if CV mode is requested
+        if args.cv_folds > 1:
+             print(f"--- Running {args.cv_folds}-Fold Cross-Validation ---")
+             # Placeholder for CV function call
+             # run_multitask_cv(args, config) 
+             print("Cross-validation logic not fully implemented yet.") # TODO
+        else:
+             print("--- Running Standard Train/Val/Test Evaluation ---")
+             run_multitask_evaluation(args, config)
+             
     except FileNotFoundError:
         print(f"Error: Config file not found at {args.config}")
     except KeyError as e:
