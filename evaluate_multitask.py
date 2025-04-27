@@ -543,22 +543,28 @@ def run_multitask_cv(args, config):
             all_syracuse_metadata         # metadata dict
         )
 
-        # Create DataLoaders directly from Syracuse datasets (following evaluate.py pattern)
-        # For CV we'll use Syracuse only for both training and validation to simplify
+        # MultiTaskCoralClassifier expects 3 values (features, pain_labels, stim_labels)
+        # So we need to wrap datasets with MultiTaskWrapper for training
+        wrapped_syracuse_train = MultiTaskWrapper(syracuse_train_set, 'pain')
+        wrapped_syracuse_val = MultiTaskWrapper(syracuse_val_set, 'pain')
+        
+        # Create DataLoaders with the wrapped datasets
         fold_train_loader = DataLoader(
-            syracuse_train_set, 
+            wrapped_syracuse_train, 
             batch_size=args.batch_size, 
             shuffle=True, 
             num_workers=args.num_workers, 
-            pin_memory=True
+            pin_memory=True,
+            persistent_workers=True if args.num_workers > 0 else False
         )
         
         fold_val_loader = DataLoader(
-            syracuse_val_set, 
+            wrapped_syracuse_val, 
             batch_size=args.batch_size, 
             shuffle=False, 
             num_workers=args.num_workers,
-            pin_memory=True
+            pin_memory=True,
+            persistent_workers=True if args.num_workers > 0 else False
         )
         
         print(f"  Created DataLoaders for fold {fold_idx + 1}")
