@@ -155,7 +155,7 @@ def run_multitask_evaluation(args, config):
     precision = args.precision
 
     # Checkpoint callback: Monitor validation performance on the pain task (Syracuse)
-    ckpt_monitor = "val_pain_mae" 
+    ckpt_monitor = "val_pain_MAE"
     ckpt_mode = "min" # Lower MAE is better
     ckpt_filename = model_name + "-{epoch}-{" + ckpt_monitor + ":.3f}"
     checkpoint_dir = f"ckpt/{model_name}_multitask"
