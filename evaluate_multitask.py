@@ -465,17 +465,37 @@ def run_multitask_cv(args, config):
         fold_val_video_ids = [unique_video_ids[i] for i in val_vid_idx_indices]
         print(f"  Train Video IDs: {len(fold_train_video_ids)}, Val Video IDs: {len(fold_val_video_ids)}")
 
-        # Get Syracuse filenames for this fold
-        # Training: Originals + Augmentations for train_video_ids
+        # Get Syracuse filenames for this fold based on the split video IDs
+        # Need to iterate through the full lists and filter by video ID
+        fold_train_video_ids_set = set(fold_train_video_ids)
+        fold_val_video_ids_set = set(fold_val_video_ids)
+
         syracuse_train_filenames = []
-        for vid in fold_train_video_ids:
-            syracuse_train_filenames.extend(original_clips.get(vid, []))
-            syracuse_train_filenames.extend(augmented_clips.get(vid, []))
-        
-        # Validation: ONLY Originals for val_video_ids
         syracuse_val_filenames = []
-        for vid in fold_val_video_ids:
-            syracuse_val_filenames.extend(original_clips.get(vid, []))
+
+        # Process original clips
+        for filename in original_clips:
+            try:
+                # Assumes filename format like: videoID_clipID_...
+                video_id = filename.split('_')[0]
+                if video_id in fold_train_video_ids_set:
+                    syracuse_train_filenames.append(filename)
+                if video_id in fold_val_video_ids_set:
+                    syracuse_val_filenames.append(filename) # Validation uses only originals
+            except IndexError:
+                 print(f"Warning: Could not parse video ID from original clip filename: {filename}")
+
+        # Process augmented clips (add only to training set)
+        for filename in augmented_clips:
+            try:
+                # Assumes filename format like: videoID_clipID_...
+                video_id = filename.split('_')[0]
+                if video_id in fold_train_video_ids_set:
+                    syracuse_train_filenames.append(filename)
+            except IndexError:
+                 print(f"Warning: Could not parse video ID from augmented clip filename: {filename}")
+
+        # Note: fold_val_filenames was populated during the original_clips loop
         fold_val_filenames.append(syracuse_val_filenames) # Store for later evaluation
         print(f"  Syracuse Train Files: {len(syracuse_train_filenames)}, Val Files: {len(syracuse_val_filenames)}")
 
