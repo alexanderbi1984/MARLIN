@@ -24,6 +24,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         optimizer_name (str, optional): Optimizer name ('AdamW', 'Adam'). Defaults to 'AdamW'.
         pain_loss_weight (float, optional): Weight for the pain task loss. Defaults to 1.0.
         stim_loss_weight (float, optional): Weight for the stimulus task loss. Defaults to 1.0.
+        distributed (bool, optional): Flag indicating if the model is distributed. Defaults to False.
         # Add other hyperparameters like weight_decay if needed
     """
     def __init__(
@@ -36,6 +37,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         optimizer_name: str = 'AdamW',
         pain_loss_weight: float = 1.0,
         stim_loss_weight: float = 1.0,
+        distributed: bool = False,
         # weight_decay: float = 0.01 # Example
     ):
         super().__init__()
@@ -43,8 +45,9 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         if num_pain_classes <= 1 or num_stimulus_classes <= 1:
             raise ValueError("Number of classes for each task must be >= 2 for CORAL.")
 
-        # Store hyperparameters
-        self.save_hyperparameters()
+        # Store hyperparameters (distributed is often not logged, but store attribute)
+        self.save_hyperparameters(ignore=['distributed']) # Optionally ignore it in logs
+        self.distributed = distributed # Store the attribute
 
         # --- Shared Encoder ---
         if encoder_hidden_dims is None or len(encoder_hidden_dims) == 0:

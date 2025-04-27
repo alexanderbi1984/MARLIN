@@ -192,9 +192,9 @@ class SyracuseLP(BioVidBase):
             dummy_label = torch.tensor(-1, dtype=torch.long)
             return dummy_features, dummy_label
 
-        # --- DEBUGGING --- 
-        print(f"[DEBUG SyracuseLP] Filename: {filename}, Label Type: {type(y)}, Label Value: {y}")
-        # --- END DEBUGGING ---
+        # --- Remove DEBUGGING --- 
+        # print(f"[DEBUG SyracuseLP] Filename: {filename}, Label Type: {type(y)}, Label Value: {y}")
+        # --- END Remove DEBUGGING ---
         return x, y
 
 

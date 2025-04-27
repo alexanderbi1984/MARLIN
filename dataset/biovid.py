@@ -227,9 +227,9 @@ class BioVidLP(BioVidBase):
                 print(f"Warning: Could not convert y to int: {y}")
                 y = -1 # Set to a default value or handle error appropriately
 
-        # --- DEBUGGING --- 
-        print(f"[DEBUG BioVidLP] Filename: {self.name_list[index]}, Label Type: {type(y)}, Label Value: {y}")
-        # --- END DEBUGGING ---
+        # --- Remove DEBUGGING --- 
+        # print(f"[DEBUG BioVidLP] Filename: {self.name_list[index]}, Label Type: {type(y)}, Label Value: {y}")
+        # --- END Remove DEBUGGING ---
         return x, torch.tensor(y, dtype=torch.long)
 
 
