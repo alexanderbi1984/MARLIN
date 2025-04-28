@@ -74,6 +74,56 @@ from dataset.biovid import BioVidLP
 # from dataset.utils import BalanceSampler, balance_source_datasets # Commented out: Module not found
 from torch.utils.data import ConcatDataset, DataLoader
 
+# Add a custom callback for stimulus weight scheduling
+class StimWeightSchedulerCallback(pl.Callback):
+    """Callback to schedule stimulus weight during training."""
+    
+    def __init__(self, initial_weight=5.0, final_weight=1.0, decay_epochs=50, scheduler_type="cosine"):
+        """
+        Initialize the stimulus weight scheduler.
+        
+        Args:
+            initial_weight: Starting weight for stimulus loss
+            final_weight: Final weight for stimulus loss
+            decay_epochs: Number of epochs over which to decay the weight
+            scheduler_type: Type of scheduler ("cosine" or "linear")
+        """
+        super().__init__()
+        self.initial_weight = initial_weight
+        self.final_weight = final_weight
+        self.decay_epochs = decay_epochs
+        self.scheduler_type = scheduler_type.lower()
+        
+    def on_train_epoch_start(self, trainer, pl_module):
+        """Update the stimulus weight at the start of each epoch."""
+        current_epoch = trainer.current_epoch
+        
+        # Calculate the weight based on scheduler type
+        if current_epoch >= self.decay_epochs:
+            # After decay_epochs, use the final weight
+            new_weight = self.final_weight
+        else:
+            # During decay period, calculate based on scheduler type
+            progress = current_epoch / self.decay_epochs
+            
+            if self.scheduler_type == "cosine":
+                # Cosine annealing: smoothly transitions from initial to final
+                cosine_decay = 0.5 * (1 + np.cos(np.pi * progress))
+                new_weight = self.final_weight + (self.initial_weight - self.final_weight) * cosine_decay
+            else:
+                # Linear decay: straight line from initial to final
+                new_weight = self.initial_weight - (self.initial_weight - self.final_weight) * progress
+        
+        # Update the model's stimulus weight
+        pl_module.stim_loss_weight = new_weight
+        
+        # Log the current weight
+        trainer.logger.experiment.add_scalar("stim_loss_weight", new_weight, current_epoch)
+        
+        # Every 10 epochs or at the start/end, print the current weight
+        if current_epoch == 0 or current_epoch == trainer.max_epochs - 1 or current_epoch % 10 == 0:
+            print(f"  Epoch {current_epoch}: Stimulus loss weight = {new_weight:.4f}")
+
 def run_multitask_evaluation(args, config):
     """Configures and runs the multi-task training and evaluation pipeline."""
     Seed.set(42) # Ensure reproducibility
@@ -391,6 +441,21 @@ def run_multitask_cv(args, config):
     learning_rate = config["learning_rate"]
     pain_loss_weight = config.get("pain_loss_weight", 1.0)
     stim_loss_weight = config.get("stim_loss_weight", 1.0)
+    
+    # Stimulus loss weight scheduling parameters
+    use_stim_weight_scheduler = config.get("use_stim_weight_scheduler", False)
+    initial_stim_weight = config.get("initial_stim_weight", stim_loss_weight * 5)  # Start 5x higher by default
+    final_stim_weight = config.get("final_stim_weight", stim_loss_weight)  # End at the specified value
+    stim_weight_decay_epochs = config.get("stim_weight_decay_epochs", args.epochs // 2)  # Decay over half the training period
+    stim_weight_sched_type = config.get("stim_weight_sched_type", "cosine")  # cosine or linear
+    
+    if use_stim_weight_scheduler:
+        print(f"Using stimulus loss weight scheduler:")
+        print(f"  - Initial weight: {initial_stim_weight}")
+        print(f"  - Final weight: {final_stim_weight}")
+        print(f"  - Decay type: {stim_weight_sched_type}")
+        print(f"  - Decay over: {stim_weight_decay_epochs} epochs")
+    
     balance_sources = config.get("balance_sources", False)
     balance_stimulus_classes = config.get("balance_stimulus_classes", False)
     encoder_hidden_dims = config.get("encoder_hidden_dims", None)
@@ -634,12 +699,24 @@ def run_multitask_cv(args, config):
             mode=monitor_mode
         )
         
+        # Create a stimulus weight scheduler callback if enabled
+        callbacks = [checkpoint_callback, early_stop_callback, LrLogger(), SystemStatsLogger()]
+        if use_stim_weight_scheduler:
+            stim_weight_scheduler = StimWeightSchedulerCallback(
+                initial_weight=initial_stim_weight,
+                final_weight=final_stim_weight,
+                decay_epochs=stim_weight_decay_epochs,
+                scheduler_type=stim_weight_sched_type
+            )
+            callbacks.append(stim_weight_scheduler)
+            print(f"  Added stimulus weight scheduler callback")
+        
         trainer = pl.Trainer(
             max_epochs=args.epochs,
             accelerator="auto",
             devices=1, # Run each fold on a single device for simplicity
             logger=pl.loggers.TensorBoardLogger("logs", name=f"{model_name}/fold_{fold_idx}"),
-            callbacks=[checkpoint_callback, early_stop_callback, LrLogger(), SystemStatsLogger()],
+            callbacks=callbacks,
             precision=args.precision,
             log_every_n_steps=50, # Log less frequently during CV
             enable_progress_bar=True, # Show progress bar per fold
@@ -650,7 +727,6 @@ def run_multitask_cv(args, config):
         
         # --- Train the Fold ---
         print(f"  Starting training for fold {fold_idx + 1}...")
-        # Align with evaluate.py's parameter style
         trainer.fit(model, train_dataloaders=fold_train_loader, val_dataloaders=fold_val_loader)
 
         # --- Store Best Checkpoint Path ---
