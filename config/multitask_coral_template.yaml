@@ -20,7 +20,7 @@ stim_loss_weight: 0.5  # Weight for the stimulus task loss in the combined loss
 
 use_stim_weight_scheduler: true
 initial_stim_weight: 5.0
-stim_weight_decay_epochs: 10
+stim_weight_decay_epochs: 100
 stim_weight_sched_type: "cosine"
 
 # --- Optional: Class Imbalance Handling ---
@@ -40,4 +40,4 @@ balance_stimulus_classes: false # Set to true to apply class balancing within th
 # Example: optimizer_name: AdamW (if you add this option to the model) 
 
 # Example config with label smoothing
-label_smoothing: 0.1  # Typical values are 0.05 to 0.2 
+label_smoothing: 0.0  # Typical values are 0.05 to 0.2 
