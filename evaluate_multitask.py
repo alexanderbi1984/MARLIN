@@ -79,6 +79,7 @@ from util.seed import Seed
 from util.system_stats_logger import SystemStatsLogger
 from dataset.syracuse import SyracuseLP, SyracuseDataModule
 from dataset.biovid import BioVidLP
+from dataset.shoulder_pain import ShoulderPainLP  # Import ShoulderPainLP class
 # from dataset.utils import BalanceSampler, balance_source_datasets # Commented out: Module not found
 from torch.utils.data import ConcatDataset, DataLoader
 # Import CombinedLoader for balanced sampling
