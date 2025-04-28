@@ -78,7 +78,21 @@ from dataset.biovid import BioVidLP
 # from dataset.utils import BalanceSampler, balance_source_datasets # Commented out: Module not found
 from torch.utils.data import ConcatDataset, DataLoader
 # Import CombinedLoader for balanced sampling
-from pytorch_lightning.trainer.supporters import CombinedLoader
+# Try both import paths for CombinedLoader to support different PyTorch Lightning versions
+try:
+    # For newer PyTorch Lightning versions
+    from lightning.pytorch.utilities.combined_loader import CombinedLoader
+except ImportError:
+    try:
+        # For older PyTorch Lightning versions
+        from pytorch_lightning.utilities.combined_loader import CombinedLoader
+    except ImportError:
+        try:
+            # For even older PyTorch Lightning versions
+            from pytorch_lightning.trainer.supporters import CombinedLoader
+        except ImportError:
+            raise ImportError("Could not import CombinedLoader from any known path in PyTorch Lightning. "
+                            "Please check your version compatibility.")
 
 # Add a custom callback for stimulus weight scheduling
 class StimWeightSchedulerCallback(pl.Callback):
