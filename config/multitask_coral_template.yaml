@@ -16,7 +16,7 @@ learning_rate: 3.0e-5      # Learning rate for the optimizer
 
 # --- Optional: Model & Loss Weights --- 
 pain_loss_weight: 1.0  # Weight for the pain task loss in the combined loss
-stim_loss_weight: 1.0  # Weight for the stimulus task loss in the combined loss
+stim_loss_weight: 2.0  # Weight for the stimulus task loss in the combined loss
 
 # Optional: Define hidden layers for the shared MLP encoder
 # If null or empty, a single Linear layer is used.
