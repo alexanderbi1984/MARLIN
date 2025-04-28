@@ -203,8 +203,10 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             valid_pain_logits = pain_logits[valid_pain_mask]
             valid_pain_labels = pain_labels[valid_pain_mask]
             # Use static method via self
+            # Only apply label smoothing during training
+            smoothing = self.hparams.label_smoothing if stage == 'train' else 0.0
             pain_loss = self.coral_loss(valid_pain_logits, valid_pain_labels, 
-                                        label_smoothing=self.hparams.label_smoothing)
+                                        label_smoothing=smoothing)
 
             # Update Metrics
             pain_probs = torch.sigmoid(valid_pain_logits)
