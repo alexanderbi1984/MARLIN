@@ -485,21 +485,10 @@ def run_multitask_cv(args, config):
         
         print(f"  Train Video IDs: {len(fold_train_video_ids)}, Val Video IDs: {len(fold_val_video_ids)}")
 
-        # DEBUG: Inspect video IDs and types
-        print("DEBUG: fold_train_video_ids (first 10):", fold_train_video_ids[:10])
-        print("DEBUG: type of video IDs in fold_train_video_ids:", type(fold_train_video_ids[0]) if fold_train_video_ids else None)
-        print("DEBUG: sample original_clips video_id values (first 5):", [clip['video_id'] for clip in original_clips[:5]])
-
         # Filter Syracuse filenames for this fold based on clip_data['video_id']
         fold_train_video_ids_set = set(fold_train_video_ids)
         fold_val_video_ids_set = set(fold_val_video_ids)
 
-        print("DEBUG: fold_train_video_ids_set (first 10):", list(fold_train_video_ids_set)[:10])
-        print("DEBUG: check membership for first 5 original_clips:")
-        for clip in original_clips[:5]:
-            vid = clip.get('video_id')
-            print(f"    clip video_id={vid}({type(vid)}), in train_set? {vid in fold_train_video_ids_set}")
-        
         syracuse_train_filenames = []
         syracuse_val_filenames = []
         
