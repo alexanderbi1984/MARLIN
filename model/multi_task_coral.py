@@ -28,6 +28,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         distributed (bool, optional): Flag indicating if the model is distributed. Defaults to False.
         weight_decay (float, optional): Weight decay for the optimizer. Defaults to 0.0.
         label_smoothing (float, optional): Amount of smoothing to apply to binary targets. Defaults to 0.0.
+        class_weights (torch.Tensor, optional): Class weights for weighted loss calculation. Defaults to None.
         # Add other hyperparameters like weight_decay if needed
     """
     def __init__(
@@ -42,7 +43,8 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         stim_loss_weight: float = 1.0,
         distributed: bool = False,
         weight_decay: float = 0.0,
-        label_smoothing: float = 0.0
+        label_smoothing: float = 0.0,
+        class_weights: Union[torch.Tensor, None] = None
     ):
         super().__init__()
 
@@ -53,8 +55,12 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             raise ValueError(f"Label smoothing must be in [0, 1), got {label_smoothing}")
 
         # Store hyperparameters (distributed is often not logged, but store attribute)
-        self.save_hyperparameters(ignore=['distributed']) # Optionally ignore it in logs
+        self.save_hyperparameters(ignore=['distributed', 'class_weights']) # Don't save weights in checkpoint
         self.distributed = distributed # Store the attribute
+
+        # Store class weights for weighted loss calculation
+        self.register_buffer('class_weights', class_weights if class_weights is not None 
+                            else torch.ones(num_pain_classes))
 
         # --- Shared Encoder ---
         # if encoder_hidden_dims is None or len(encoder_hidden_dims) == 0:
@@ -202,10 +208,17 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         if valid_pain_mask.any():
             valid_pain_logits = pain_logits[valid_pain_mask]
             valid_pain_labels = pain_labels[valid_pain_mask]
-            # Use static method via self
+            
+            # Get sample weights from class weights if available (for handling class imbalance)
+            importance_weights = None
+            if hasattr(self, 'class_weights') and self.class_weights is not None and stage == 'train':
+                # Map each label to its corresponding class weight
+                importance_weights = self.class_weights[valid_pain_labels]
+            
             # Only apply label smoothing during training
             smoothing = self.hparams.label_smoothing if stage == 'train' else 0.0
             pain_loss = self.coral_loss(valid_pain_logits, valid_pain_labels, 
+                                        importance_weights=importance_weights,
                                         label_smoothing=smoothing)
 
             # Update Metrics

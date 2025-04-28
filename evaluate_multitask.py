@@ -26,6 +26,7 @@ Configuration YAML File Keys (`--config`):
 *   `learning_rate: <float>` (**Required**).
 *   `weight_decay: <float>` (Optional, default: 0.0): Weight decay for the optimizer.
 *   `label_smoothing: <float>` (Optional, default: 0.0): Amount of label smoothing for Syracuse data (0.0-1.0).
+*   `use_class_weights: <bool>` (Optional, default: False): Whether to use class weights to handle class imbalance.
 *   `pain_loss_weight: <float>` (Optional, default: 1.0): Weight for pain task loss.
 *   `stim_loss_weight: <float>` (Optional, default: 1.0): Weight for stimulus task loss.
 *   `balance_sources: <bool>` (Optional, default: False): Balance Syracuse vs BioVid in training set.
@@ -140,6 +141,7 @@ def run_multitask_evaluation(args, config):
     learning_rate = config["learning_rate"]
     weight_decay = config.get("weight_decay", 0.0)  # Default to 0.0 (no weight decay)
     label_smoothing = config.get("label_smoothing", 0.0)  # Default to 0.0 (no label smoothing)
+    use_class_weights = config.get("use_class_weights", False)  # Default to False (no class weighting)
     pain_loss_weight = config.get("pain_loss_weight", 1.0)
     stim_loss_weight = config.get("stim_loss_weight", 1.0)
     balance_sources = config.get("balance_sources", False)
@@ -154,6 +156,7 @@ def run_multitask_evaluation(args, config):
     print(f"Learning Rate: {learning_rate}")
     print(f"Weight Decay: {weight_decay}")
     print(f"Label Smoothing: {label_smoothing}")
+    print(f"Use Class Weights: {use_class_weights}")
     print(f"Loss Weights (Pain/Stim): {pain_loss_weight}/{stim_loss_weight}")
     print(f"Balance Sources: {balance_sources}, Balance Stimulus Classes: {balance_stimulus_classes}")
     print(f"Encoder Hidden Dims: {encoder_hidden_dims}")
@@ -186,6 +189,44 @@ def run_multitask_evaluation(args, config):
     )
     # Note: setup() is called internally by Trainer.fit/test
 
+    # Calculate class weights if enabled
+    class_weights = None
+    if use_class_weights and not args.predict_only:
+        print("Calculating class weights for Syracuse pain levels...")
+        dm.setup('fit')  # Ensure train dataset is ready
+        # Get the wrapped Syracuse train set from the training dataset
+        # The MultiTaskDataModule's train_dataset is a ConcatDataset with Syracuse as first item
+        wrapped_syracuse_train = dm.train_dataset.datasets[0]
+        
+        # Extract all labels
+        train_labels = []
+        # Use a temporary DataLoader to efficiently extract labels
+        temp_loader = DataLoader(wrapped_syracuse_train, batch_size=64, shuffle=False)
+        for batch in temp_loader:
+            # The MultiTaskWrapper returns (features, pain_labels, stim_labels)
+            _, labels, _ = batch
+            valid_mask = labels != -1  # Filter out invalid labels if any
+            if valid_mask.any():
+                train_labels.append(labels[valid_mask])
+        
+        if train_labels:
+            train_labels = torch.cat(train_labels).numpy()
+            
+            # Calculate class frequencies
+            class_counts = np.bincount(train_labels, minlength=num_pain_classes)
+            print(f"Class distribution: {class_counts}")
+            
+            # Calculate inverse frequency weights (with small epsilon to avoid division by zero)
+            weights = 1.0 / (class_counts + 1e-6)
+            
+            # Normalize weights to maintain loss scale
+            weights = weights / weights.mean()
+            
+            print(f"Class weights: {np.round(weights, 3)}")
+            class_weights = torch.tensor(weights, dtype=torch.float32)
+        else:
+            print("Warning: Could not extract valid labels for class weight calculation.")
+
     # --- Model Setup --- 
     print("Initializing MultiTaskCoralClassifier...")
     # Assuming features are 768-dim after temporal reduction (unless reduction='none')
@@ -205,6 +246,7 @@ def run_multitask_evaluation(args, config):
         learning_rate=learning_rate,
         weight_decay=weight_decay,
         label_smoothing=label_smoothing,
+        class_weights=class_weights,
         pain_loss_weight=pain_loss_weight,
         stim_loss_weight=stim_loss_weight,
         encoder_hidden_dims=encoder_hidden_dims,
@@ -449,6 +491,7 @@ def run_multitask_cv(args, config):
     learning_rate = config["learning_rate"]
     weight_decay = config.get("weight_decay", 0.0)  # Default to 0.0 (no weight decay)
     label_smoothing = config.get("label_smoothing", 0.0)  # Default to 0.0 (no label smoothing)
+    use_class_weights = config.get("use_class_weights", False)  # Default to False (no class weighting)
     pain_loss_weight = config.get("pain_loss_weight", 1.0)
     stim_loss_weight = config.get("stim_loss_weight", 1.0)
     
@@ -643,6 +686,33 @@ def run_multitask_cv(args, config):
         wrapped_syracuse_train = MultiTaskWrapper(syracuse_train_set, 'pain')
         wrapped_syracuse_val = MultiTaskWrapper(syracuse_val_set, 'pain')
         
+        # Calculate class weights if enabled
+        fold_class_weights = None
+        if use_class_weights:
+            print(f"  Calculating class weights for fold {fold_idx + 1}...")
+            # Get all labels from training set
+            train_labels = []
+            # Use a temporary DataLoader with batch_size=64 to efficiently extract labels
+            temp_loader = DataLoader(syracuse_train_set, batch_size=64, shuffle=False)
+            for batch in temp_loader:
+                _, labels = batch
+                train_labels.append(labels)
+            
+            train_labels = torch.cat(train_labels).numpy()
+            
+            # Calculate class frequencies
+            class_counts = np.bincount(train_labels, minlength=num_pain_classes)
+            print(f"  Class distribution: {class_counts}")
+            
+            # Calculate inverse frequency weights (with small epsilon to avoid division by zero)
+            class_weights = 1.0 / (class_counts + 1e-6)
+            
+            # Normalize weights to maintain loss scale
+            class_weights = class_weights / class_weights.mean()
+            
+            print(f"  Class weights: {np.round(class_weights, 3)}")
+            fold_class_weights = torch.tensor(class_weights, dtype=torch.float32)
+        
         # Add BioVid data to the training set (as this is a multi-task model)
         wrapped_biovid_train = MultiTaskWrapper(full_biovid_train_set, 'stimulus')
         
@@ -688,11 +758,10 @@ def run_multitask_cv(args, config):
             learning_rate=learning_rate,
             weight_decay=weight_decay,
             label_smoothing=label_smoothing,
-            pain_loss_weight=pain_loss_weight,
-            stim_loss_weight=stim_loss_weight,
+            class_weights=fold_class_weights,
             encoder_hidden_dims=encoder_hidden_dims,
-            distributed=(args.n_gpus > 1), # Pass the distributed flag
-            # optimizer_name can be added to config/args if needed
+            pain_loss_weight=pain_loss_weight,
+            stim_loss_weight=stim_loss_weight
         )
         
         fold_checkpoint_dir = os.path.join("ckpt", f"{model_name}", f"fold_{fold_idx}")
