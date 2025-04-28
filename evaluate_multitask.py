@@ -139,8 +139,13 @@ class StimWeightSchedulerCallback(pl.Callback):
                 # Linear decay: straight line from initial to final
                 new_weight = self.initial_weight - (self.initial_weight - self.final_weight) * progress
         
-        # Update the model's stimulus weight
-        pl_module.stim_loss_weight = new_weight
+        # Update the model's stimulus weight in the CORRECT location
+        # Fix: Update pl_module.hparams.stim_loss_weight instead of pl_module.stim_loss_weight
+        pl_module.hparams.stim_loss_weight = new_weight
+        
+        # Also update the attribute directly for any code that might use it
+        if hasattr(pl_module, 'stim_loss_weight'):
+            pl_module.stim_loss_weight = new_weight
         
         # Log the current weight
         trainer.logger.experiment.add_scalar("stim_loss_weight", new_weight, current_epoch)

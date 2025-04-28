@@ -190,7 +190,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         stimulus_logits = self.stimulus_head(encoded_features)
         return pain_logits, stimulus_logits
 
-    def _calculate_loss_and_metrics(self, pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage: str):
+    def _calculate_loss_and_metrics(self, pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage: str, batch_idx: int = 0):
         """ Helper to calculate loss and update metrics for a given stage. """
         total_loss = torch.tensor(0.0, device=self.device, requires_grad=True) # Ensure loss is on correct device and requires grad
         pain_loss = torch.tensor(0.0, device=self.device)
@@ -261,6 +261,12 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         # Weighted sum using hyperparameters
         # Ensure requires_grad=True propagates if only one loss is active
         if valid_pain_mask.any() or valid_stim_mask.any():
+             # Add debug prints to verify weights
+             if stage == 'train' and valid_stim_mask.any() and (batch_idx == 0 or batch_idx % 50 == 0):
+                 print(f"DEBUG - Epoch {self.current_epoch}, Batch {batch_idx}: stim_loss_weight = {self.hparams.stim_loss_weight:.4f}")
+                 print(f"DEBUG - Pain Loss: {pain_loss:.4f}, Stim Loss: {stim_loss:.4f}")
+                 print(f"DEBUG - Weighted Pain: {(self.hparams.pain_loss_weight * pain_loss):.4f}, Weighted Stim: {(self.hparams.stim_loss_weight * stim_loss):.4f}")
+             
              total_loss = self.hparams.pain_loss_weight * pain_loss + self.hparams.stim_loss_weight * stim_loss
         else:
              # No valid labels in batch, return zero loss but ensure grad is enabled if model parameters were used
@@ -275,7 +281,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         features, pain_labels, stimulus_labels = batch
         pain_logits, stimulus_logits = self(features)
-        loss = self._calculate_loss_and_metrics(pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage='train')
+        loss = self._calculate_loss_and_metrics(pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage='train', batch_idx=batch_idx)
         # Log learning rate
         self.log("learning_rate", self.hparams.learning_rate, on_step=False, on_epoch=True, prog_bar=False, logger=True)
         return loss
@@ -283,13 +289,13 @@ class MultiTaskCoralClassifier(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         features, pain_labels, stimulus_labels = batch
         pain_logits, stimulus_logits = self(features)
-        self._calculate_loss_and_metrics(pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage='val')
+        self._calculate_loss_and_metrics(pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage='val', batch_idx=batch_idx)
         # No loss returned for validation/test
 
     def test_step(self, batch, batch_idx):
         features, pain_labels, stimulus_labels = batch
         pain_logits, stimulus_logits = self(features)
-        self._calculate_loss_and_metrics(pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage='test')
+        self._calculate_loss_and_metrics(pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage='test', batch_idx=batch_idx)
         # No loss returned for validation/test
 
     def sanity_check(self, batch_size: int = 4):
