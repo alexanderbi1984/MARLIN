@@ -41,3 +41,5 @@ balance_stimulus_classes: false # Set to true to apply class balancing within th
 
 # Example config with label smoothing
 label_smoothing: 0.0  # Typical values are 0.05 to 0.2 
+use_distance_penalty: true
+focal_gamma: 2.0  # Focal loss parameter (default is 2.0)

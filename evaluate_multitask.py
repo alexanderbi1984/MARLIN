@@ -33,6 +33,8 @@ Configuration YAML File Keys (`--config`):
 *   `balance_sources: <bool>` (Optional, default: False): Balance Syracuse vs BioVid in training set.
 *   `balance_stimulus_classes: <bool>` (Optional, default: False): Balance BioVid classes in training.
 *   `encoder_hidden_dims`: (Optional, list[int], default: None): Hidden dims for MLP encoder.
+*   `use_distance_penalty: <bool>` (Optional, default: False): Whether to use distance penalty for coral loss.
+*   `focal_gamma: <float>` (Optional, default: None): Focal gamma for coral loss.
 
 Example Command:
 ----------------
@@ -165,6 +167,9 @@ def run_multitask_evaluation(args, config):
     balance_sources = config.get("balance_sources", False)
     balance_stimulus_classes = config.get("balance_stimulus_classes", False)
     encoder_hidden_dims = config.get("encoder_hidden_dims", None)
+    # New parameters for coral_loss
+    use_distance_penalty = config.get("use_distance_penalty", False)
+    focal_gamma = config.get("focal_gamma", None)
 
     print("--- Multi-Task Configuration ---")
     print(f"Model Name: {model_name}")
@@ -179,6 +184,8 @@ def run_multitask_evaluation(args, config):
     print(f"Loss Weights (Pain/Stim): {pain_loss_weight}/{stim_loss_weight}")
     print(f"Balance Sources: {balance_sources}, Balance Stimulus Classes: {balance_stimulus_classes}")
     print(f"Encoder Hidden Dims: {encoder_hidden_dims}")
+    print(f"Use Distance Penalty: {use_distance_penalty}")
+    print(f"Focal Gamma: {focal_gamma}")
     print(f"---------------------------------")
 
     # --- DataModule Setup --- 
@@ -270,6 +277,8 @@ def run_multitask_evaluation(args, config):
         stim_loss_weight=stim_loss_weight,
         encoder_hidden_dims=encoder_hidden_dims,
         distributed=(args.n_gpus > 1), # Pass the distributed flag
+        use_distance_penalty=use_distance_penalty,
+        focal_gamma=focal_gamma,
         # optimizer_name can be added to config/args if needed
     )
     
@@ -515,6 +524,10 @@ def run_multitask_cv(args, config):
     pain_loss_weight = config.get("pain_loss_weight", 1.0)
     stim_loss_weight = config.get("stim_loss_weight", 1.0)
     
+    # New parameters for coral_loss
+    use_distance_penalty = config.get("use_distance_penalty", False)
+    focal_gamma = config.get("focal_gamma", None)
+    
     # Stimulus loss weight scheduling parameters
     use_stim_weight_scheduler = config.get("use_stim_weight_scheduler", False)
     initial_stim_weight = config.get("initial_stim_weight", stim_loss_weight * 5)  # Start 5x higher by default
@@ -538,6 +551,25 @@ def run_multitask_cv(args, config):
     patience = config.get("patience", 100)
     monitor_metric = config.get("monitor_metric", "val_pain_QWK") # QWK or MAE
     monitor_mode = "min" if "MAE" in monitor_metric else "max"
+
+    # Print configuration summary
+    print("--- Cross-Validation Configuration ---")
+    print(f"Model Name: {model_name}")
+    print(f"Pain Classes: {num_pain_classes}, Stimulus Classes: {num_stimulus_classes}")
+    print(f"Syracuse Features: {syracuse_feature_dir}, BioVid Features: {biovid_feature_dir}")
+    print(f"Temporal Reduction: {temporal_reduction}")
+    print(f"Learning Rate: {learning_rate}")
+    print(f"Weight Decay: {weight_decay}")
+    print(f"Label Smoothing: {label_smoothing}")
+    print(f"Use Class Weights: {use_class_weights}")
+    print(f"Balance Pain Classes: {balance_pain_classes}")
+    print(f"Loss Weights (Pain/Stim): {pain_loss_weight}/{stim_loss_weight}")
+    print(f"Use Distance Penalty: {use_distance_penalty}")
+    print(f"Focal Gamma: {focal_gamma}")
+    print(f"Balance Sources: {balance_sources}, Balance Stimulus Classes: {balance_stimulus_classes}")
+    print(f"Encoder Hidden Dims: {encoder_hidden_dims}")
+    print(f"Monitor Metric: {monitor_metric} ({monitor_mode})")
+    print(f"---------------------------------")
 
     # --- Load Syracuse Metadata (once) --- 
     print("  Loading Syracuse metadata for splitting...")
@@ -886,7 +918,9 @@ def run_multitask_cv(args, config):
             class_weights=fold_class_weights,
             encoder_hidden_dims=encoder_hidden_dims,
             pain_loss_weight=pain_loss_weight,
-            stim_loss_weight=stim_loss_weight
+            stim_loss_weight=stim_loss_weight,
+            use_distance_penalty=use_distance_penalty,
+            focal_gamma=focal_gamma
         )
         
         fold_checkpoint_dir = os.path.join("ckpt", f"{model_name}", f"fold_{fold_idx}")
@@ -1060,6 +1094,8 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
         stim_loss_weight = config.get("stim_loss_weight", 1.0)
         label_smoothing = config.get("label_smoothing", 0.0)  # For loading checkpoint
         weight_decay = config.get("weight_decay", 0.0)  # For loading checkpoint
+        use_distance_penalty = config.get("use_distance_penalty", False)  # New parameter
+        focal_gamma = config.get("focal_gamma", None)  # New parameter
 
         # Load the model from the checkpoint
         model = MultiTaskCoralClassifier.load_from_checkpoint(
@@ -1072,7 +1108,9 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
             pain_loss_weight=pain_loss_weight,
             stim_loss_weight=stim_loss_weight,
             label_smoothing=label_smoothing,
-            weight_decay=weight_decay
+            weight_decay=weight_decay,
+            use_distance_penalty=use_distance_penalty,
+            focal_gamma=focal_gamma
         )
         model.eval()
         

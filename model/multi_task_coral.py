@@ -28,6 +28,8 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         distributed (bool, optional): Flag indicating if the model is distributed. Defaults to False.
         weight_decay (float, optional): Weight decay for the optimizer. Defaults to 0.0.
         label_smoothing (float, optional): Amount of smoothing to apply to binary targets. Defaults to 0.0.
+        use_distance_penalty (bool, optional): Flag indicating whether to use distance penalty. Defaults to False.
+        focal_gamma (float, optional): Focal gamma for focal weighting. Defaults to None.
         class_weights (torch.Tensor, optional): Class weights for weighted loss calculation. Defaults to None.
         # Add other hyperparameters like weight_decay if needed
     """
@@ -44,6 +46,8 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         distributed: bool = False,
         weight_decay: float = 0.0,
         label_smoothing: float = 0.0,
+        use_distance_penalty: bool = False,
+        focal_gamma: Union[float, None] = None,
         class_weights: Union[torch.Tensor, None] = None
     ):
         super().__init__()
@@ -63,21 +67,6 @@ class MultiTaskCoralClassifier(pl.LightningModule):
                             else torch.ones(num_pain_classes))
 
         # --- Shared Encoder ---
-        # if encoder_hidden_dims is None or len(encoder_hidden_dims) == 0:
-        #     self.shared_encoder = nn.Linear(input_dim, input_dim) # Simple linear projection
-        #     encoder_output_dim = input_dim
-        #     # print(f"Using simple Linear layer as shared encoder (In: {input_dim}, Out: {encoder_output_dim})") # Optional logging
-        # else:
-        #     layers = []
-        #     current_dim = input_dim
-        #     for h_dim in encoder_hidden_dims:
-        #         layers.append(nn.Linear(current_dim, h_dim))
-        #         layers.append(nn.ReLU())
-        #         current_dim = h_dim
-        #     self.shared_encoder = nn.Sequential(*layers)
-        #     encoder_output_dim = current_dim
-        #     # print(f"Using MLP shared encoder (In: {input_dim}, Hidden: {encoder_hidden_dims}, Out: {encoder_output_dim})") # Optional logging
-
         if encoder_hidden_dims is None or len(encoder_hidden_dims) == 0:
             self.shared_encoder = nn.Sequential(
                 nn.Linear(input_dim, input_dim),
@@ -95,7 +84,6 @@ class MultiTaskCoralClassifier(pl.LightningModule):
                 current_dim = h_dim
             self.shared_encoder = nn.Sequential(*layers)
             encoder_output_dim = current_dim
-
 
         # --- CORAL Heads ---
         self.pain_head = nn.Linear(encoder_output_dim, num_pain_classes - 1)
@@ -128,44 +116,49 @@ class MultiTaskCoralClassifier(pl.LightningModule):
 
 
     @staticmethod
-    def coral_loss(logits, levels, importance_weights=None, reduction='mean', label_smoothing=0.0):
-        """Computes the CORAL loss (moved inside the class).
-
-        Args:
-            logits: Prediction logits of shape (batch_size, num_classes - 1).
-            levels: Ground truth labels (levels) of shape (batch_size). Integer labels 0, 1, 2...
-            importance_weights: Optional tensor of shape (batch_size) to weigh samples.
-            reduction: 'mean', 'sum', or 'none'.
-            label_smoothing: Float in [0, 1). Amount of smoothing to apply to binary targets.
-
-        Returns:
-            The CORAL loss.
-        """
-        if logits.shape[0] == 0: # Handle empty batch
+    def coral_loss(logits, levels, importance_weights=None, reduction='mean', label_smoothing=0.0, distance_penalty=False, focal_gamma=None):
+        if logits.shape[0] == 0:
             return torch.tensor(0.0, device=logits.device, requires_grad=True)
 
-        # Ensure levels are long integers
+        num_classes_minus1 = logits.shape[1]
         levels = levels.long()
 
-        # Create binary labels for each task t < num_classes - 1
-        # levels_binary[b, t] = 1 if levels[b] > t else 0
-        levels_binary = (levels.unsqueeze(1) > torch.arange(logits.shape[1], device=logits.device).unsqueeze(0)).float()
-        
-        # Apply label smoothing if enabled
+        # Step 1: Generate target binary levels
+        levels_binary = (levels.unsqueeze(1) > torch.arange(num_classes_minus1, device=logits.device).unsqueeze(0)).float()
+
         if label_smoothing > 0.0:
-            # Transform targets from {0, 1} to {label_smoothing/2, 1 - label_smoothing/2}
-            # This creates "soft" targets instead of hard 0/1 targets
             levels_binary = levels_binary * (1 - label_smoothing) + label_smoothing / 2
 
-        # Compute the loss for each task
-        loss_tasks = F.logsigmoid(logits) * levels_binary + (F.logsigmoid(logits) - logits) * (1 - levels_binary)
+        # Step 2: Base CORAL loss computation
+        log_sigmoid = F.logsigmoid(logits)
+        base_loss_tasks = log_sigmoid * levels_binary + (log_sigmoid - logits) * (1 - levels_binary)
 
-        # Sum losses across tasks for each sample
-        loss_per_sample = -torch.sum(loss_tasks, dim=1)
+        # Step 3: Apply Distance Penalty (Optional)
+        if distance_penalty:
+            distance_matrix = torch.abs(
+                levels.unsqueeze(1) - torch.arange(num_classes_minus1, device=logits.device).unsqueeze(0)
+            ).float()  # (batch_size, num_classes-1)
+            base_loss_tasks = base_loss_tasks * (1.0 + distance_matrix)  # Penalize farther threshold mistakes more
 
+        # Step 4: Apply Focal Weighting (Optional)
+        if focal_gamma is not None:
+            probs = torch.sigmoid(logits)
+            eps = 1e-6
+            focal_weight = torch.where(
+                levels_binary > 0.5,
+                (1 - probs + eps) ** focal_gamma,
+                (probs + eps) ** focal_gamma
+            )
+            base_loss_tasks = focal_weight * base_loss_tasks
+
+        # Step 5: Sum across tasks
+        loss_per_sample = -torch.sum(base_loss_tasks, dim=1)
+
+        # Step 6: Importance Weights
         if importance_weights is not None:
             loss_per_sample *= importance_weights
 
+        # Step 7: Reduction
         if reduction == 'mean':
             return loss_per_sample.mean()
         elif reduction == 'sum':
@@ -217,9 +210,14 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             
             # Only apply label smoothing during training
             smoothing = self.hparams.label_smoothing if stage == 'train' else 0.0
-            pain_loss = self.coral_loss(valid_pain_logits, valid_pain_labels, 
-                                        importance_weights=importance_weights,
-                                        label_smoothing=smoothing)
+            pain_loss = self.coral_loss(
+                valid_pain_logits, 
+                valid_pain_labels, 
+                importance_weights=importance_weights,
+                label_smoothing=smoothing,
+                distance_penalty=self.hparams.use_distance_penalty,
+                focal_gamma=self.hparams.focal_gamma
+            )
 
             # Update Metrics
             pain_probs = torch.sigmoid(valid_pain_logits)
@@ -239,8 +237,13 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             valid_stim_logits = stimulus_logits[valid_stim_mask]
             valid_stim_labels = stimulus_labels[valid_stim_mask]
             # Use static method via self
-            stim_loss = self.coral_loss(valid_stim_logits, valid_stim_labels,
-                                        label_smoothing=0.0)  # No smoothing for stimulus task
+            stim_loss = self.coral_loss(
+                valid_stim_logits, 
+                valid_stim_labels,
+                label_smoothing=0.0,  # No smoothing for stimulus task
+                distance_penalty=self.hparams.use_distance_penalty,
+                focal_gamma=self.hparams.focal_gamma
+            )
 
             # Update Metrics
             stim_probs = torch.sigmoid(valid_stim_logits)
