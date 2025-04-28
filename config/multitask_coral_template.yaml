@@ -25,6 +25,7 @@ stim_weight_sched_type: "cosine"
 
 # --- Optional: Class Imbalance Handling ---
 use_class_weights: true  # Whether to use inverse frequency class weighting to handle class imbalance
+balance_pain_classes: false  # Whether to use weighted sampling to balance pain classes in dataloaders (only affects Syracuse data)
 
 # Optional: Define hidden layers for the shared MLP encoder
 # If null or empty, a single Linear layer is used.
