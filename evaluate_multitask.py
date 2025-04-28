@@ -582,7 +582,37 @@ def run_multitask_cv(args, config):
     print(f"Monitor Metric: {monitor_metric} ({monitor_mode})")
     print(f"---------------------------------")
 
-    # --- 4. Load Full BioVid Training Data (once) --- 
+    # --- 1. Load Syracuse metadata first --- 
+    # This must be done before anything else to get video_id_labels
+    print("  Loading Syracuse metadata...")
+    try:
+        # Instantiate SyracuseDataModule to use its metadata loading logic
+        syracuse_dm_for_meta = SyracuseDataModule(
+            root_dir=args.syracuse_data_path,
+            task='multiclass',
+            num_classes=num_pain_classes,
+            batch_size=1,  # Dummy value
+            feature_dir=syracuse_feature_dir,
+            marlin_base_dir=args.syracuse_marlin_base_dir,
+            temporal_reduction=temporal_reduction,
+            num_workers=0  # Dummy value
+        )
+        # Load metadata
+        syracuse_dm_for_meta.setup(stage=None)
+        
+        # Get important metadata variables
+        all_syracuse_metadata = syracuse_dm_for_meta.all_metadata
+        original_clips = syracuse_dm_for_meta.original_clips
+        augmented_clips = syracuse_dm_for_meta.augmented_clips
+        video_id_labels = syracuse_dm_for_meta.video_id_labels  # Now correctly defined
+        
+        print(f"  Found {len(video_id_labels)} unique Syracuse videos with labels")
+        print(f"  Dataset has {len(original_clips)} original clips and {len(augmented_clips)} augmented clips")
+    except Exception as e:
+        print(f"Error loading Syracuse metadata: {e}. Cannot proceed with CV.")
+        return
+
+    # --- 2. Load Full BioVid Training Data (once) --- 
     print("  Loading full BioVid training data...")
     try:
         full_biovid_train_set = BioVidLP(
@@ -600,7 +630,7 @@ def run_multitask_cv(args, config):
          print(f"Error loading BioVid training data: {e}. Cannot proceed with CV.")
          return
          
-    # --- 5. Load ShoulderPain Training Data (once, if enabled) --- 
+    # --- 3. Load ShoulderPain Training Data (once, if enabled) --- 
     full_shoulder_pain_train_set = None
     use_shoulder_pain = shoulder_pain_feature_dir is not None and hasattr(args, 'shoulder_pain_data_path') and args.shoulder_pain_data_path is not None
     
@@ -627,6 +657,7 @@ def run_multitask_cv(args, config):
             use_shoulder_pain = False
             full_shoulder_pain_train_set = None
 
+    # Now video_id_labels is properly defined before it's used
     unique_video_ids = sorted(list(video_id_labels.keys()))
     video_labels_for_stratify = [video_id_labels[vid] for vid in unique_video_ids]
     if len(unique_video_ids) < n_splits:
