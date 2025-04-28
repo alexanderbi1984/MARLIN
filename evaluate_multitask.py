@@ -158,7 +158,7 @@ def run_multitask_evaluation(args, config):
     num_stimulus_classes = config["num_stimulus_classes"]
     syracuse_feature_dir = config["syracuse_feature_dir"]
     biovid_feature_dir = config["biovid_feature_dir"]
-    shoulder_pain_feature_dir = config.get("shoulder_pain_feature_dir", None)  # Optional
+    shoulder_pain_feature_dir = config.get("shoulder_pain_feature_dir", None)
     temporal_reduction = config.get("temporal_reduction", "mean")
     learning_rate = config["learning_rate"]
     weight_decay = config.get("weight_decay", 0.0)  # Default to 0.0 (no weight decay)
@@ -632,11 +632,72 @@ def run_multitask_cv(args, config):
          
     # --- 3. Load ShoulderPain Training Data (once, if enabled) --- 
     full_shoulder_pain_train_set = None
+    
+    # Debug the shoulder pain parameters
+    print(f"SHOULDER_PAIN PATH DEBUG:")
+    print(f"  - hasattr(args, 'shoulder_pain_data_path'): {hasattr(args, 'shoulder_pain_data_path')}")
+    if hasattr(args, 'shoulder_pain_data_path'):
+        print(f"  - args.shoulder_pain_data_path: '{args.shoulder_pain_data_path}'")
+        print(f"  - args.shoulder_pain_data_path is None: {args.shoulder_pain_data_path is None}")
+        if args.shoulder_pain_data_path:
+            print(f"  - Path exists: {os.path.exists(args.shoulder_pain_data_path)}")
+    print(f"  - shoulder_pain_feature_dir: '{shoulder_pain_feature_dir}'")
+    print(f"  - shoulder_pain_feature_dir is None: {shoulder_pain_feature_dir is None}")
+    
+    # Check what creates the use_shoulder_pain flag
     use_shoulder_pain = shoulder_pain_feature_dir is not None and hasattr(args, 'shoulder_pain_data_path') and args.shoulder_pain_data_path is not None
+    print(f"  - Combined condition (use_shoulder_pain): {use_shoulder_pain}")
+    
+    # Additional directory structure checks
+    if hasattr(args, 'shoulder_pain_data_path') and args.shoulder_pain_data_path and shoulder_pain_feature_dir:
+        # Check if the full feature directory exists
+        feature_dir_path = os.path.join(args.shoulder_pain_data_path, shoulder_pain_feature_dir)
+        print(f"  - Full feature directory path: '{feature_dir_path}'")
+        print(f"  - Feature directory exists: {os.path.exists(feature_dir_path)}")
+        
+        # Check if metadata and split files exist
+        print(f"  - Checking required files:")
+        metadata_path = os.path.join(args.shoulder_pain_data_path, 'shoulder_pain_info.json')
+        train_split_path = os.path.join(args.shoulder_pain_data_path, 'train.txt')
+        print(f"    - shoulder_pain_info.json exists: {os.path.exists(metadata_path)}")
+        print(f"    - train.txt exists: {os.path.exists(train_split_path)}")
+        
+        # Check if any feature files exist
+        if os.path.exists(feature_dir_path):
+            try:
+                feature_files = os.listdir(feature_dir_path)
+                npy_files = [f for f in feature_files if f.endswith('.npy')]
+                print(f"    - Number of .npy files in feature directory: {len(npy_files)}")
+                if npy_files:
+                    print(f"    - Example feature files: {npy_files[:3]}")
+            except Exception as e:
+                print(f"    - Error listing feature files: {e}")
+    
+    # Uncomment for testing: Override use_shoulder_pain flag if needed
+    # use_shoulder_pain = True
+    # print("  - TESTING: Forcing use_shoulder_pain to True for testing")
     
     if use_shoulder_pain:
         print("  Loading full ShoulderPain training data...")
         try:
+            print(f"  SHOULDER_PAIN DEBUG: Creating dataset with params:")
+            print(f"    - root_dir: {args.shoulder_pain_data_path}")
+            print(f"    - feature_dir: {shoulder_pain_feature_dir}")
+            print(f"    - num_classes: {num_pain_classes}")
+            
+            # First check if the required files exist
+            metadata_exists = os.path.exists(os.path.join(args.shoulder_pain_data_path, 'shoulder_pain_info.json'))
+            train_file_exists = os.path.exists(os.path.join(args.shoulder_pain_data_path, 'train.txt'))
+            feature_dir_exists = os.path.exists(os.path.join(args.shoulder_pain_data_path, shoulder_pain_feature_dir))
+            
+            if not metadata_exists:
+                raise FileNotFoundError(f"shoulder_pain_info.json not found in {args.shoulder_pain_data_path}")
+            if not train_file_exists:
+                raise FileNotFoundError(f"train.txt not found in {args.shoulder_pain_data_path}")
+            if not feature_dir_exists:
+                raise FileNotFoundError(f"Feature directory {shoulder_pain_feature_dir} not found in {args.shoulder_pain_data_path}")
+                
+            # Now try to create the dataset
             full_shoulder_pain_train_set = ShoulderPainLP(
                 root_dir=args.shoulder_pain_data_path,
                 feature_dir=shoulder_pain_feature_dir,
@@ -652,8 +713,22 @@ def run_multitask_cv(args, config):
             # Print class distribution
             class_distribution = full_shoulder_pain_train_set.get_class_distribution()
             print(f"    ShoulderPain Class Distribution: {class_distribution}")
+        except FileNotFoundError as e:
+            print(f"  ERROR: ShoulderPain directory structure issue: {e}")
+            print(f"  Continuing without ShoulderPain dataset.")
+            use_shoulder_pain = False
+            full_shoulder_pain_train_set = None
+        except ImportError as e:
+            print(f"  ERROR: ShoulderPainLP class not found: {e}")
+            print(f"  Make sure dataset/shoulder_pain.py is properly implemented and imported.")
+            use_shoulder_pain = False
+            full_shoulder_pain_train_set = None
         except Exception as e:
-            print(f"Error loading ShoulderPain training data: {e}. Continuing without ShoulderPain data.")
+            print(f"  ERROR: Loading ShoulderPain training data: {str(e)}")
+            print(f"  Exception type: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()
+            print(f"  Continuing without ShoulderPain dataset.")
             use_shoulder_pain = False
             full_shoulder_pain_train_set = None
 
