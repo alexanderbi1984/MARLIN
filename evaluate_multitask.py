@@ -806,6 +806,19 @@ def run_multitask_cv(args, config):
         if use_shoulder_pain and full_shoulder_pain_train_set is not None and len(full_shoulder_pain_train_set) > 0:
             wrapped_shoulder_pain_train = MultiTaskWrapper(full_shoulder_pain_train_set, 'pain')
             print(f"  Including ShoulderPain dataset with {len(wrapped_shoulder_pain_train)} samples")
+            
+            # Add more detailed debug info about ShoulderPain dataset
+            print(f"  SHOULDER_PAIN DEBUG: Dataset loaded successfully")
+            print(f"  SHOULDER_PAIN DEBUG: Original dataset size: {len(full_shoulder_pain_train_set)}")
+            print(f"  SHOULDER_PAIN DEBUG: Wrapped dataset size: {len(wrapped_shoulder_pain_train)}")
+        else:
+            print(f"  SHOULDER_PAIN DEBUG: Dataset NOT included in training")
+            if not use_shoulder_pain:
+                print(f"  SHOULDER_PAIN DEBUG: Reason - use_shoulder_pain flag is False")
+            elif full_shoulder_pain_train_set is None:
+                print(f"  SHOULDER_PAIN DEBUG: Reason - dataset object is None")
+            elif len(full_shoulder_pain_train_set) == 0:
+                print(f"  SHOULDER_PAIN DEBUG: Reason - dataset is empty (0 samples)")
         
         # Combine Syracuse and BioVid for training
         print(f"  Creating combined training dataset:")
@@ -823,11 +836,44 @@ def run_multitask_cv(args, config):
         combined_train_dataset = ConcatDataset(train_datasets)
         print(f"    - Combined training set: {len(combined_train_dataset)} samples")
         
+        # Add detailed debug information about ConcatDataset internals
+        print(f"DATASET INTERNALS DEBUG:")
+        if hasattr(combined_train_dataset, 'cumulative_sizes'):
+            cum_sizes = combined_train_dataset.cumulative_sizes
+            print(f"  - Cumulative sizes: {cum_sizes}")
+            dataset_sizes = [cum_sizes[0]] + [cum_sizes[i] - cum_sizes[i-1] for i in range(1, len(cum_sizes))]
+            print(f"  - Individual dataset sizes: {dataset_sizes}")
+            print(f"  - Dataset start indices:")
+            start_indices = [0] + [cum_sizes[i] for i in range(len(cum_sizes)-1)]
+            for i, start_idx in enumerate(start_indices):
+                end_idx = cum_sizes[i] - 1
+                dataset_type = type(train_datasets[i]).__name__
+                print(f"    Dataset {i+1} ({dataset_type}): indices {start_idx} to {end_idx} (size: {end_idx-start_idx+1})")
+        else:
+            print(f"  - combined_train_dataset does not have cumulative_sizes attribute")
+            print(f"  - Number of datasets: {len(train_datasets)}")
+            for i, ds in enumerate(train_datasets):
+                print(f"    Dataset {i+1}: type={type(ds).__name__}, size={len(ds)}")
+        
         # Calculate new expected batches with combined dataset
         combined_expected_batches = len(combined_train_dataset) // args.batch_size
         if len(combined_train_dataset) % args.batch_size != 0:
             combined_expected_batches += 1
         print(f"FOLD DEBUG: Expected batches with combined data: {combined_expected_batches}")
+        
+        # Check dataset composition
+        print(f"DATASET DEBUG: Combined dataset contains {len(combined_train_dataset)} samples")
+        print(f"DATASET DEBUG: Number of datasets in combined dataset: {len(train_datasets)}")
+        for i, dataset in enumerate(train_datasets):
+            print(f"DATASET DEBUG: Dataset {i+1} type: {type(dataset).__name__}, size: {len(dataset)}")
+        
+        # Verify total makes sense
+        expected_total = len(wrapped_syracuse_train) + len(wrapped_biovid_train)
+        if wrapped_shoulder_pain_train is not None:
+            expected_total += len(wrapped_shoulder_pain_train)
+        print(f"DATASET DEBUG: Expected combined size: {expected_total}, Actual size: {len(combined_train_dataset)}")
+        if expected_total != len(combined_train_dataset):
+            print(f"DATASET DEBUG: WARNING - Size mismatch! Dataset might not be properly combined!")
         
         # Create validation dataloader
         fold_val_loader = DataLoader(
@@ -919,6 +965,46 @@ def run_multitask_cv(args, config):
                 # Combine weights in the same order as datasets in combined_train_dataset
                 combined_weights = np.concatenate([syracuse_weights, biovid_weights])
                 
+                # Add ShoulderPain sample weights if available
+                if wrapped_shoulder_pain_train is not None:
+                    # ShoulderPain samples are pain samples too, so they get weights just like Syracuse
+                    # Extract all ShoulderPain labels to calculate weights
+                    all_shoulder_pain_labels = []
+                    for batch in DataLoader(wrapped_shoulder_pain_train, batch_size=128, shuffle=False):
+                        # Parse MultiTaskWrapper output: (features, pain_labels, stim_labels)
+                        _, pain_labels, _ = batch
+                        all_shoulder_pain_labels.append(pain_labels)
+                    
+                    # Convert to tensor
+                    if all_shoulder_pain_labels:
+                        all_shoulder_pain_labels = torch.cat(all_shoulder_pain_labels)
+                        
+                        # Create sample weights array for ShoulderPain
+                        shoulder_pain_weights = torch.ones_like(all_shoulder_pain_labels, dtype=torch.float)
+                        # Only valid labels get class-based weights
+                        valid_mask = all_shoulder_pain_labels != -1
+                        for i, (is_valid, label) in enumerate(zip(valid_mask, all_shoulder_pain_labels)):
+                            if is_valid:
+                                shoulder_pain_weights[i] = sample_class_weights[label]
+                        
+                        # Convert to numpy and combine with existing weights
+                        shoulder_pain_weights = shoulder_pain_weights.numpy()
+                        combined_weights = np.concatenate([syracuse_weights, biovid_weights, shoulder_pain_weights])
+                        
+                        print(f"  SHOULDER_PAIN DEBUG: Added weights for {len(shoulder_pain_weights)} ShoulderPain samples")
+                        print(f"  SHOULDER_PAIN DEBUG: Mean ShoulderPain sample weight: {np.mean(shoulder_pain_weights):.4f}")
+                        print(f"  SHOULDER_PAIN DEBUG: Mean Syracuse sample weight: {np.mean(syracuse_weights):.4f}")
+                        print(f"  SHOULDER_PAIN DEBUG: Mean BioVid sample weight: {np.mean(biovid_weights):.4f}")
+                    else:
+                        print(f"  SHOULDER_PAIN DEBUG: No labels extracted from ShoulderPain dataset")
+                
+                # Verify the weights array matches the combined dataset size
+                if len(combined_weights) != len(combined_train_dataset):
+                    print(f"  WARNING: Weight array size ({len(combined_weights)}) doesn't match dataset size ({len(combined_train_dataset)})")
+                    print(f"  WEIGHT DEBUG: Syracuse weights: {len(syracuse_weights)}, BioVid weights: {len(biovid_weights)}")
+                    if wrapped_shoulder_pain_train is not None and 'shoulder_pain_weights' in locals():
+                        print(f"  WEIGHT DEBUG: ShoulderPain weights: {len(shoulder_pain_weights)}")
+                
                 # Create a weighted sampler for the combined dataset
                 sampler = torch.utils.data.WeightedRandomSampler(
                     weights=torch.from_numpy(combined_weights).float(),
@@ -937,6 +1023,12 @@ def run_multitask_cv(args, config):
                 )
                 
                 print(f"  Created balanced DataLoader for fold {fold_idx + 1} with {len(fold_train_loader)} batches")
+                print(f"  SAMPLING DEBUG: Total samples: {len(combined_train_dataset)}, Weights array size: {len(combined_weights)}")
+                print(f"  SAMPLING DEBUG: Dataset composition: Syracuse={len(wrapped_syracuse_train)}, BioVid={len(wrapped_biovid_train)}")
+                if wrapped_shoulder_pain_train is not None:
+                    print(f"  SAMPLING DEBUG: ShoulderPain={len(wrapped_shoulder_pain_train)}")
+                print(f"  SAMPLING DEBUG: Expected batches: {combined_expected_batches}, Created batches: {len(fold_train_loader)}")
+                
         else:
             # Standard DataLoader with combined dataset (default behavior)
             fold_train_loader = DataLoader(
@@ -948,6 +1040,22 @@ def run_multitask_cv(args, config):
                 persistent_workers=True if args.num_workers > 0 else False
             )
             print(f"  Created standard DataLoader for fold {fold_idx + 1} with {len(fold_train_loader)} batches")
+            
+            # Add debug prints for the standard DataLoader case
+            print(f"  SAMPLING DEBUG: Using standard DataLoader (no class balancing)")
+            print(f"  SAMPLING DEBUG: Total samples: {len(combined_train_dataset)}")
+            print(f"  SAMPLING DEBUG: Dataset composition: Syracuse={len(wrapped_syracuse_train)}, BioVid={len(wrapped_biovid_train)}")
+            if wrapped_shoulder_pain_train is not None:
+                print(f"  SAMPLING DEBUG: ShoulderPain={len(wrapped_shoulder_pain_train)}")
+            print(f"  SAMPLING DEBUG: Expected batches: {combined_expected_batches}, Created batches: {len(fold_train_loader)}")
+            
+            # Check if the batch calculation makes sense
+            total_samples = len(combined_train_dataset)
+            expected_batch_count = total_samples // args.batch_size
+            if total_samples % args.batch_size != 0:
+                expected_batch_count += 1
+            if expected_batch_count != len(fold_train_loader):
+                print(f"  SAMPLING DEBUG: WARNING - Batch count mismatch! Expected: {expected_batch_count}, Actual: {len(fold_train_loader)}")
 
         # --- Configure Model & Trainer for the Fold ---
         model = MultiTaskCoralClassifier(
