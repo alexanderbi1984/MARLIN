@@ -261,12 +261,6 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         # Weighted sum using hyperparameters
         # Ensure requires_grad=True propagates if only one loss is active
         if valid_pain_mask.any() or valid_stim_mask.any():
-             # Add debug prints to verify weights
-             if stage == 'train' and valid_stim_mask.any() and (batch_idx == 0 or batch_idx % 50 == 0):
-                 print(f"DEBUG - Epoch {self.current_epoch}, Batch {batch_idx}: stim_loss_weight = {self.hparams.stim_loss_weight:.4f}")
-                 print(f"DEBUG - Pain Loss: {pain_loss:.4f}, Stim Loss: {stim_loss:.4f}")
-                 print(f"DEBUG - Weighted Pain: {(self.hparams.pain_loss_weight * pain_loss):.4f}, Weighted Stim: {(self.hparams.stim_loss_weight * stim_loss):.4f}")
-             
              total_loss = self.hparams.pain_loss_weight * pain_loss + self.hparams.stim_loss_weight * stim_loss
         else:
              # No valid labels in batch, return zero loss but ensure grad is enabled if model parameters were used
