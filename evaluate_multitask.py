@@ -706,10 +706,10 @@ def run_multitask_cv(args, config):
         wrapped_syracuse_train = MultiTaskWrapper(syracuse_train_set, 'pain')
         wrapped_syracuse_val = MultiTaskWrapper(syracuse_val_set, 'pain')
         
-        # Calculate class weights if enabled
+        # Calculate class weights if enabled (for loss weighting)
         fold_class_weights = None
         if use_class_weights:
-            print(f"  Calculating class weights for fold {fold_idx + 1}...")
+            print(f"  Calculating class weights for loss function (fold {fold_idx + 1})...")
             # Get all labels from training set
             train_labels = []
             # Use a temporary DataLoader with batch_size=64 to efficiently extract labels
@@ -722,23 +722,22 @@ def run_multitask_cv(args, config):
                     train_labels.append(labels[valid_mask])
             
             if train_labels:
-                train_labels = torch.cat(train_labels)
+                train_labels = torch.cat(train_labels).numpy()
+                
+                # Calculate class frequencies
+                class_counts = np.bincount(train_labels, minlength=num_pain_classes)
+                print(f"  Class distribution for loss weighting: {class_counts}")
+                
+                # Calculate inverse frequency weights (with small epsilon to avoid division by zero)
+                class_weights = 1.0 / (class_counts + 1e-6)
+                
+                # Normalize weights to maintain loss scale
+                class_weights = class_weights / class_weights.mean()
+                
+                print(f"  Loss class weights: {np.round(class_weights, 3)}")
+                fold_class_weights = torch.tensor(class_weights, dtype=torch.float32)
             else:
-                print(f"  WARNING: No valid labels found in Syracuse train set.")
-                train_labels = torch.ones(1, dtype=torch.long)  # Fallback to avoid errors
-            
-            # Calculate class frequencies
-            class_counts = np.bincount(train_labels.numpy(), minlength=num_pain_classes)
-            print(f"  Class distribution: {class_counts}")
-            
-            # Calculate inverse frequency weights (with small epsilon to avoid division by zero)
-            class_weights = 1.0 / (class_counts + 1e-6)
-            
-            # Normalize weights to maintain loss scale
-            class_weights = class_weights / class_weights.mean()
-            
-            print(f"  Class weights: {np.round(class_weights, 3)}")
-            fold_class_weights = torch.tensor(class_weights, dtype=torch.float32)
+                print(f"  WARNING: No valid labels found for loss weighting. Using uniform weights.")
         
         # Add BioVid data to the training set (as this is a multi-task model)
         wrapped_biovid_train = MultiTaskWrapper(full_biovid_train_set, 'stimulus')
@@ -756,8 +755,7 @@ def run_multitask_cv(args, config):
             combined_expected_batches += 1
         print(f"FOLD DEBUG: Expected batches with combined data: {combined_expected_batches}")
         
-        # Create DataLoaders with the wrapped datasets
-        # For Syracuse validation - always use standard DataLoader
+        # Create validation dataloader
         fold_val_loader = DataLoader(
             wrapped_syracuse_val, 
             batch_size=args.batch_size, 
@@ -766,99 +764,118 @@ def run_multitask_cv(args, config):
             pin_memory=True,
             persistent_workers=True if args.num_workers > 0 else False
         )
-        
+
         # For training - use WeightedRandomSampler for Syracuse if balance_pain_classes is enabled
         if balance_pain_classes:
             print(f"  Using weighted random sampler for Syracuse pain classes...")
             
-            # Get labels from wrapped_syracuse_train
-            if not hasattr(wrapped_syracuse_train, 'indices'):
-                # For datasets without indices attribute, we need to extract labels directly
-                all_labels = []
-                # Use a temporary DataLoader with batch_size=64 to efficiently extract labels
-                temp_loader = DataLoader(wrapped_syracuse_train, batch_size=64, shuffle=False)
-                for batch in temp_loader:
-                    _, labels, _ = batch  # MultiTaskWrapper returns (features, pain_labels, stim_labels)
-                    # Filter out -1 labels (invalid)
-                    valid_mask = labels != -1
-                    if valid_mask.any():
-                        all_labels.append(labels[valid_mask])
+            # Extract pain labels from Syracuse dataset
+            syracuse_labels = []
+            temp_loader = DataLoader(syracuse_train_set, batch_size=64, shuffle=False)
+            for batch in temp_loader:
+                _, labels = batch  # SyracuseLP returns (features, labels)
+                valid_mask = labels != -1
+                if valid_mask.any():
+                    syracuse_labels.append(labels[valid_mask])
+            
+            if len(syracuse_labels) == 0:
+                print("  WARNING: No valid labels found in Syracuse train set. Using uniform weights.")
+                # Default to regular dataloader
+                fold_train_loader = DataLoader(
+                    combined_train_dataset,
+                    batch_size=args.batch_size,
+                    shuffle=True,
+                    num_workers=args.num_workers,
+                    pin_memory=True,
+                    persistent_workers=True if args.num_workers > 0 else False
+                )
+            else:
+                # Convert labels to numpy array for bincount
+                syracuse_labels = torch.cat(syracuse_labels).numpy()
                 
-                if all_labels:
-                    all_labels = torch.cat(all_labels)
+                # Calculate class frequencies and weights
+                class_counts = np.bincount(syracuse_labels, minlength=num_pain_classes)
+                print(f"  Syracuse sampling class distribution: {class_counts}")
+                
+                # Check for empty classes
+                if np.any(class_counts == 0):
+                    print(f"  WARNING: Some classes have zero samples - using frequency-based weights for sampling")
+                    # Still use inverse frequency but don't try to make perfectly uniform
+                    sample_class_weights = 1.0 / (class_counts + 1e-6)
+                    sample_class_weights = sample_class_weights / sample_class_weights.sum()  # Normalize to sum to 1
                 else:
-                    print(f"  WARNING: No valid labels found in Syracuse train set.")
-                    all_labels = torch.ones(1, dtype=torch.long)  # Fallback to avoid errors
-            else:
-                # For Subset datasets with indices attribute, we can access labels directly
-                # But this is usually not needed with our dataset structure
-                pass
-            
-            # Calculate sample weights based on class frequencies
-            class_counts = np.bincount(all_labels.numpy(), minlength=num_pain_classes)
-            if np.any(class_counts == 0):
-                print(f"  WARNING: Some classes have zero samples - using uniform sampling instead.")
-                sample_weights = torch.ones(len(wrapped_syracuse_train))
-            else:
-                class_weights = 1.0 / class_counts
-                class_weights = class_weights / class_weights.sum()  # Normalize to sum to 1
-                print(f"  Class frequencies: {class_counts}")
-                print(f"  Class weights for sampling: {np.round(class_weights, 3)}")
+                    # Calculate weights to create perfectly balanced classes
+                    sample_class_weights = 1.0 / class_counts
+                    sample_class_weights = sample_class_weights / sample_class_weights.sum()  # Normalize to sum to 1
+                    
+                print(f"  Syracuse sampling class weights: {np.round(sample_class_weights, 3)}")
                 
-                # Assign weight to each sample based on its class
-                sample_weights = torch.tensor([class_weights[label] for label in all_labels], dtype=torch.float)
-            
-            # Create a sampler that samples with replacement according to the weights
-            sampler = torch.utils.data.WeightedRandomSampler(
-                weights=sample_weights,
-                num_samples=len(wrapped_syracuse_train),
-                replacement=True
-            )
-            
-            # Create separate DataLoaders for Syracuse and BioVid
-            syracuse_loader = DataLoader(
-                wrapped_syracuse_train,
-                batch_size=args.batch_size,
-                sampler=sampler,  # Use weighted sampler for Syracuse
-                num_workers=args.num_workers,
-                pin_memory=True,
-                persistent_workers=True if args.num_workers > 0 else False
-            )
-            
-            biovid_loader = DataLoader(
-                wrapped_biovid_train,
-                batch_size=args.batch_size,
-                shuffle=True,  # Regular shuffling for BioVid
-                num_workers=args.num_workers,
-                pin_memory=True,
-                persistent_workers=True if args.num_workers > 0 else False
-            )
-            
-            # Use CombinedLoader from PyTorch Lightning to handle multiple dataloaders
-            fold_train_loader = CombinedLoader(
-                {"syracuse": syracuse_loader, "biovid": biovid_loader},
-                mode="max_size_cycle"  # This ensures we go through all batches in the larger dataset
-            )
-            
-            print(f"  Created balanced DataLoaders for fold {fold_idx + 1}")
-            print(f"    - Syracuse loader: {len(syracuse_loader)} batches")
-            print(f"    - BioVid loader: {len(biovid_loader)} batches")
-            print(f"    - Combined max batches: {max(len(syracuse_loader), len(biovid_loader))}")
-            
+                # We need to assign a weight to each sample in the combined dataset:
+                # 1. Syracuse samples get weights based on their class
+                # 2. BioVid samples get default weight to maintain dataset balance
+                
+                # Get weights for all Syracuse samples
+                all_weights = []
+                
+                # First get all Syracuse sample labels
+                all_syracuse_labels = []
+                for batch in DataLoader(wrapped_syracuse_train, batch_size=128, shuffle=False):
+                    # Parse MultiTaskWrapper output: (features, pain_labels, stim_labels)
+                    _, pain_labels, _ = batch
+                    all_syracuse_labels.append(pain_labels)
+                
+                # Convert to tensor and create weight array
+                all_syracuse_labels = torch.cat(all_syracuse_labels)
+                
+                # Create sample weights array for Syracuse
+                syracuse_weights = torch.ones_like(all_syracuse_labels, dtype=torch.float)
+                # Only valid labels get class-based weights
+                valid_mask = all_syracuse_labels != -1
+                for i, (is_valid, label) in enumerate(zip(valid_mask, all_syracuse_labels)):
+                    if is_valid:
+                        syracuse_weights[i] = sample_class_weights[label]
+                        
+                # Convert to numpy
+                syracuse_weights = syracuse_weights.numpy()
+                
+                # BioVid samples get average weight to maintain balance between datasets
+                biovid_weight = np.mean(syracuse_weights)
+                biovid_weights = np.ones(len(wrapped_biovid_train)) * biovid_weight
+                
+                # Combine weights in the same order as datasets in combined_train_dataset
+                combined_weights = np.concatenate([syracuse_weights, biovid_weights])
+                
+                # Create a weighted sampler for the combined dataset
+                sampler = torch.utils.data.WeightedRandomSampler(
+                    weights=torch.from_numpy(combined_weights).float(),
+                    num_samples=len(combined_train_dataset),
+                    replacement=True
+                )
+                
+                # Create dataloader with the weighted sampler
+                fold_train_loader = DataLoader(
+                    combined_train_dataset,
+                    batch_size=args.batch_size,
+                    sampler=sampler,
+                    num_workers=args.num_workers,
+                    pin_memory=True,
+                    persistent_workers=True if args.num_workers > 0 else False
+                )
+                
+                print(f"  Created balanced DataLoader for fold {fold_idx + 1} with {len(fold_train_loader)} batches")
         else:
             # Standard DataLoader with combined dataset (default behavior)
             fold_train_loader = DataLoader(
-                combined_train_dataset,  # Now using the combined dataset
-                batch_size=args.batch_size, 
-                shuffle=True, 
-                num_workers=args.num_workers, 
+                combined_train_dataset,
+                batch_size=args.batch_size,
+                shuffle=True,
+                num_workers=args.num_workers,
                 pin_memory=True,
                 persistent_workers=True if args.num_workers > 0 else False
             )
-        
-        print(f"  Created DataLoaders for fold {fold_idx + 1}")
-        
-        # --- Configure Model & Trainer for the Fold --- 
+            print(f"  Created standard DataLoader for fold {fold_idx + 1} with {len(fold_train_loader)} batches")
+
+        # --- Configure Model & Trainer for the Fold ---
         model = MultiTaskCoralClassifier(
             input_dim=input_dim,
             num_pain_classes=num_pain_classes,
