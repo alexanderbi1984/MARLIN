@@ -12,15 +12,17 @@ from typing import Optional, Tuple, List, Dict, Any, Union
 # We might need to refactor SyracuseDataModule setup logic or its Dataset
 from dataset.biovid import BioVidLP  # Assuming BioVidLP is the relevant dataset class
 from dataset.syracuse import SyracuseLP, SyracuseDataModule # Need SyracuseLP and potentially setup logic
+from dataset.shoulder_pain import ShoulderPainLP  # Import the new ShoulderPainLP class
 
 
 class MultiTaskDataModule(LightningDataModule):
     """
-    LightningDataModule to load and combine data from Syracuse (Pain) and BioVid (Stimulus) datasets
-    for multi-task learning with transfer learning focus.
+    LightningDataModule to load and combine data from Syracuse (Pain), BioVid (Stimulus),
+    and ShoulderPain (Pain) datasets for multi-task learning with transfer learning focus.
     
     This module ensures:
-    1. Training set contains both Syracuse data (original+augmented) and BioVid data
+    1. Training set contains Syracuse data (original+augmented), BioVid data, 
+       and ShoulderPain data (if provided)
     2. Validation and test sets contain only Syracuse original clips
     3. Optional balancing of data sources and class labels in the training set
     """
@@ -40,12 +42,15 @@ class MultiTaskDataModule(LightningDataModule):
         batch_size: int,
         
         # --- Optional Arguments with Defaults ---
+        # ShoulderPain Specific Params (Optional)
+        shoulder_pain_root_dir: Optional[str] = None,
+        shoulder_pain_feature_dir: Optional[str] = None,
         # Syracuse Split Ratios
         syracuse_val_ratio: float = 0.15, # Ratio for validation set from Syracuse video IDs
         syracuse_test_ratio: float = 0.15, # Ratio for test set from Syracuse video IDs
         # Common Params
         num_workers: int = 0,
-        temporal_reduction: str = "mean", # Assuming same reduction for both feature sets
+        temporal_reduction: str = "mean", # Assuming same reduction for all feature sets
         # Training Set Balancing Options
         balance_sources: bool = False,  # Whether to balance Syracuse vs BioVid in training
         balance_stimulus_classes: bool = False,  # Whether to balance stimulus classes in BioVid portion
@@ -64,6 +69,11 @@ class MultiTaskDataModule(LightningDataModule):
         self.biovid_root_dir = biovid_root_dir
         self.biovid_feature_dir = biovid_feature_dir
         self.num_stimulus_classes = num_stimulus_classes
+        
+        # ShoulderPain params
+        self.shoulder_pain_root_dir = shoulder_pain_root_dir
+        self.shoulder_pain_feature_dir = shoulder_pain_feature_dir
+        self.use_shoulder_pain = shoulder_pain_root_dir is not None and shoulder_pain_feature_dir is not None
 
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -247,119 +257,159 @@ class MultiTaskDataModule(LightningDataModule):
         test_ids_set = set(test_ids)
 
         print(f"    Split Video IDs: Train={len(train_ids_set)}, Val={len(val_ids_set)}, Test={len(test_ids_set)}")
+        
+        # --- 3. Create Syracuse train/val/test datasets based on the video ID splits ---
+        print("  Creating Syracuse datasets...")
 
-        # --- 3. Create Syracuse Filename Lists for each split --- 
-        train_names, val_names, test_names = [], [], []
-        # Originals
+        # For each original clip, choose train/val/test based on video_id
+        syracuse_train_filenames = []
+        syracuse_val_filenames = []
+        syracuse_test_filenames = []
+
         for clip in original_clips:
-            vid = clip['video_id']
+            vid = clip.get('video_id')
+            filename = clip.get('filename')
             if vid in train_ids_set:
-                train_names.append(clip['filename'])
+                syracuse_train_filenames.append(filename)
             elif vid in val_ids_set:
-                val_names.append(clip['filename'])
+                syracuse_val_filenames.append(filename)
             elif vid in test_ids_set:
-                test_names.append(clip['filename'])
-        # Augmentations (only add to training set)
+                syracuse_test_filenames.append(filename)
+            # else: possible if metadata has videos not in video_id_labels
+
+        # Add augmented clips to training set only (standard practice)
         for clip in augmented_clips:
-            if clip['video_id'] in train_ids_set:
-                train_names.append(clip['filename'])
+            vid = clip.get('video_id')
+            filename = clip.get('filename')
+            if vid in train_ids_set:
+                syracuse_train_filenames.append(filename)
 
-        print(f"    Split Clip Filenames: Train={len(train_names)}, Val={len(val_names)}, Test={len(test_names)}")
+        print(f"    Syracuse Train Files: {len(syracuse_train_filenames)}")
+        print(f"    Syracuse Val Files: {len(syracuse_val_filenames)}")
+        print(f"    Syracuse Test Files: {len(syracuse_test_filenames)}")
 
-        # --- 4. Instantiate SyracuseLP Datasets --- 
-        common_lp_args = {
-            "root_dir": self.syracuse_root_dir,
-            "feature_dir": self.syracuse_feature_dir,
-            "task": 'multiclass', # Assuming pain task is multiclass
-            "num_classes": self.num_pain_classes,
-            "temporal_reduction": self.temporal_reduction,
-            "metadata": all_syracuse_metadata
-        }
-        syracuse_train_set = SyracuseLP(split='train', name_list=train_names, **common_lp_args)
-        syracuse_val_set = SyracuseLP(split='val', name_list=val_names, **common_lp_args)
-        syracuse_test_set = SyracuseLP(split='test', name_list=test_names, **common_lp_args)
-        # Original line causing error: print(f"    Syracuse train/val/test sizes: {len(syracuse_train_set)}/{len(syracuse_val_set)}/{len(syracuse_test_set)}")
-        # Now sizes are available from the manually created datasets above.
+        # Create Syracuse datasets for each split
+        syracuse_train_set = SyracuseLP(
+            self.syracuse_root_dir,
+            self.syracuse_feature_dir,
+            split='train',
+            task='multiclass',
+            num_classes=self.num_pain_classes,
+            temporal_reduction=self.temporal_reduction,
+            name_list=syracuse_train_filenames, # For cross-validation/debugging: explicit list
+            metadata=all_syracuse_metadata
+        )
 
-        # --- 5. Load BioVid Training Data --- 
-        print("  Setting up BioVid dataset...")
-        biovid_train_set = None
-        if stage == 'fit' or stage is None:
+        syracuse_val_set = SyracuseLP(
+            self.syracuse_root_dir,
+            self.syracuse_feature_dir,
+            split='val',
+            task='multiclass',
+            num_classes=self.num_pain_classes,
+            temporal_reduction=self.temporal_reduction,
+            name_list=syracuse_val_filenames,
+            metadata=all_syracuse_metadata
+        )
+
+        syracuse_test_set = SyracuseLP(
+            self.syracuse_root_dir,
+            self.syracuse_feature_dir,
+            split='test',
+            task='multiclass',
+            num_classes=self.num_pain_classes,
+            temporal_reduction=self.temporal_reduction,
+            name_list=syracuse_test_filenames,
+            metadata=all_syracuse_metadata
+        )
+
+        # --- 4. Load BioVid Training Dataset ---
+        print("  Loading BioVid training dataset...")
+        biovid_train_set = BioVidLP(
+             self.biovid_root_dir,
+             self.biovid_feature_dir,
+             split='train', # Only use the training split
+             task='multiclass',  
+             num_classes=self.num_stimulus_classes,
+             temporal_reduction=self.temporal_reduction,
+             data_ratio=self.data_ratio, # Sample subset if requested
+             take_num=self.take_train # Take limited number if requested
+        )
+        
+        print(f"    BioVid Train Set Size: {len(biovid_train_set)}")
+        
+        # --- 5. Load ShoulderPain Dataset (if enabled) ---
+        shoulder_pain_train_set = None
+        if self.use_shoulder_pain:
+            print("  Loading ShoulderPain dataset...")
             try:
-                # Use data_ratio and take_train specifically for the BioVid training set
-                biovid_train_set = BioVidLP(
-                     root_dir=self.biovid_root_dir, feature_dir=self.biovid_feature_dir,
-                     split='train', task='multiclass', num_classes=self.num_stimulus_classes,
-                     temporal_reduction=self.temporal_reduction,
-                     data_ratio=self.data_ratio, # Apply ratio to BioVid train set
-                     take_num=self.take_train  # Apply take_num to BioVid train set
+                shoulder_pain_train_set = ShoulderPainLP(
+                    self.shoulder_pain_root_dir,
+                    self.shoulder_pain_feature_dir,
+                    split='train',  # Only available as training data
+                    task='multiclass',
+                    num_classes=self.num_pain_classes,  # Same number of classes as Syracuse
+                    temporal_reduction=self.temporal_reduction,
+                    data_ratio=self.data_ratio,
+                    take_num=self.take_train
                 )
-                print(f"    BioVid train size (initial): {len(biovid_train_set)}")
-            except FileNotFoundError:
-                 print(f"Error: BioVid train.txt or feature directory not found at expected locations based on {self.biovid_root_dir}")
-                 biovid_train_set = None # Ensure it's None if loading fails
+                print(f"    ShoulderPain Train Set Size: {len(shoulder_pain_train_set)}")
+                
+                # Print class distribution
+                class_distribution = shoulder_pain_train_set.get_class_distribution()
+                print(f"    ShoulderPain Class Distribution: {class_distribution}")
             except Exception as e:
-                 print(f"Error loading BioVid training data: {e}")
-                 biovid_train_set = None
-        
-        if biovid_train_set is None and (stage == 'fit' or stage is None):
-             print("Warning: BioVid training set could not be loaded. Training will proceed with Syracuse data only.")
-             # Create a dummy empty list or handle appropriately if BioVid is essential
-             biovid_train_set = [] # Or maybe an empty Dataset? For Subset logic below.
+                print(f"    Error loading ShoulderPain dataset: {e}")
+                print(f"    Continuing without ShoulderPain dataset.")
+                self.use_shoulder_pain = False
 
-        # --- 6. Apply Balancing if Requested --- 
-        # Wrapper for Syracuse train set
-        wrapped_syracuse_train = MultiTaskWrapper(syracuse_train_set, task_type='pain')
-
-        # Determine if and how to balance BioVid data
-        wrapped_biovid_train = None
-        if biovid_train_set and len(biovid_train_set) > 0:
-            if self.balance_sources or self.balance_stimulus_classes:
-                print("  Applying dataset balancing...")
-                target_biovid_count = len(syracuse_train_set) if self.balance_sources else len(biovid_train_set)
-                if target_biovid_count > 0:
-                     if self.balance_stimulus_classes:
-                         print(f"    Balancing BioVid stimulus classes (target: ~{target_biovid_count} samples)...")
-                         balanced_indices = self._balance_biovid_by_class(biovid_train_set, target_biovid_count)
-                         if balanced_indices:
-                             biovid_train_subset = Subset(biovid_train_set, balanced_indices)
-                             wrapped_biovid_train = MultiTaskWrapper(biovid_train_subset, task_type='stimulus')
-                             print(f"    BioVid balanced size: {len(balanced_indices)}")
-                         else:
-                              print("    Balancing resulted in 0 samples. Using no BioVid data.")
-                     else:
-                         if self.balance_sources and len(biovid_train_set) > target_biovid_count:
-                             print(f"    Sampling BioVid to match Syracuse size ({target_biovid_count} samples)...")
-                             indices = random.sample(range(len(biovid_train_set)), target_biovid_count)
-                             biovid_train_subset = Subset(biovid_train_set, indices)
-                             wrapped_biovid_train = MultiTaskWrapper(biovid_train_subset, task_type='stimulus')
-                             print(f"    BioVid sampled size: {len(indices)}")
-                         else:
-                             wrapped_biovid_train = MultiTaskWrapper(biovid_train_set, task_type='stimulus') # Use full if no sampling needed
-                else:
-                     print("    Skipping balancing as target count is 0.")
-            else:
-                 wrapped_biovid_train = MultiTaskWrapper(biovid_train_set, task_type='stimulus')
-        
-        if wrapped_biovid_train is None:
-            # Create a dummy empty dataset if BioVid wasn't loaded or balancing failed
-            print("    Creating dummy empty dataset for BioVid component.")
-            wrapped_biovid_train = MultiTaskWrapper([], task_type='stimulus')
+        # --- 6. Balance BioVid Classes (Stimulus) if requested ---
+        if self.balance_stimulus_classes and len(biovid_train_set) > 0:
+            print("  Balancing BioVid stimulus classes...")
+            # Default target count is just the current set size
+            target_count = len(biovid_train_set)
             
-        # --- 7. Build Final Datasets --- 
-        # Construct training set
-        self.train_dataset = ConcatDataset([wrapped_syracuse_train, wrapped_biovid_train])
+            # Get balanced indices
+            balanced_indices = self._balance_biovid_by_class(biovid_train_set, target_count)
+            if balanced_indices:
+                # Create new subset of BioVid with balanced classes
+                biovid_train_set = Subset(biovid_train_set, balanced_indices)
+                print(f"    Balanced BioVid Train Set Size: {len(biovid_train_set)}")
+            else:
+                print("    Warning: Could not balance BioVid classes. Using original dataset.")
 
-        # Validation and test sets contain ONLY Syracuse data
-        self.val_dataset = MultiTaskWrapper(syracuse_val_set, task_type='pain')
-        self.test_dataset = MultiTaskWrapper(syracuse_test_set, task_type='pain')
+        # --- 7. Wrap datasets for multi-task format ---
+        # Wrap the Syracuse datasets for pain task
+        wrapped_syracuse_train = MultiTaskWrapper(syracuse_train_set, 'pain')
+        self.val_dataset = MultiTaskWrapper(syracuse_val_set, 'pain') 
+        self.test_dataset = MultiTaskWrapper(syracuse_test_set, 'pain')
+        
+        # Wrap BioVid dataset for stimulus task
+        wrapped_biovid_train = MultiTaskWrapper(biovid_train_set, 'stimulus')
+        
+        # Wrap ShoulderPain dataset for pain task (if available)
+        wrapped_shoulder_pain_train = None
+        if self.use_shoulder_pain and shoulder_pain_train_set is not None:
+            wrapped_shoulder_pain_train = MultiTaskWrapper(shoulder_pain_train_set, 'pain')
 
-        print(f"  Final dataset sizes:")
-        print(f"    Train: {len(self.train_dataset)} (Syracuse: {len(wrapped_syracuse_train)}, BioVid: {len(wrapped_biovid_train)})")
-        print(f"    Validation: {len(self.val_dataset)} (Syracuse only)")
-        print(f"    Test: {len(self.test_dataset)} (Syracuse only)")
-
-        print("MultiTaskDataModule setup complete.")
+        # --- 8. Combine training datasets ---
+        # Start with Syracuse and BioVid
+        train_datasets = [wrapped_syracuse_train, wrapped_biovid_train]
+        
+        # Add ShoulderPain if available
+        if self.use_shoulder_pain and wrapped_shoulder_pain_train is not None:
+            train_datasets.append(wrapped_shoulder_pain_train)
+            
+        self.train_dataset = ConcatDataset(train_datasets)
+        
+        # Print dataset statistics
+        print("  Final Dataset Sizes:")
+        print(f"    Training: {len(self.train_dataset)} samples")
+        print(f"      - Syracuse: {len(wrapped_syracuse_train)} samples")
+        print(f"      - BioVid: {len(wrapped_biovid_train)} samples")
+        if self.use_shoulder_pain and wrapped_shoulder_pain_train is not None:
+            print(f"      - ShoulderPain: {len(wrapped_shoulder_pain_train)} samples")
+        print(f"    Validation: {len(self.val_dataset)} samples")
+        print(f"    Test: {len(self.test_dataset)} samples")
 
     def train_dataloader(self):
         if not self.train_dataset:

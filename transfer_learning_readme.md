@@ -1,14 +1,19 @@
-# Multi-Task Transfer Learning (Syracuse Pain + BioVid Stimulus)
+# Multi-Task Transfer Learning (Syracuse Pain + BioVid Stimulus + ShoulderPain)
 
-This document describes how to set up and run the multi-task transfer learning experiment using the `evaluate_multitask.py` script. The goal is to train a model that learns from both Syracuse pain level data and BioVid stimulus level data, but evaluate its performance primarily on the Syracuse pain prediction task.
+This document describes how to set up and run the multi-task transfer learning experiment using the `evaluate_multitask.py` script. The goal is to train a model that learns from multiple datasets (Syracuse pain, BioVid stimulus, and optionally ShoulderPain), but evaluate its performance primarily on the Syracuse pain prediction task.
 
 ## Objective
 
-Train a single model with a shared feature encoder and two separate CORAL heads:
-1.  **Pain Head:** Predicts ordinal pain levels using Syracuse dataset features.
+Train a single model with a shared feature encoder and task-specific heads:
+1.  **Pain Head:** Predicts ordinal pain levels using Syracuse dataset features and optionally ShoulderPain features.
 2.  **Stimulus Head:** Predicts ordinal stimulus levels using BioVid dataset features.
 
-The model is trained on a combined dataset including Syracuse (original + augmented) and BioVid samples. Evaluation (validation and testing) is performed *only* on the Syracuse dataset splits to measure the model's ability to predict pain levels, potentially enhanced by the multi-task learning.
+The model is trained on a combined dataset including:
+- Syracuse (original + augmented) 
+- BioVid samples
+- ShoulderPain samples (optional)
+
+Evaluation (validation and testing) is performed *only* on the Syracuse dataset splits to measure the model's ability to predict pain levels, potentially enhanced by the multi-task learning approach.
 
 ## Requirements
 
@@ -23,9 +28,9 @@ The model is trained on a combined dataset including Syracuse (original + augmen
     *   `scikit-learn` (for metrics/splitting, if applicable)
     *   (Potentially others required by `marlin-pytorch`, `ffmpeg-python` etc. - refer to project setup)
 
-2.  **Data Setup:** You need both the Syracuse and BioVid datasets prepared as follows:
+2.  **Data Setup:** You need two or three datasets prepared as follows:
 
-    **a) Syracuse Dataset:**
+    **a) Syracuse Dataset (Required):**
 
     *   **Root Directory (`--syracuse_data_path`):** The main directory containing Syracuse data.
     *   **Feature Directory (`syracuse_feature_dir` in YAML):** A subdirectory within the root directory containing pre-extracted features as `.npy` files (expected shape e.g., (4, 768) before temporal reduction).
@@ -61,7 +66,7 @@ The model is trained on a combined dataset including Syracuse (original + augmen
             }
             ```
 
-    **b) BioVid Dataset:**
+    **b) BioVid Dataset (Required):**
 
     *   **Root Directory (`--biovid_data_path`):** The main directory containing BioVid data.
     *   **Feature Directory (`biovid_feature_dir` in YAML):** A subdirectory within the root directory containing pre-extracted features as `.npy` files.
@@ -99,6 +104,54 @@ The model is trained on a combined dataset including Syracuse (original + augmen
         *Note: The `.npy` filenames in the feature directory must correspond to the video filenames listed in `train.txt` (e.g., `PartA_001_sx001t1.npy` corresponds to `PartA_001/sx001t1.avi` in `train.txt` and `biovid_info.json`).*
     *   **Split File (`train.txt`):** A text file in the BioVid root directory listing the relative paths of the video clips used for training (one per line). The `MultiTaskDataModule` uses this to identify which BioVid features to load for the training portion.
 
+    **c) ShoulderPain Dataset (Optional):**
+
+    *   **Root Directory (`--shoulder_pain_data_path`):** The main directory containing ShoulderPain data.
+    *   **Feature Directory (`shoulder_pain_feature_dir` in YAML):** A subdirectory within the root directory containing pre-extracted features as `.npy` files.
+        ```
+        <shoulder_pain_data_path>/
+            <shoulder_pain_feature_dir>/  # e.g., marlin_vit_small_patch16_224
+                ll042t1aaaff.npy
+                ll042t1aaunaff.npy
+                ...
+            shoulder_pain_info.json  # Metadata file (see below)
+            train.txt                # List of training clip filenames
+        ```
+    *   **Metadata File (`shoulder_pain_info.json`):** Located in the ShoulderPain root directory. Similar structure to BioVid's metadata, but with VAS scores for pain (values 0-10).
+        ```json
+        // Example shoulder_pain_info.json structure
+        {
+          "clips": {
+            "ll042t1aaaff.mp4": {
+              "attributes": {
+                "binary": 1,
+                "multiclass": {
+                  "6": 3,
+                  "5": 2.0
+                },
+                "subject_id": "042-ll042",
+                "sex": "",
+                "age": "",
+                "vas": "3.0",     // VAS score (0-10) used for pain classification
+                "opr": "3.0",
+                "source": "ShoulderPain"
+              }
+            },
+            ...
+          }
+        }
+        ```
+        *Note: The VAS score is automatically binned into classes as follows:*
+        - Class 0: Pain level 0.0 - 1.0
+        - Class 1: Pain level 2.0 - 3.0
+        - Class 2: Pain level 4.0 - 5.0
+        - Class 3: Pain level 6.0 - 7.0
+        - Class 4: Pain level 8.0 - 10.0
+    
+    *   **Split File (`train.txt`):** A text file listing the relative paths of the video clips used for training (same format as BioVid).
+    
+    *Note: ShoulderPain data is only used for training. It is not used for validation or testing.*
+
 ## Configuration File (`--config`)
 
 The experiment is configured using a YAML file. Create a copy of the template below and modify it for your run.
@@ -117,6 +170,7 @@ num_stimulus_classes: 5  # Number of ordinal stimulus levels (BioVid)
 # Feature directory names (relative to the respective data paths provided via CLI)
 syracuse_feature_dir: marlin_vit_small_patch16_224 # Example: Feature directory for Syracuse
 biovid_feature_dir: marlin_vit_small_patch16_224   # Example: Feature directory for BioVid (can be the same or different)
+shoulder_pain_feature_dir: null  # Optional: feature directory for ShoulderPain dataset, set to null to disable
 
 temporal_reduction: mean  # How to aggregate features temporally (mean, max, min, none)
 
@@ -156,10 +210,11 @@ stim_weight_sched_type: "cosine"  # Scheduling type ("cosine" or "linear")
 **Parameter Explanations:**
 
 *   `model_name`: Used for naming checkpoint directories and log files.
-*   `num_pain_classes`: Number of ordinal classes for the Syracuse pain task. Must match the label structure in `clips_json.json` (`class_N`).
+*   `num_pain_classes`: Number of ordinal classes for the Syracuse/ShoulderPain pain task. Must match the label structure in `clips_json.json` (`class_N`).
 *   `num_stimulus_classes`: Number of ordinal classes for the BioVid stimulus task. Must match the label structure in `biovid_info.json` (`multiclass[N]`).
 *   `syracuse_feature_dir`: Name of the subdirectory under `--syracuse_data_path` containing Syracuse `.npy` features.
 *   `biovid_feature_dir`: Name of the subdirectory under `--biovid_data_path` containing BioVid `.npy` features.
+*   `shoulder_pain_feature_dir`: Name of the subdirectory under `--shoulder_pain_data_path` containing ShoulderPain `.npy` features. Set to `null` to disable ShoulderPain data.
 *   `temporal_reduction`: Method to aggregate frame-level features (shape e.g., `(4, 768)`) into a single vector (shape `(768,)`) before feeding to the model's linear layers. Options: `mean`, `max`, `min`. Use `none` if the model handles sequences directly (may require model changes).
 *   `learning_rate`: Optimizer learning rate.
 *   `weight_decay`: L2 regularization strength for the optimizer.
@@ -191,6 +246,7 @@ python evaluate_multitask.py \
     --syracuse_data_path /path/to/syracuse_features_root \
     --syracuse_marlin_base_dir /path/to/syracuse_metadata \
     --biovid_data_path /path/to/biovid_features_root \
+    --shoulder_pain_data_path /path/to/shoulder_pain_features_root \  # Optional
     --n_gpus 1            `# Number of GPUs (0 for CPU)` \
     --batch_size 64       `# Training batch size` \
     --epochs 50           `# Maximum training epochs` \
@@ -210,6 +266,7 @@ python evaluate_multitask.py \
     --syracuse_data_path /path/to/syracuse_features_root \
     --syracuse_marlin_base_dir /path/to/syracuse_metadata \
     --biovid_data_path /path/to/biovid_features_root \
+    --shoulder_pain_data_path /path/to/shoulder_pain_features_root \  # Optional
     --cv_folds 5          `# Number of cross-validation folds` \
     --n_gpus 1 \
     --batch_size 64 \
@@ -219,8 +276,8 @@ python evaluate_multitask.py \
 ```
 
 In cross-validation mode:
-- The script performs stratified K-fold splitting based on unique video IDs
-- Each fold trains on K-1 folds and validates on 1 fold
+- The script performs stratified K-fold splitting based on unique Syracuse video IDs
+- Each fold trains on K-1 folds of Syracuse + all BioVid/ShoulderPain data, and validates on 1 fold from Syracuse
 - Results are aggregated and reported as mean ± standard deviation
 - The best model for each fold is saved separately
 
@@ -247,32 +304,39 @@ QWK is the primary metric used for model selection during training, as it better
 
 ### Data Loading Architecture
 
-The multi-task learning system uses a sophisticated data loading pipeline to handle the two datasets simultaneously:
+The multi-task learning system uses a sophisticated data loading pipeline to handle multiple datasets simultaneously:
 
 #### 1. Dataset Classes
 
 - **SyracuseLP**: Loads Syracuse pain level features and labels. Handles filtering by specific filenames for cross-validation.
 - **BioVidLP**: Loads BioVid stimulus level features and labels from the training split.
+- **ShoulderPainLP**: Loads ShoulderPain data and converts VAS scores (0-10) to discrete pain classes using predefined bins.
 - **MultiTaskWrapper**: Wraps each dataset to provide a consistent interface for the multi-task model, returning features along with pain and stimulus labels (with -1 for missing task labels).
 
 #### 2. MultiTaskDataModule
 
-This PyTorch Lightning DataModule orchestrates the loading and combining of both datasets:
+This PyTorch Lightning DataModule orchestrates the loading and combining of all datasets:
 
 ```python
 # Simplified DataModule structure
 class MultiTaskDataModule(pl.LightningDataModule):
     def setup(self, stage):
-        # For training: combine Syracuse and BioVid
-        syracuse_train = SyracuseLP(...)  # Load Syracuse training set
-        biovid_train = BioVidLP(...)      # Load BioVid training set
+        # For training: combine Syracuse, BioVid and optionally ShoulderPain
+        syracuse_train = SyracuseLP(...)    # Load Syracuse training set
+        biovid_train = BioVidLP(...)        # Load BioVid training set
+        shoulder_pain_train = ShoulderPainLP(...) if use_shoulder_pain else None
         
         # Wrap datasets to handle multi-task format
         wrapped_syracuse_train = MultiTaskWrapper(syracuse_train, 'pain')
         wrapped_biovid_train = MultiTaskWrapper(biovid_train, 'stimulus')
+        wrapped_shoulder_pain_train = MultiTaskWrapper(shoulder_pain_train, 'pain') if use_shoulder_pain else None
         
         # Combine datasets for training
-        self.train_dataset = ConcatDataset([wrapped_syracuse_train, wrapped_biovid_train])
+        train_datasets = [wrapped_syracuse_train, wrapped_biovid_train]
+        if use_shoulder_pain:
+            train_datasets.append(wrapped_shoulder_pain_train)
+            
+        self.train_dataset = ConcatDataset(train_datasets)
         
         # For validation and testing: use only Syracuse
         self.val_dataset = MultiTaskWrapper(SyracuseLP(...), 'pain')

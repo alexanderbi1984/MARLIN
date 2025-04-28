@@ -22,6 +22,7 @@ Configuration YAML File Keys (`--config`):
 *   `num_stimulus_classes: <int>` (**Required**): Number of ordinal classes for stimulus (BioVid).
 *   `syracuse_feature_dir: <name>` (**Required**): Feature dir name for Syracuse (relative to `--syracuse_data_path`).
 *   `biovid_feature_dir: <name>` (**Required**): Feature dir name for BioVid (relative to `--biovid_data_path`).
+*   `shoulder_pain_feature_dir: <name>` (Optional): Feature dir name for ShoulderPain (relative to `--shoulder_pain_data_path`).
 *   `temporal_reduction: <mean|max|min|none>` (**Required**): Temporal reduction for features.
 *   `learning_rate: <float>` (**Required**).
 *   `weight_decay: <float>` (Optional, default: 0.0): Weight decay for the optimizer.
@@ -33,8 +34,8 @@ Configuration YAML File Keys (`--config`):
 *   `balance_sources: <bool>` (Optional, default: False): Balance Syracuse vs BioVid in training set.
 *   `balance_stimulus_classes: <bool>` (Optional, default: False): Balance BioVid classes in training.
 *   `encoder_hidden_dims`: (Optional, list[int], default: None): Hidden dims for MLP encoder.
-*   `use_distance_penalty: <bool>` (Optional, default: False): Whether to use distance penalty for coral loss.
-*   `focal_gamma: <float>` (Optional, default: None): Focal gamma for coral loss.
+*   `use_distance_penalty: <bool>` (Optional, default: False): Whether to use distance penalty for CORAL loss.
+*   `focal_gamma: <float>` (Optional, default: None): Focal loss gamma parameter for CORAL loss.
 
 Example Command:
 ----------------
@@ -44,6 +45,7 @@ python evaluate_multitask.py \
     --syracuse_data_path /path/to/syracuse_features_root \
     --syracuse_marlin_base_dir /path/to/syracuse_metadata \
     --biovid_data_path /path/to/biovid_features_root \
+    --shoulder_pain_data_path /path/to/shoulder_pain_features_root \  # Optional
     --n_gpus 1 \
     --batch_size 64 \
     --epochs 50 
@@ -156,6 +158,7 @@ def run_multitask_evaluation(args, config):
     num_stimulus_classes = config["num_stimulus_classes"]
     syracuse_feature_dir = config["syracuse_feature_dir"]
     biovid_feature_dir = config["biovid_feature_dir"]
+    shoulder_pain_feature_dir = config.get("shoulder_pain_feature_dir", None)  # Optional
     temporal_reduction = config.get("temporal_reduction", "mean")
     learning_rate = config["learning_rate"]
     weight_decay = config.get("weight_decay", 0.0)  # Default to 0.0 (no weight decay)
@@ -175,6 +178,8 @@ def run_multitask_evaluation(args, config):
     print(f"Model Name: {model_name}")
     print(f"Pain Classes: {num_pain_classes}, Stimulus Classes: {num_stimulus_classes}")
     print(f"Syracuse Features: {syracuse_feature_dir}, BioVid Features: {biovid_feature_dir}")
+    if shoulder_pain_feature_dir and args.shoulder_pain_data_path:
+        print(f"ShoulderPain Features: {shoulder_pain_feature_dir}")
     print(f"Temporal Reduction: {temporal_reduction}")
     print(f"Learning Rate: {learning_rate}")
     print(f"Weight Decay: {weight_decay}")
@@ -200,6 +205,9 @@ def run_multitask_evaluation(args, config):
         biovid_root_dir=args.biovid_data_path,
         biovid_feature_dir=biovid_feature_dir,
         num_stimulus_classes=num_stimulus_classes,
+        # ShoulderPain Params (Optional)
+        shoulder_pain_root_dir=args.shoulder_pain_data_path if hasattr(args, 'shoulder_pain_data_path') else None,
+        shoulder_pain_feature_dir=shoulder_pain_feature_dir,
         # Common Params
         batch_size=args.batch_size,
         num_workers=args.num_workers,
@@ -515,6 +523,7 @@ def run_multitask_cv(args, config):
     num_stimulus_classes = config["num_stimulus_classes"]
     syracuse_feature_dir = config["syracuse_feature_dir"]
     biovid_feature_dir = config["biovid_feature_dir"]
+    shoulder_pain_feature_dir = config.get("shoulder_pain_feature_dir", None)  # Optional
     temporal_reduction = config.get("temporal_reduction", "mean")
     learning_rate = config["learning_rate"]
     weight_decay = config.get("weight_decay", 0.0)  # Default to 0.0 (no weight decay)
@@ -548,7 +557,7 @@ def run_multitask_cv(args, config):
     input_dim = 768 # Assuming same as before, adjust if needed
     data_ratio = config.get("data_ratio", 1.0) # Use from config if available
     take_train = config.get("take_train", None)
-    patience = config.get("patience", 100)
+    patience = config.get("patience", 200)  # Changed from 100 to 200 to match the regular evaluation function
     monitor_metric = config.get("monitor_metric", "val_pain_QWK") # QWK or MAE
     monitor_mode = "min" if "MAE" in monitor_metric else "max"
 
@@ -557,6 +566,8 @@ def run_multitask_cv(args, config):
     print(f"Model Name: {model_name}")
     print(f"Pain Classes: {num_pain_classes}, Stimulus Classes: {num_stimulus_classes}")
     print(f"Syracuse Features: {syracuse_feature_dir}, BioVid Features: {biovid_feature_dir}")
+    if shoulder_pain_feature_dir and hasattr(args, 'shoulder_pain_data_path') and args.shoulder_pain_data_path:
+        print(f"ShoulderPain Features: {shoulder_pain_feature_dir}")
     print(f"Temporal Reduction: {temporal_reduction}")
     print(f"Learning Rate: {learning_rate}")
     print(f"Weight Decay: {weight_decay}")
@@ -571,58 +582,7 @@ def run_multitask_cv(args, config):
     print(f"Monitor Metric: {monitor_metric} ({monitor_mode})")
     print(f"---------------------------------")
 
-    # --- Load Syracuse Metadata (once) --- 
-    print("  Loading Syracuse metadata for splitting...")
-    try:
-        # DEBUG: Inspect SyracuseDataModule signature and arguments
-        import inspect
-        print("DEBUG: SyracuseDataModule __init__ signature:", inspect.signature(SyracuseDataModule.__init__))
-        print("DEBUG: Preparing args for SyracuseDataModule:")
-        print("    root_dir=", args.syracuse_data_path)
-        print("    task=multiclass")
-        print("    num_classes=", num_pain_classes)
-        print("    batch_size=", 1)
-        print("    feature_dir=", syracuse_feature_dir)
-        print("    marlin_base_dir=", args.syracuse_marlin_base_dir)
-        print("    temporal_reduction=", temporal_reduction)
-        print("    num_workers=", 0)
-        # Instantiate SyracuseDataModule directly to load metadata
-        # Using positional arguments for required ones to avoid potential kwarg issues
-        syracuse_dm_for_meta = SyracuseDataModule(
-            args.syracuse_data_path,       # root_dir
-            'multiclass',                 # task
-            num_pain_classes,             # num_classes
-            1,                            # batch_size (dummy)
-            syracuse_feature_dir,         # feature_dir
-            args.syracuse_marlin_base_dir, # marlin_base_dir 
-            # Optional args as keywords
-            temporal_reduction=temporal_reduction,
-            num_workers=0                 # num_workers (dummy)
-        )
-        # Call setup just to load metadata and parse it
-        syracuse_dm_for_meta.setup(stage=None) # Use stage=None to load everything
-        # Access attributes from the SyracuseDataModule instance
-        # Note: It's syracuse_dm_for_meta.all_metadata, not all_syracuse_metadata
-        all_syracuse_metadata = syracuse_dm_for_meta.all_metadata 
-        original_clips = syracuse_dm_for_meta.original_clips # dict: video_id -> [filenames]
-        augmented_clips = syracuse_dm_for_meta.augmented_clips # dict: video_id -> [filenames]
-        video_id_labels = syracuse_dm_for_meta.video_id_labels # dict: video_id -> label
-        if not video_id_labels:
-            raise ValueError("video_id_labels empty after Syracuse metadata setup.")
-    except Exception as e:
-        print(f"Error loading Syracuse metadata for CV: {e}")
-        return
-
-    unique_video_ids = sorted(list(video_id_labels.keys()))
-    video_labels_for_stratify = [video_id_labels[vid] for vid in unique_video_ids]
-    if len(unique_video_ids) < n_splits:
-        raise ValueError(f"Number of unique Syracuse videos ({len(unique_video_ids)}) is less than the number of folds ({n_splits}).")
-    
-    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
-    fold_checkpoint_paths = [] # Stores best ckpt path for each fold
-    fold_val_filenames = [] # Stores list of val filenames for each fold
-    
-    # --- Load Full BioVid Training Data (once) --- 
+    # --- 4. Load Full BioVid Training Data (once) --- 
     print("  Loading full BioVid training data...")
     try:
         full_biovid_train_set = BioVidLP(
@@ -639,7 +599,43 @@ def run_multitask_cv(args, config):
     except Exception as e:
          print(f"Error loading BioVid training data: {e}. Cannot proceed with CV.")
          return
+         
+    # --- 5. Load ShoulderPain Training Data (once, if enabled) --- 
+    full_shoulder_pain_train_set = None
+    use_shoulder_pain = shoulder_pain_feature_dir is not None and hasattr(args, 'shoulder_pain_data_path') and args.shoulder_pain_data_path is not None
+    
+    if use_shoulder_pain:
+        print("  Loading full ShoulderPain training data...")
+        try:
+            full_shoulder_pain_train_set = ShoulderPainLP(
+                root_dir=args.shoulder_pain_data_path,
+                feature_dir=shoulder_pain_feature_dir,
+                split='train',
+                task='multiclass',
+                num_classes=num_pain_classes,
+                temporal_reduction=temporal_reduction,
+                data_ratio=data_ratio,
+                take_num=take_train
+            )
+            print(f"    Full ShoulderPain train size: {len(full_shoulder_pain_train_set)}")
+            
+            # Print class distribution
+            class_distribution = full_shoulder_pain_train_set.get_class_distribution()
+            print(f"    ShoulderPain Class Distribution: {class_distribution}")
+        except Exception as e:
+            print(f"Error loading ShoulderPain training data: {e}. Continuing without ShoulderPain data.")
+            use_shoulder_pain = False
+            full_shoulder_pain_train_set = None
 
+    unique_video_ids = sorted(list(video_id_labels.keys()))
+    video_labels_for_stratify = [video_id_labels[vid] for vid in unique_video_ids]
+    if len(unique_video_ids) < n_splits:
+        raise ValueError(f"Number of unique Syracuse videos ({len(unique_video_ids)}) is less than the number of folds ({n_splits}).")
+    
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+    fold_checkpoint_paths = [] # Stores best ckpt path for each fold
+    fold_val_filenames = [] # Stores list of val filenames for each fold
+    
     # --- Cross-Validation Loop --- 
     for fold_idx, (train_vid_idx_indices, val_vid_idx_indices) in enumerate(skf.split(unique_video_ids, video_labels_for_stratify)):
         print(f"\n===== Starting Fold {fold_idx + 1}/{n_splits} =====")
@@ -774,11 +770,26 @@ def run_multitask_cv(args, config):
         # Add BioVid data to the training set (as this is a multi-task model)
         wrapped_biovid_train = MultiTaskWrapper(full_biovid_train_set, 'stimulus')
         
+        # Add ShoulderPain data to the training set if available
+        wrapped_shoulder_pain_train = None
+        if use_shoulder_pain and full_shoulder_pain_train_set is not None and len(full_shoulder_pain_train_set) > 0:
+            wrapped_shoulder_pain_train = MultiTaskWrapper(full_shoulder_pain_train_set, 'pain')
+            print(f"  Including ShoulderPain dataset with {len(wrapped_shoulder_pain_train)} samples")
+        
         # Combine Syracuse and BioVid for training
         print(f"  Creating combined training dataset:")
         print(f"    - Syracuse train: {len(wrapped_syracuse_train)} samples")
         print(f"    - BioVid train: {len(wrapped_biovid_train)} samples")
-        combined_train_dataset = ConcatDataset([wrapped_syracuse_train, wrapped_biovid_train])
+        
+        # Start with Syracuse and BioVid datasets
+        train_datasets = [wrapped_syracuse_train, wrapped_biovid_train]
+        
+        # Add ShoulderPain if available
+        if wrapped_shoulder_pain_train is not None:
+            train_datasets.append(wrapped_shoulder_pain_train)
+            print(f"    - ShoulderPain train: {len(wrapped_shoulder_pain_train)} samples")
+        
+        combined_train_dataset = ConcatDataset(train_datasets)
         print(f"    - Combined training set: {len(combined_train_dataset)} samples")
         
         # Calculate new expected batches with combined dataset
@@ -1214,6 +1225,8 @@ if __name__ == '__main__':
                         help="Base directory containing Syracuse metadata (e.g., clips_json.json)." )
     parser.add_argument("--biovid_data_path", type=str, required=True, 
                         help="Root directory for BioVid features.")
+    parser.add_argument("--shoulder_pain_data_path", type=str, default=None,
+                        help="Root directory for ShoulderPain features (optional).")
     parser.add_argument("--output_path", type=str, default=None,
                         help="Optional path to save prediction CSV file (Syracuse test set).")
 
