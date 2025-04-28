@@ -25,6 +25,7 @@ Configuration YAML File Keys (`--config`):
 *   `temporal_reduction: <mean|max|min|none>` (**Required**): Temporal reduction for features.
 *   `learning_rate: <float>` (**Required**).
 *   `weight_decay: <float>` (Optional, default: 0.0): Weight decay for the optimizer.
+*   `label_smoothing: <float>` (Optional, default: 0.0): Amount of label smoothing for Syracuse data (0.0-1.0).
 *   `pain_loss_weight: <float>` (Optional, default: 1.0): Weight for pain task loss.
 *   `stim_loss_weight: <float>` (Optional, default: 1.0): Weight for stimulus task loss.
 *   `balance_sources: <bool>` (Optional, default: False): Balance Syracuse vs BioVid in training set.
@@ -138,6 +139,7 @@ def run_multitask_evaluation(args, config):
     temporal_reduction = config.get("temporal_reduction", "mean")
     learning_rate = config["learning_rate"]
     weight_decay = config.get("weight_decay", 0.0)  # Default to 0.0 (no weight decay)
+    label_smoothing = config.get("label_smoothing", 0.0)  # Default to 0.0 (no label smoothing)
     pain_loss_weight = config.get("pain_loss_weight", 1.0)
     stim_loss_weight = config.get("stim_loss_weight", 1.0)
     balance_sources = config.get("balance_sources", False)
@@ -151,6 +153,7 @@ def run_multitask_evaluation(args, config):
     print(f"Temporal Reduction: {temporal_reduction}")
     print(f"Learning Rate: {learning_rate}")
     print(f"Weight Decay: {weight_decay}")
+    print(f"Label Smoothing: {label_smoothing}")
     print(f"Loss Weights (Pain/Stim): {pain_loss_weight}/{stim_loss_weight}")
     print(f"Balance Sources: {balance_sources}, Balance Stimulus Classes: {balance_stimulus_classes}")
     print(f"Encoder Hidden Dims: {encoder_hidden_dims}")
@@ -201,6 +204,7 @@ def run_multitask_evaluation(args, config):
         num_stimulus_classes=num_stimulus_classes,
         learning_rate=learning_rate,
         weight_decay=weight_decay,
+        label_smoothing=label_smoothing,
         pain_loss_weight=pain_loss_weight,
         stim_loss_weight=stim_loss_weight,
         encoder_hidden_dims=encoder_hidden_dims,
@@ -444,6 +448,7 @@ def run_multitask_cv(args, config):
     temporal_reduction = config.get("temporal_reduction", "mean")
     learning_rate = config["learning_rate"]
     weight_decay = config.get("weight_decay", 0.0)  # Default to 0.0 (no weight decay)
+    label_smoothing = config.get("label_smoothing", 0.0)  # Default to 0.0 (no label smoothing)
     pain_loss_weight = config.get("pain_loss_weight", 1.0)
     stim_loss_weight = config.get("stim_loss_weight", 1.0)
     
@@ -682,9 +687,12 @@ def run_multitask_cv(args, config):
             num_stimulus_classes=num_stimulus_classes,
             learning_rate=learning_rate,
             weight_decay=weight_decay,
-            encoder_hidden_dims=encoder_hidden_dims,
+            label_smoothing=label_smoothing,
             pain_loss_weight=pain_loss_weight,
-            stim_loss_weight=stim_loss_weight
+            stim_loss_weight=stim_loss_weight,
+            encoder_hidden_dims=encoder_hidden_dims,
+            distributed=(args.n_gpus > 1), # Pass the distributed flag
+            # optimizer_name can be added to config/args if needed
         )
         
         fold_checkpoint_dir = os.path.join("ckpt", f"{model_name}", f"fold_{fold_idx}")
@@ -856,6 +864,8 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
         encoder_hidden_dims = config.get("encoder_hidden_dims", None)
         pain_loss_weight = config.get("pain_loss_weight", 1.0)
         stim_loss_weight = config.get("stim_loss_weight", 1.0)
+        label_smoothing = config.get("label_smoothing", 0.0)  # For loading checkpoint
+        weight_decay = config.get("weight_decay", 0.0)  # For loading checkpoint
 
         # Load the model from the checkpoint
         model = MultiTaskCoralClassifier.load_from_checkpoint(
@@ -866,7 +876,9 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
             learning_rate=0, # Not needed for evaluation
             encoder_hidden_dims=encoder_hidden_dims,
             pain_loss_weight=pain_loss_weight,
-            stim_loss_weight=stim_loss_weight
+            stim_loss_weight=stim_loss_weight,
+            label_smoothing=label_smoothing,
+            weight_decay=weight_decay
         )
         model.eval()
         

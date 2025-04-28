@@ -34,3 +34,6 @@ balance_stimulus_classes: false # Set to true to apply class balancing within th
 
 # --- Optional: Add other parameters if needed by model/datamodule ---
 # Example: optimizer_name: AdamW (if you add this option to the model) 
+
+# Example config with label smoothing
+label_smoothing: 0.1  # Typical values are 0.05 to 0.2 

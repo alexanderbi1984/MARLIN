@@ -27,6 +27,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         stim_loss_weight (float, optional): Weight for the stimulus task loss. Defaults to 1.0.
         distributed (bool, optional): Flag indicating if the model is distributed. Defaults to False.
         weight_decay (float, optional): Weight decay for the optimizer. Defaults to 0.0.
+        label_smoothing (float, optional): Amount of smoothing to apply to binary targets. Defaults to 0.0.
         # Add other hyperparameters like weight_decay if needed
     """
     def __init__(
@@ -40,12 +41,16 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         pain_loss_weight: float = 1.0,
         stim_loss_weight: float = 1.0,
         distributed: bool = False,
-        weight_decay: float = 0.0
+        weight_decay: float = 0.0,
+        label_smoothing: float = 0.0
     ):
         super().__init__()
 
         if num_pain_classes <= 1 or num_stimulus_classes <= 1:
             raise ValueError("Number of classes for each task must be >= 2 for CORAL.")
+
+        if not 0.0 <= label_smoothing < 1.0:
+            raise ValueError(f"Label smoothing must be in [0, 1), got {label_smoothing}")
 
         # Store hyperparameters (distributed is often not logged, but store attribute)
         self.save_hyperparameters(ignore=['distributed']) # Optionally ignore it in logs
@@ -117,7 +122,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
 
 
     @staticmethod
-    def coral_loss(logits, levels, importance_weights=None, reduction='mean'):
+    def coral_loss(logits, levels, importance_weights=None, reduction='mean', label_smoothing=0.0):
         """Computes the CORAL loss (moved inside the class).
 
         Args:
@@ -125,6 +130,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             levels: Ground truth labels (levels) of shape (batch_size). Integer labels 0, 1, 2...
             importance_weights: Optional tensor of shape (batch_size) to weigh samples.
             reduction: 'mean', 'sum', or 'none'.
+            label_smoothing: Float in [0, 1). Amount of smoothing to apply to binary targets.
 
         Returns:
             The CORAL loss.
@@ -138,6 +144,12 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         # Create binary labels for each task t < num_classes - 1
         # levels_binary[b, t] = 1 if levels[b] > t else 0
         levels_binary = (levels.unsqueeze(1) > torch.arange(logits.shape[1], device=logits.device).unsqueeze(0)).float()
+        
+        # Apply label smoothing if enabled
+        if label_smoothing > 0.0:
+            # Transform targets from {0, 1} to {label_smoothing/2, 1 - label_smoothing/2}
+            # This creates "soft" targets instead of hard 0/1 targets
+            levels_binary = levels_binary * (1 - label_smoothing) + label_smoothing / 2
 
         # Compute the loss for each task
         loss_tasks = F.logsigmoid(logits) * levels_binary + (F.logsigmoid(logits) - logits) * (1 - levels_binary)
@@ -191,7 +203,8 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             valid_pain_logits = pain_logits[valid_pain_mask]
             valid_pain_labels = pain_labels[valid_pain_mask]
             # Use static method via self
-            pain_loss = self.coral_loss(valid_pain_logits, valid_pain_labels)
+            pain_loss = self.coral_loss(valid_pain_logits, valid_pain_labels, 
+                                        label_smoothing=self.hparams.label_smoothing)
 
             # Update Metrics
             pain_probs = torch.sigmoid(valid_pain_logits)
@@ -211,7 +224,8 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             valid_stim_logits = stimulus_logits[valid_stim_mask]
             valid_stim_labels = stimulus_labels[valid_stim_mask]
             # Use static method via self
-            stim_loss = self.coral_loss(valid_stim_logits, valid_stim_labels)
+            stim_loss = self.coral_loss(valid_stim_logits, valid_stim_labels,
+                                        label_smoothing=0.0)  # No smoothing for stimulus task
 
             # Update Metrics
             stim_probs = torch.sigmoid(valid_stim_logits)
