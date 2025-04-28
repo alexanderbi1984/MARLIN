@@ -26,6 +26,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         pain_loss_weight (float, optional): Weight for the pain task loss. Defaults to 1.0.
         stim_loss_weight (float, optional): Weight for the stimulus task loss. Defaults to 1.0.
         distributed (bool, optional): Flag indicating if the model is distributed. Defaults to False.
+        weight_decay (float, optional): Weight decay for the optimizer. Defaults to 0.0.
         # Add other hyperparameters like weight_decay if needed
     """
     def __init__(
@@ -39,7 +40,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         pain_loss_weight: float = 1.0,
         stim_loss_weight: float = 1.0,
         distributed: bool = False,
-        # weight_decay: float = 0.01 # Example
+        weight_decay: float = 0.0
     ):
         super().__init__()
 
@@ -306,14 +307,15 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         # Explicitly cast learning rate to float
         try:
             lr = float(self.hparams.learning_rate)
+            wd = float(self.hparams.weight_decay)
         except ValueError:
             print(f"Error: Could not convert learning rate '{self.hparams.learning_rate}' to float!")
             raise # Re-raise the error
             
         if self.hparams.optimizer_name.lower() == 'adam':
-            optimizer = optim.Adam(self.parameters(), lr=lr) # Use the float lr
+            optimizer = optim.Adam(self.parameters(), lr=lr, weight_decay=wd)
         elif self.hparams.optimizer_name.lower() == 'adamw':
-            optimizer = optim.AdamW(self.parameters(), lr=lr) # Use the float lr
+            optimizer = optim.AdamW(self.parameters(), lr=lr, weight_decay=wd)
         else:
             raise ValueError(f"Unsupported optimizer: {self.hparams.optimizer_name}")
         

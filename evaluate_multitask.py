@@ -24,6 +24,7 @@ Configuration YAML File Keys (`--config`):
 *   `biovid_feature_dir: <name>` (**Required**): Feature dir name for BioVid (relative to `--biovid_data_path`).
 *   `temporal_reduction: <mean|max|min|none>` (**Required**): Temporal reduction for features.
 *   `learning_rate: <float>` (**Required**).
+*   `weight_decay: <float>` (Optional, default: 0.0): Weight decay for the optimizer.
 *   `pain_loss_weight: <float>` (Optional, default: 1.0): Weight for pain task loss.
 *   `stim_loss_weight: <float>` (Optional, default: 1.0): Weight for stimulus task loss.
 *   `balance_sources: <bool>` (Optional, default: False): Balance Syracuse vs BioVid in training set.
@@ -136,6 +137,7 @@ def run_multitask_evaluation(args, config):
     biovid_feature_dir = config["biovid_feature_dir"]
     temporal_reduction = config.get("temporal_reduction", "mean")
     learning_rate = config["learning_rate"]
+    weight_decay = config.get("weight_decay", 0.0)  # Default to 0.0 (no weight decay)
     pain_loss_weight = config.get("pain_loss_weight", 1.0)
     stim_loss_weight = config.get("stim_loss_weight", 1.0)
     balance_sources = config.get("balance_sources", False)
@@ -148,6 +150,7 @@ def run_multitask_evaluation(args, config):
     print(f"Syracuse Features: {syracuse_feature_dir}, BioVid Features: {biovid_feature_dir}")
     print(f"Temporal Reduction: {temporal_reduction}")
     print(f"Learning Rate: {learning_rate}")
+    print(f"Weight Decay: {weight_decay}")
     print(f"Loss Weights (Pain/Stim): {pain_loss_weight}/{stim_loss_weight}")
     print(f"Balance Sources: {balance_sources}, Balance Stimulus Classes: {balance_stimulus_classes}")
     print(f"Encoder Hidden Dims: {encoder_hidden_dims}")
@@ -197,6 +200,7 @@ def run_multitask_evaluation(args, config):
         num_pain_classes=num_pain_classes,
         num_stimulus_classes=num_stimulus_classes,
         learning_rate=learning_rate,
+        weight_decay=weight_decay,
         pain_loss_weight=pain_loss_weight,
         stim_loss_weight=stim_loss_weight,
         encoder_hidden_dims=encoder_hidden_dims,
@@ -439,6 +443,7 @@ def run_multitask_cv(args, config):
     biovid_feature_dir = config["biovid_feature_dir"]
     temporal_reduction = config.get("temporal_reduction", "mean")
     learning_rate = config["learning_rate"]
+    weight_decay = config.get("weight_decay", 0.0)  # Default to 0.0 (no weight decay)
     pain_loss_weight = config.get("pain_loss_weight", 1.0)
     stim_loss_weight = config.get("stim_loss_weight", 1.0)
     
@@ -676,6 +681,7 @@ def run_multitask_cv(args, config):
             num_pain_classes=num_pain_classes,
             num_stimulus_classes=num_stimulus_classes,
             learning_rate=learning_rate,
+            weight_decay=weight_decay,
             encoder_hidden_dims=encoder_hidden_dims,
             pain_loss_weight=pain_loss_weight,
             stim_loss_weight=stim_loss_weight
