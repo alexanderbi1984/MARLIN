@@ -1125,6 +1125,32 @@ def run_multitask_cv(args, config):
                 print(f"  SAMPLING DEBUG: WARNING - Batch count mismatch! Expected: {expected_batch_count}, Actual: {len(fold_train_loader)}")
 
         # --- Configure Model & Trainer for the Fold ---
+        # Determine input dimension from a sample feature file
+        sample_feature_path = os.path.join(args.syracuse_data_path, syracuse_feature_dir, 
+                                         syracuse_train_filenames[0])
+        if not os.path.exists(sample_feature_path):
+            print(f"Error: Could not find sample feature file at {sample_feature_path}")
+            return
+            
+        sample_feature = np.load(sample_feature_path)
+        if temporal_reduction == "none":
+            print(f"Warning: temporal_reduction='none' specified. "
+                  f"Raw feature shape: {sample_feature.shape}")
+            # Handle sequence data differently if needed
+            input_dim = 768  # Default fallback
+        else:
+            # Apply temporal reduction
+            if temporal_reduction == "mean":
+                sample_feature = np.mean(sample_feature, axis=0)
+            elif temporal_reduction == "max":
+                sample_feature = np.max(sample_feature, axis=0)
+            elif temporal_reduction == "min":
+                sample_feature = np.min(sample_feature, axis=0)
+                
+            input_dim = sample_feature.shape[0]
+            
+        print(f"Using input dimension: {input_dim}")
+        
         model = MultiTaskCoralClassifier(
             input_dim=input_dim,
             num_pain_classes=num_pain_classes,
