@@ -518,7 +518,9 @@ class StimWeightSchedulerCallback(pl.Callback):
             else:
                 new_weight = self.initial_weight - (self.initial_weight - self.final_weight) * progress
         
+        # Update both the module attribute and the hyperparameters to ensure consistent usage
         pl_module.stim_loss_weight = new_weight
+        pl_module.hparams.stim_loss_weight = new_weight
 ```
 
-This approach helps the model leverage the stimulus task more heavily in early training stages, then gradually focus more on the pain task as training progresses. 
+This approach helps the model leverage the stimulus task more heavily in early training stages, then gradually focus more on the pain task as training progresses. The implementation ensures the weight is properly updated in both the module attribute and the hyperparameters, so it's correctly used in the loss calculation. 
