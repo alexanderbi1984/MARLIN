@@ -179,6 +179,13 @@ def run_multitask_evaluation(args, config):
     # New parameters for coral_loss
     use_distance_penalty = config.get("use_distance_penalty", False)
     focal_gamma = config.get("focal_gamma", None)
+    
+    # Print pretrained model information if provided
+    using_pretrained = args.pretrained_checkpoint is not None
+    if using_pretrained:
+        print(f"Using pretrained model from: {args.pretrained_checkpoint}")
+        print(f"Freeze stimulus head: {args.freeze_stimulus_head}")
+        print(f"Encoder learning rate factor: {args.encoder_lr_factor}")
 
     print("--- Multi-Task Configuration ---")
     print(f"Model Name: {model_name}")
@@ -293,8 +300,14 @@ def run_multitask_evaluation(args, config):
         distributed=(args.n_gpus > 1), # Pass the distributed flag
         use_distance_penalty=use_distance_penalty,
         focal_gamma=focal_gamma,
+        freeze_stimulus_head=args.freeze_stimulus_head if using_pretrained else False,
+        encoder_lr_factor=args.encoder_lr_factor if using_pretrained else 1.0
         # optimizer_name can be added to config/args if needed
     )
+    
+    # Load pretrained weights if provided
+    if using_pretrained:
+        model.load_from_pretrained(args.pretrained_checkpoint)
     
     # Perform a sanity check
     model.sanity_check()
@@ -518,75 +531,48 @@ def run_multitask_evaluation(args, config):
 
 def run_multitask_cv(args, config):
     """Runs K-Fold Cross-Validation for the multi-task model."""
-    Seed.set(42)
-    n_splits = args.cv_folds
-    print(f"--- Starting {n_splits}-Fold Cross-Validation --- ")
+    Seed.set(42)  # Fixed seed for reproducibility
     
-    # --- Common Config --- 
-    # Extract necessary params from config and args
-    model_name = config.get("model_name", f"multitask_cv_{n_splits}fold")
+    # --- Configuration --- 
+    model_name = config.get("model_name", "multitask_cv_run")
     num_pain_classes = config["num_pain_classes"]
     num_stimulus_classes = config["num_stimulus_classes"]
     syracuse_feature_dir = config["syracuse_feature_dir"]
-    biovid_feature_dir = config["biovid_feature_dir"]
-    shoulder_pain_feature_dir = config.get("shoulder_pain_feature_dir", None)  # Optional
+    biovid_feature_dir = config.get("biovid_feature_dir", None)
+    shoulder_pain_feature_dir = config.get("shoulder_pain_feature_dir", None)
     temporal_reduction = config.get("temporal_reduction", "mean")
     learning_rate = config["learning_rate"]
-    weight_decay = config.get("weight_decay", 0.0)  # Default to 0.0 (no weight decay)
-    label_smoothing = config.get("label_smoothing", 0.0)  # Default to 0.0 (no label smoothing)
-    use_class_weights = config.get("use_class_weights", False)  # Default to False (no class weighting)
-    balance_pain_classes = config.get("balance_pain_classes", False)  # Default to False (no weighted sampling)
+    weight_decay = config.get("weight_decay", 0.0)
+    label_smoothing = config.get("label_smoothing", 0.0)
+    use_class_weights = config.get("use_class_weights", False)
+    balance_pain_classes = config.get("balance_pain_classes", False)
     pain_loss_weight = config.get("pain_loss_weight", 1.0)
     stim_loss_weight = config.get("stim_loss_weight", 1.0)
-    
-    # New parameters for coral_loss
-    use_distance_penalty = config.get("use_distance_penalty", False)
-    focal_gamma = config.get("focal_gamma", None)
-    
-    # Stimulus loss weight scheduling parameters
-    use_stim_weight_scheduler = config.get("use_stim_weight_scheduler", False)
-    initial_stim_weight = config.get("initial_stim_weight", stim_loss_weight * 5)  # Start 5x higher by default
-    final_stim_weight = config.get("final_stim_weight", stim_loss_weight)  # End at the specified value
-    stim_weight_decay_epochs = config.get("stim_weight_decay_epochs", args.epochs // 2)  # Decay over half the training period
-    stim_weight_sched_type = config.get("stim_weight_sched_type", "cosine")  # cosine or linear
-    
-    if use_stim_weight_scheduler:
-        print(f"Using stimulus loss weight scheduler:")
-        print(f"  - Initial weight: {initial_stim_weight}")
-        print(f"  - Final weight: {final_stim_weight}")
-        print(f"  - Decay type: {stim_weight_sched_type}")
-        print(f"  - Decay over: {stim_weight_decay_epochs} epochs")
-    
     balance_sources = config.get("balance_sources", False)
     balance_stimulus_classes = config.get("balance_stimulus_classes", False)
     encoder_hidden_dims = config.get("encoder_hidden_dims", None)
-    input_dim = 768 # Assuming same as before, adjust if needed
-    data_ratio = config.get("data_ratio", 1.0) # Use from config if available
-    take_train = config.get("take_train", None)
-    patience = config.get("patience", 200)  # Changed from 100 to 200 to match the regular evaluation function
-    monitor_metric = config.get("monitor_metric", "val_pain_QWK") # QWK or MAE
-    monitor_mode = "min" if "MAE" in monitor_metric else "max"
-
-    # Print configuration summary
-    print("--- Cross-Validation Configuration ---")
-    print(f"Model Name: {model_name}")
-    print(f"Pain Classes: {num_pain_classes}, Stimulus Classes: {num_stimulus_classes}")
-    print(f"Syracuse Features: {syracuse_feature_dir}, BioVid Features: {biovid_feature_dir}")
-    if shoulder_pain_feature_dir and hasattr(args, 'shoulder_pain_data_path') and args.shoulder_pain_data_path:
-        print(f"ShoulderPain Features: {shoulder_pain_feature_dir}")
-    print(f"Temporal Reduction: {temporal_reduction}")
-    print(f"Learning Rate: {learning_rate}")
-    print(f"Weight Decay: {weight_decay}")
-    print(f"Label Smoothing: {label_smoothing}")
-    print(f"Use Class Weights: {use_class_weights}")
-    print(f"Balance Pain Classes: {balance_pain_classes}")
-    print(f"Loss Weights (Pain/Stim): {pain_loss_weight}/{stim_loss_weight}")
-    print(f"Use Distance Penalty: {use_distance_penalty}")
-    print(f"Focal Gamma: {focal_gamma}")
-    print(f"Balance Sources: {balance_sources}, Balance Stimulus Classes: {balance_stimulus_classes}")
-    print(f"Encoder Hidden Dims: {encoder_hidden_dims}")
-    print(f"Monitor Metric: {monitor_metric} ({monitor_mode})")
-    print(f"---------------------------------")
+    # New coral_loss parameters
+    use_distance_penalty = config.get("use_distance_penalty", False)
+    focal_gamma = config.get("focal_gamma", None)
+    # Early stopping parameters
+    patience = config.get("patience", 200)  # Higher since we're using a combined dataset
+    # Default to QWK for model selection, can be changed through config
+    monitor_metric = config.get("monitor_metric", "val_pain_QWK")
+    monitor_mode = config.get("monitor_mode", "max")  # Default to max for QWK
+    
+    # Stimulus Weight Scheduler
+    use_stim_weight_scheduler = config.get("use_stim_weight_scheduler", False)
+    initial_stim_weight = config.get("initial_stim_weight", 5.0)
+    final_stim_weight = config.get("final_stim_weight", 1.0)
+    stim_weight_decay_epochs = config.get("stim_weight_decay_epochs", 50)
+    stim_weight_sched_type = config.get("stim_weight_sched_type", "cosine")
+    
+    # Print pretrained model information if provided
+    using_pretrained = args.pretrained_checkpoint is not None
+    if using_pretrained:
+        print(f"Using pretrained model from: {args.pretrained_checkpoint}")
+        print(f"Freeze stimulus head: {args.freeze_stimulus_head}")
+        print(f"Encoder learning rate factor: {args.encoder_lr_factor}")
 
     # --- 1. Load Syracuse metadata first --- 
     # This must be done before anything else to get video_id_labels
@@ -628,8 +614,8 @@ def run_multitask_cv(args, config):
              task='multiclass', 
              num_classes=num_stimulus_classes,
              temporal_reduction=temporal_reduction,
-             data_ratio=data_ratio, 
-             take_num=take_train
+             data_ratio=1.0, 
+             take_num=None
         )
         print(f"    Full BioVid train size: {len(full_biovid_train_set)}")
     except Exception as e:
@@ -711,8 +697,8 @@ def run_multitask_cv(args, config):
                 task='multiclass',
                 num_classes=num_pain_classes,
                 temporal_reduction=temporal_reduction,
-                data_ratio=data_ratio,
-                take_num=take_train
+                data_ratio=1.0,
+                take_num=None
             )
             print(f"    Full ShoulderPain train size: {len(full_shoulder_pain_train_set)}")
             
@@ -741,16 +727,16 @@ def run_multitask_cv(args, config):
     # Now video_id_labels is properly defined before it's used
     unique_video_ids = sorted(list(video_id_labels.keys()))
     video_labels_for_stratify = [video_id_labels[vid] for vid in unique_video_ids]
-    if len(unique_video_ids) < n_splits:
-        raise ValueError(f"Number of unique Syracuse videos ({len(unique_video_ids)}) is less than the number of folds ({n_splits}).")
+    if len(unique_video_ids) < args.cv_folds:
+        raise ValueError(f"Number of unique Syracuse videos ({len(unique_video_ids)}) is less than the number of folds ({args.cv_folds}).")
     
-    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+    skf = StratifiedKFold(n_splits=args.cv_folds, shuffle=True, random_state=42)
     fold_checkpoint_paths = [] # Stores best ckpt path for each fold
     fold_val_filenames = [] # Stores list of val filenames for each fold
     
     # --- Cross-Validation Loop --- 
     for fold_idx, (train_vid_idx_indices, val_vid_idx_indices) in enumerate(skf.split(unique_video_ids, video_labels_for_stratify)):
-        print(f"\n===== Starting Fold {fold_idx + 1}/{n_splits} =====")
+        print(f"\n===== Starting Fold {fold_idx + 1}/{args.cv_folds} =====")
         
         # Map indices back to video IDs
         fold_train_video_ids = [unique_video_ids[i] for i in train_vid_idx_indices]
@@ -758,7 +744,7 @@ def run_multitask_cv(args, config):
         
         # DEBUGGING - Print fold data statistics
         print(f"\nFOLD DEBUG: Total unique video IDs: {len(unique_video_ids)}")
-        print(f"FOLD DEBUG: Train set should be ~{(n_splits-1)/n_splits:.1%} of videos")
+        print(f"FOLD DEBUG: Train set should be ~{(args.cv_folds-1)/args.cv_folds:.1%} of videos")
         print(f"FOLD DEBUG: Actual train/val video split: {len(fold_train_video_ids)}/{len(fold_val_video_ids)} = {len(fold_train_video_ids)/len(unique_video_ids):.1%}/{len(fold_val_video_ids)/len(unique_video_ids):.1%}")
         
         print(f"  Train Video IDs: {len(fold_train_video_ids)}, Val Video IDs: {len(fold_val_video_ids)}")
@@ -1151,8 +1137,14 @@ def run_multitask_cv(args, config):
             pain_loss_weight=pain_loss_weight,
             stim_loss_weight=stim_loss_weight,
             use_distance_penalty=use_distance_penalty,
-            focal_gamma=focal_gamma
+            focal_gamma=focal_gamma,
+            freeze_stimulus_head=args.freeze_stimulus_head if using_pretrained else False,
+            encoder_lr_factor=args.encoder_lr_factor if using_pretrained else 1.0
         )
+        
+        # Load pretrained weights if provided
+        if using_pretrained:
+            model.load_from_pretrained(args.pretrained_checkpoint)
         
         fold_checkpoint_dir = os.path.join("ckpt", f"{model_name}", f"fold_{fold_idx}")
         os.makedirs(fold_checkpoint_dir, exist_ok=True)
@@ -1229,8 +1221,8 @@ def run_multitask_cv(args, config):
     print(f"Validation filenames stored for {len(fold_val_filenames)} folds.")
 
     # Sanity check lengths
-    if len(fold_checkpoint_paths) != n_splits or len(fold_val_filenames) != n_splits:
-        print(f"Warning: Mismatch in number of checkpoints ({len(fold_checkpoint_paths)}) or validation sets ({len(fold_val_filenames)}) vs folds ({n_splits}).")
+    if len(fold_checkpoint_paths) != args.cv_folds or len(fold_val_filenames) != args.cv_folds:
+        print(f"Warning: Mismatch in number of checkpoints ({len(fold_checkpoint_paths)}) or validation sets ({len(fold_val_filenames)}) vs folds ({args.cv_folds}).")
 
     # Evaluate each fold's best checkpoint on its corresponding validation set
     all_fold_metrics = []
@@ -1269,7 +1261,7 @@ def run_multitask_cv(args, config):
         print("\nError: No valid fold metrics were collected. Cannot aggregate results.")
         return
 
-    print(f"\n--- Aggregated Cross-Validation Results ({len(valid_fold_metrics)}/{n_splits} Folds) ---")
+    print(f"\n--- Aggregated Cross-Validation Results ({len(valid_fold_metrics)}/{args.cv_folds} Folds) ---")
 
     # Example: Aggregate QWK and MAE
     avg_qwk = np.mean([m['val_pain_qwk'] for m in valid_fold_metrics])
@@ -1284,7 +1276,7 @@ def run_multitask_cv(args, config):
     # Optionally save aggregated results
     agg_results = {
         'model_name': model_name,
-        'n_splits': n_splits,
+        'n_splits': args.cv_folds,
         'num_successful_folds': len(valid_fold_metrics),
         'monitor_metric': monitor_metric,
         'monitor_mode': monitor_mode,
@@ -1462,6 +1454,20 @@ if __name__ == '__main__':
                         help="Skip training, load best/last checkpoint and run testing/prediction.")
     parser.add_argument("--cv_folds", type=int, default=0, 
                         help="Number of folds for cross-validation. If > 1, runs CV mode instead of train/val/test split. Default: 0 (disabled).")
+    parser.add_argument('--biovid_data_path', type=str, default=None, 
+                        help='Path to BioVid data directory containing features, metadata, and splits')
+    parser.add_argument('--shoulder_pain_data_path', type=str, default=None,
+                        help='Path to ShoulderPain data directory containing features, metadata, and splits')
+    parser.add_argument('--output_path', type=str, default=None, 
+                        help='Path to save test predictions CSV (optional)')
+    parser.add_argument('--predict_only', action='store_true', 
+                        help='Skip training and run prediction only (requires existing checkpoint)')
+    parser.add_argument('--pretrained_checkpoint', type=str, default=None,
+                        help='Path to pretrained BioVid model checkpoint for fine-tuning')
+    parser.add_argument('--freeze_stimulus_head', action='store_true',
+                        help='Freeze the stimulus head when using a pretrained model')
+    parser.add_argument('--encoder_lr_factor', type=float, default=0.1,
+                        help='Learning rate factor for the encoder when using a pretrained model (default: 0.1)')
 
     args = parser.parse_args()
 

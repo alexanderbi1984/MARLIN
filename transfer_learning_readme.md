@@ -15,6 +15,75 @@ The model is trained on a combined dataset including:
 
 Evaluation (validation and testing) is performed *only* on the Syracuse dataset splits to measure the model's ability to predict pain levels, potentially enhanced by the multi-task learning approach.
 
+## Training Approaches
+
+There are two ways to train the multi-task learning model:
+
+### 1. Joint Training (Original Approach)
+
+In this approach, all tasks are trained simultaneously from scratch. The model learns to encode features useful for both pain and stimulus tasks.
+
+```bash
+python evaluate_multitask.py \
+    --config configs/your_multitask_config.yaml \
+    --syracuse_data_path /path/to/syracuse_features_root \
+    --syracuse_marlin_base_dir /path/to/syracuse_metadata \
+    --biovid_data_path /path/to/biovid_features_root \
+    --shoulder_pain_data_path /path/to/shoulder_pain_features_root \  # Optional
+    --n_gpus 1 \
+    --batch_size 64 \
+    --epochs 50 \
+    --num_workers 4
+```
+
+### 2. Pretrain + Fine-tune Approach
+
+This approach involves two steps:
+
+#### Step 1: Pretrain the shared encoder and stimulus head on BioVid
+
+First, train the model using only BioVid data to learn stimulus classification:
+
+```bash
+python pretrain_biovid.py \
+    --config configs/your_multitask_config.yaml \
+    --biovid_data_path /path/to/biovid_features_root \
+    --n_gpus 1 \
+    --batch_size 64 \
+    --epochs 100 \
+    --num_workers 4
+```
+
+This will save the best model to `ckpt/<model_name>_pretrain/`.
+
+#### Step 2: Fine-tune on the multi-task objective
+
+Next, load the pretrained weights and fine-tune the model on the multi-task objective:
+
+```bash
+python evaluate_multitask.py \
+    --config configs/your_multitask_config.yaml \
+    --syracuse_data_path /path/to/syracuse_features_root \
+    --syracuse_marlin_base_dir /path/to/syracuse_metadata \
+    --biovid_data_path /path/to/biovid_features_root \
+    --shoulder_pain_data_path /path/to/shoulder_pain_features_root \  # Optional
+    --pretrained_checkpoint ckpt/<model_name>_pretrain/<model_name>_pretrain-last.ckpt \
+    --freeze_stimulus_head \  # Optional: freeze stimulus head to preserve learned knowledge
+    --encoder_lr_factor 0.1 \  # Use lower learning rate for pretrained encoder
+    --n_gpus 1 \
+    --batch_size 64 \
+    --epochs 50 \
+    --num_workers 4
+```
+
+This approach has several advantages:
+- The encoder learns strong features from BioVid's stimulus task first
+- The frozen stimulus head preserves the knowledge from pretraining
+- Discriminative learning rates help preserve useful features during fine-tuning
+- The pain head can leverage the pretrained encoder's knowledge
+
+Cross-validation can also be used with pretraining by adding the `--cv_folds` parameter to the fine-tuning command.
+
 ## Requirements
 
 1.  **Python Environment:** Ensure you have a Python environment with the necessary libraries installed, including:
