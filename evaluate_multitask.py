@@ -1454,14 +1454,6 @@ if __name__ == '__main__':
                         help="Skip training, load best/last checkpoint and run testing/prediction.")
     parser.add_argument("--cv_folds", type=int, default=0, 
                         help="Number of folds for cross-validation. If > 1, runs CV mode instead of train/val/test split. Default: 0 (disabled).")
-    parser.add_argument('--biovid_data_path', type=str, default=None, 
-                        help='Path to BioVid data directory containing features, metadata, and splits')
-    parser.add_argument('--shoulder_pain_data_path', type=str, default=None,
-                        help='Path to ShoulderPain data directory containing features, metadata, and splits')
-    parser.add_argument('--output_path', type=str, default=None, 
-                        help='Path to save test predictions CSV (optional)')
-    parser.add_argument('--predict_only', action='store_true', 
-                        help='Skip training and run prediction only (requires existing checkpoint)')
     parser.add_argument('--pretrained_checkpoint', type=str, default=None,
                         help='Path to pretrained BioVid model checkpoint for fine-tuning')
     parser.add_argument('--freeze_stimulus_head', action='store_true',
