@@ -16,7 +16,7 @@ import torch.nn as nn
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 
 from dataset.biovid import BioVidLP
 from model.multi_task_coral import MultiTaskCoralClassifier
@@ -48,7 +48,8 @@ class StimOnlyDataModule(pl.LightningDataModule):
         num_stimulus_classes,
         batch_size=32,
         num_workers=4,
-        temporal_reduction='mean'
+        temporal_reduction='mean',
+        val_split=0.15  # Validation split ratio
     ):
         super().__init__()
         self.biovid_root_dir = biovid_root_dir
@@ -57,10 +58,11 @@ class StimOnlyDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.temporal_reduction = temporal_reduction
+        self.val_split = val_split
 
     def setup(self, stage=None):
-        # Load BioVid dataset for training
-        self.biovid_dataset = BioVidLP(
+        # Load full BioVid dataset
+        full_dataset = BioVidLP(
             root_dir=self.biovid_root_dir,
             task='multiclass',
             num_classes=self.num_stimulus_classes,
@@ -69,15 +71,32 @@ class StimOnlyDataModule(pl.LightningDataModule):
             temporal_reduction=self.temporal_reduction
         )
         
-        # Wrap dataset for multi-task format
-        self.train_dataset = StimOnlyWrapper(self.biovid_dataset)
+        # Calculate train/val split sizes
+        val_size = int(len(full_dataset) * self.val_split)
+        train_size = len(full_dataset) - val_size
         
-        print(f"BioVid training dataset: {len(self.train_dataset)} samples")
+        # Split dataset into train and validation sets
+        self.biovid_train_dataset, self.biovid_val_dataset = random_split(
+            full_dataset, 
+            [train_size, val_size],
+            generator=torch.Generator().manual_seed(42)  # For reproducibility
+        )
         
-        # Calculate class distribution
-        labels = [self.biovid_dataset[i][1] for i in range(len(self.biovid_dataset))]
-        class_counts = np.bincount(labels, minlength=self.num_stimulus_classes)
-        print(f"Stimulus class distribution: {class_counts}")
+        # Wrap datasets for multi-task format
+        self.train_dataset = StimOnlyWrapper(self.biovid_train_dataset)
+        self.val_dataset = StimOnlyWrapper(self.biovid_val_dataset)
+        
+        print(f"BioVid dataset split: {len(self.train_dataset)} training samples, {len(self.val_dataset)} validation samples ({self.val_split*100:.1f}%)")
+        
+        # Calculate class distribution for training set
+        train_labels = [full_dataset[i][1] for i in self.biovid_train_dataset.indices]
+        train_class_counts = np.bincount(train_labels, minlength=self.num_stimulus_classes)
+        print(f"Training stimulus class distribution: {train_class_counts}")
+        
+        # Calculate class distribution for validation set
+        val_labels = [full_dataset[i][1] for i in self.biovid_val_dataset.indices]
+        val_class_counts = np.bincount(val_labels, minlength=self.num_stimulus_classes)
+        print(f"Validation stimulus class distribution: {val_class_counts}")
 
     def train_dataloader(self):
         return DataLoader(
@@ -85,6 +104,15 @@ class StimOnlyDataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=True,
+            pin_memory=True
+        )
+    
+    def val_dataloader(self):
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
             pin_memory=True
         )
 
@@ -101,6 +129,7 @@ def pretrain_model(args, config):
     encoder_hidden_dims = config.get('encoder_hidden_dims', None)
     use_distance_penalty = config.get('use_distance_penalty', False)
     focal_gamma = config.get('focal_gamma', None)
+    val_split = float(config.get('val_split', 0.15))  # Default 15% validation split
     
     # Set up checkpoint directory
     checkpoint_dir = os.path.join("ckpt", f"{pretrain_model_name}")
@@ -117,6 +146,7 @@ def pretrain_model(args, config):
     print(f"Use Distance Penalty: {use_distance_penalty}")
     print(f"Focal Gamma: {focal_gamma}")
     print(f"Encoder Hidden Dims: {encoder_hidden_dims}")
+    print(f"Validation Split: {val_split*100:.1f}%")
     print(f"---------------------------------")
     
     # Create data module
@@ -126,7 +156,8 @@ def pretrain_model(args, config):
         num_stimulus_classes=num_stimulus_classes,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
-        temporal_reduction=temporal_reduction
+        temporal_reduction=temporal_reduction,
+        val_split=val_split
     )
     
     # Setup data module to get feature dimension
@@ -154,8 +185,8 @@ def pretrain_model(args, config):
     # Define callbacks
     checkpoint_callback = ModelCheckpoint(
         dirpath=checkpoint_dir,
-        filename=f"{pretrain_model_name}-{{epoch:02d}}-{{train_stim_QWK:.4f}}",
-        monitor="train_stim_QWK",
+        filename=f"{pretrain_model_name}-{{epoch:02d}}-{{val_stim_QWK:.4f}}",
+        monitor="val_stim_QWK",  # Changed to monitor validation metric
         mode="max",
         save_top_k=1,
         save_last=True,
@@ -163,9 +194,9 @@ def pretrain_model(args, config):
     )
     
     early_stop_callback = EarlyStopping(
-        monitor="train_stim_QWK",
+        monitor="val_stim_QWK",  # Changed to monitor validation metric
         mode="max",
-        patience=50,
+        patience=15,  # Changed patience to 15 epochs
         verbose=True
     )
     
@@ -198,14 +229,15 @@ def pretrain_model(args, config):
     # Save additional metadata about the checkpoint
     checkpoint_info = {
         "best_model_path": best_model_path,
-        "best_stim_qwk": checkpoint_callback.best_model_score.item() if checkpoint_callback.best_model_score else None,
+        "best_val_stim_qwk": checkpoint_callback.best_model_score.item() if checkpoint_callback.best_model_score else None,
+        "val_split": val_split,
         "config": config
     }
     
     with open(os.path.join(checkpoint_dir, f"{pretrain_model_name}_info.json"), 'w') as f:
         json.dump(checkpoint_info, f, indent=2)
     
-    print(f"Pretraining completed. Best train stimulus QWK: {checkpoint_callback.best_model_score.item() if checkpoint_callback.best_model_score else 'Unknown'}")
+    print(f"Pretraining completed. Best validation stimulus QWK: {checkpoint_callback.best_model_score.item() if checkpoint_callback.best_model_score else 'Unknown'}")
     
     return best_model_path
 

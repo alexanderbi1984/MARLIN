@@ -1,0 +1,44 @@
+# config/pretrain/biovid_coral_template.yaml
+
+# --- Required --- 
+model_name: pretrain_biovid_model  # Name for checkpoint and logs
+
+num_pain_classes: 5  # Number of ordinal pain levels (required for model but not used in pretraining)
+num_stimulus_classes: 5  # Number of ordinal stimulus levels (BioVid)
+
+# Feature directory name (relative to the BioVid data path provided via CLI)
+biovid_feature_dir: multimodal_marlin_base   # Example: Feature directory for BioVid
+ 
+temporal_reduction: mean  # How to aggregate features temporally (mean, max, min, none)
+
+learning_rate: 2.0e-5      # Learning rate for the optimizer
+weight_decay: 1.0e-4       # Weight decay for AdamW optimizer
+
+# --- Validation Split ---
+val_split: 0.15  # 15% of data used for validation
+
+# --- Optional: Model Architecture ---
+# Optional: Define hidden layers for the shared MLP encoder
+# If null or empty, a single Linear layer is used.
+encoder_hidden_dims: [512, 256] # Example: [hidden1_size, hidden2_size]
+# encoder_hidden_dims: null
+
+# --- Optional: CORAL Loss Parameters ---
+use_distance_penalty: true  # Whether to use distance penalty in CORAL loss
+focal_gamma: 2.0            # Focal loss parameter for CORAL loss (null to disable)
+
+# --- Notes ---
+# This config is used with pretrain_biovid.py to create a model that can be used
+# as a starting point for multi-task learning.
+# 
+# The pretrained model will have:
+# 1. A trained shared encoder
+# 2. A trained stimulus head
+# 3. An initialized but untrained pain head
+#
+# Usage example:
+# python pretrain_biovid.py \
+#   --config config/pretrain/biovid_coral_template.yaml \
+#   --biovid_data_path /path/to/biovid/features \
+#   --batch_size 32 \
+#   --epochs 200 
