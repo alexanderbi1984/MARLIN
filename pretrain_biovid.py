@@ -20,6 +20,114 @@ from torch.utils.data import DataLoader, random_split
 
 from dataset.biovid import BioVidLP
 from model.multi_task_coral import MultiTaskCoralClassifier
+from util.misc import read_json  # Import read_json utility
+
+class AllClipsBioVidLP(BioVidLP):
+    """
+    Modified BioVidLP class that uses all clips from the JSON file instead of
+    relying on a train.txt file.
+    """
+    def __init__(self, root_dir: str,
+                feature_dir: str,
+                task: str,
+                num_classes: int,
+                temporal_reduction: str,
+                data_ratio: float = 1.0,
+                take_num = None
+    ):
+        # Initialize without calling BioVidLP's __init__
+        # We'll manually set the attributes that would normally come from BioVidBase
+        
+        # Don't call super().__init__() since we want to bypass the train.txt loading
+        self.data_root = root_dir
+        self.feature_dir = feature_dir
+        self.task = task
+        self.num_classes = num_classes
+        self.temporal_reduction = temporal_reduction
+        
+        # Load the metadata directly
+        self.metadata = read_json(os.path.join(root_dir, "biovid_info.json"))
+        
+        # Use all clips from the metadata as our name_list
+        self.name_list = list(self.metadata["clips"].keys())
+        
+        # Apply data_ratio if needed
+        if data_ratio < 1.0:
+            self.name_list = self.name_list[:int(len(self.name_list) * data_ratio)]
+        
+        # Apply take_num if specified
+        if take_num is not None:
+            self.name_list = self.name_list[:take_num]
+            
+        print(f"AllClipsBioVidLP initialized with {len(self.name_list)} clips")
+
+    def __len__(self):
+        return len(self.name_list)
+    
+    def __getitem__(self, index: int):
+        try:
+            # Get the name without the extension (if it has one)
+            if os.path.splitext(self.name_list[index])[1]:
+                name_without_extension = os.path.splitext(self.name_list[index])[0]
+                feat_path = os.path.join(self.data_root, self.feature_dir, name_without_extension + ".npy")
+            else:
+                # No extension in the name_list entry
+                feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
+        except FileNotFoundError:
+            print(f"File not found: {self.name_list[index]}")
+            feat_path = os.path.join(self.data_root, self.feature_dir, self.name_list[index] + ".npy")
+            
+        # Load feature
+        x = torch.from_numpy(np.load(feat_path)).float()
+        target_clips = 4
+
+        if x.shape[0] > target_clips:
+            # If more clips than needed, truncate
+            x = x[:target_clips]
+        elif x.shape[0] < target_clips:
+            # If fewer clips than needed, pad with zeros
+            padding = torch.zeros(target_clips - x.shape[0], *x.shape[1:], device=x.device)
+            x = torch.cat([x, padding], dim=0)
+
+        if x.size(0) == 0:
+            x = torch.zeros(1, 768, dtype=torch.float32)
+
+        # Apply temporal reduction
+        if self.temporal_reduction == "mean":
+            x = x.mean(dim=0)
+        elif self.temporal_reduction == "max":
+            x = x.max(dim=0)[0]
+        elif self.temporal_reduction == "min":
+            x = x.min(dim=0)[0]
+        elif self.temporal_reduction == "none":
+            # Keep sequence dimension intact
+            pass
+        else:
+            raise ValueError(self.temporal_reduction)
+
+        # Get the label
+        if self.task == "regression":
+            y = self.metadata["clips"][self.name_list[index]]["attributes"]['multiclass']['5']
+        else:
+            if self.task == "multiclass":
+                num_classes = str(self.num_classes)
+                try:
+                    y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task][num_classes]
+                except Exception as e:
+                    print(f"Error: {e}")
+                    print(f"Clip: {self.metadata['clips'][self.name_list[index]]}")
+            else:
+                y = self.metadata["clips"][self.name_list[index]]["attributes"][self.task]
+                
+        if isinstance(y, str):
+            try:
+                # Convert to float first, then to int
+                y = int(float(y))
+            except ValueError:
+                print(f"Warning: Could not convert y to int: {y}")
+                y = -1  # Set to a default value
+
+        return x, torch.tensor(y, dtype=torch.long)
 
 class StimOnlyWrapper:
     """
@@ -61,12 +169,11 @@ class StimOnlyDataModule(pl.LightningDataModule):
         self.val_split = val_split
 
     def setup(self, stage=None):
-        # Load full BioVid dataset
-        full_dataset = BioVidLP(
+        # Load full BioVid dataset using our custom class that doesn't rely on train.txt
+        full_dataset = AllClipsBioVidLP(
             root_dir=self.biovid_root_dir,
             task='multiclass',
             num_classes=self.num_stimulus_classes,
-            split='train',
             feature_dir=self.biovid_feature_dir,
             temporal_reduction=self.temporal_reduction
         )
@@ -147,6 +254,7 @@ def pretrain_model(args, config):
     print(f"Focal Gamma: {focal_gamma}")
     print(f"Encoder Hidden Dims: {encoder_hidden_dims}")
     print(f"Validation Split: {val_split*100:.1f}%")
+    print(f"Using: All clips from biovid_info.json (no train.txt required)")
     print(f"---------------------------------")
     
     # Create data module
