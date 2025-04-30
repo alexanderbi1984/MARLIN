@@ -31,7 +31,7 @@ balance_pain_classes: true  # Whether to use weighted sampling to balance pain c
 
 # Optional: Define hidden layers for the shared MLP encoder
 # If null or empty, a single Linear layer is used.
-encoder_hidden_dims: [512,256] # Example: [hidden1_size, hidden2_size]
+encoder_hidden_dims: [512,256,128] # Example: [hidden1_size, hidden2_size]
 # encoder_hidden_dims: null
 
 # --- Optional: Data Balancing --- 
