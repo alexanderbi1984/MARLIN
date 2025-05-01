@@ -207,9 +207,17 @@ class MultiTaskCoralClassifier(pl.LightningModule):
 
     def _calculate_loss_and_metrics(self, pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage: str, batch_idx: int = 0):
         """ Helper to calculate loss and update metrics for a given stage. """
-        total_loss = torch.tensor(0.0, device=self.device, requires_grad=True) # Ensure loss is on correct device and requires grad
-        pain_loss = torch.tensor(0.0, device=self.device)
-        stim_loss = torch.tensor(0.0, device=self.device)
+        # Check if we need to detach tensors based on freezing flags
+        # If both encoder and stimulus head are frozen, we're only training the pain head
+        # So pain_logits should require grad, but stimulus_logits should be detached
+        if self.freeze_encoder and self.freeze_stimulus_head:
+            # Ensure detaching stimulus_logits to avoid any potential gradient issues
+            stimulus_logits = stimulus_logits.detach()
+        
+        # Initialize loss tensors with requires_grad=True
+        total_loss = torch.tensor(0.0, device=self.device, requires_grad=True)
+        pain_loss = torch.tensor(0.0, device=self.device, requires_grad=True)
+        stim_loss = torch.tensor(0.0, device=self.device, requires_grad=True)
 
         # --- Pain Task ---
         valid_pain_mask = pain_labels != -1
@@ -248,7 +256,8 @@ class MultiTaskCoralClassifier(pl.LightningModule):
 
         # --- Stimulus Task ---
         valid_stim_mask = stimulus_labels != -1
-        if valid_stim_mask.any():
+        if valid_stim_mask.any() and not self.freeze_stimulus_head:
+            # Only calculate stimulus loss if stimulus head is not frozen
             valid_stim_logits = stimulus_logits[valid_stim_mask]
             valid_stim_labels = stimulus_labels[valid_stim_mask]
             # Use static method via self
@@ -259,8 +268,13 @@ class MultiTaskCoralClassifier(pl.LightningModule):
                 distance_penalty=self.hparams.use_distance_penalty,
                 focal_gamma=self.hparams.focal_gamma
             )
-
-            # Update Metrics
+        
+        # Even if stimulus head is frozen, we still want to log metrics
+        if valid_stim_mask.any():
+            valid_stim_logits = stimulus_logits[valid_stim_mask]
+            valid_stim_labels = stimulus_labels[valid_stim_mask]
+            
+            # Update Metrics (even when frozen)
             stim_probs = torch.sigmoid(valid_stim_logits)
             stim_preds = self.prob_to_label(stim_probs)
             mae_metric = getattr(self, f"{stage}_stim_mae")
@@ -268,23 +282,57 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             qwk_metric = getattr(self, f"{stage}_stim_qwk")
             qwk_metric.update(stim_preds, valid_stim_labels)
             
-            self.log(f"{stage}_stim_loss", stim_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
+            # Only log stim_loss if stimulus head is not frozen
+            if not self.freeze_stimulus_head:
+                self.log(f"{stage}_stim_loss", stim_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
+            
             self.log(f"{stage}_stim_MAE", mae_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
             self.log(f"{stage}_stim_QWK", qwk_metric, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
         # --- Combine Losses ---
-        # Weighted sum using hyperparameters
-        # Ensure requires_grad=True propagates if only one loss is active
-        if valid_pain_mask.any() or valid_stim_mask.any():
-             total_loss = self.hparams.pain_loss_weight * pain_loss + self.hparams.stim_loss_weight * stim_loss
+        # When both encoder and stimulus head are frozen, use only pain loss
+        if self.freeze_encoder and self.freeze_stimulus_head:
+            # If training ONLY the pain head, ignore stim_loss_weight
+            if valid_pain_mask.any():
+                total_loss = pain_loss
+            else:
+                # Create dummy loss with pain_logits to ensure gradient flow
+                # This is important when we have no valid pain labels in a batch
+                # but we still need backward() to work
+                dummy_factor = 0.0
+                total_loss = pain_logits.sum() * dummy_factor
         else:
-             # No valid labels in batch, return zero loss but ensure grad is enabled if model parameters were used
-             # This shouldn't happen if dataloaders guarantee at least one valid label per batch,
-             # but handles the edge case. The forward pass still runs.
-             total_loss = (pain_logits.sum() + stimulus_logits.sum()) * 0.0 # Trick to keep grad connection
+            # Weighted sum using hyperparameters otherwise
+            # Ensure requires_grad=True propagates if only one loss is active
+            if valid_pain_mask.any() or (valid_stim_mask.any() and not self.freeze_stimulus_head):
+                total_loss = self.hparams.pain_loss_weight * pain_loss
+                if not self.freeze_stimulus_head and valid_stim_mask.any():
+                    total_loss = total_loss + self.hparams.stim_loss_weight * stim_loss
+            else:
+                # No valid labels in batch, but we need to ensure the graph has gradient flow
+                dummy_factor = 0.0
+                if not self.freeze_encoder:
+                    total_loss = pain_logits.sum() * dummy_factor
+                    if not self.freeze_stimulus_head:
+                        total_loss = total_loss + stimulus_logits.sum() * dummy_factor
+                else:
+                    # Only pain head is trainable
+                    total_loss = pain_logits.sum() * dummy_factor
 
-
-        self.log(f"{stage}_loss", total_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        # Check if total_loss has a gradient
+        if stage == 'train' and total_loss.requires_grad:
+            self.log(f"{stage}_loss", total_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        elif stage == 'train':
+            print(f"WARNING: Total loss does not require gradients. This may cause backpropagation issues.")
+            # Log it anyway, but with a special name to flag the issue
+            self.log(f"{stage}_loss_nograd", total_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            # Create a dummy loss with a gradient path
+            total_loss = 0.0 * sum(p.sum() for p in self.parameters() if p.requires_grad)
+            self.log(f"{stage}_loss", total_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        else:
+            # For validation and testing, just log the loss
+            self.log(f"{stage}_loss", total_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            
         return total_loss
 
     def training_step(self, batch, batch_idx):
@@ -335,6 +383,17 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             print(f"  Input shape: {dummy_input.shape}")
             print(f"  Pain logits shape: {pain_logits.shape}")
             print(f"  Stimulus logits shape: {stimulus_logits.shape}")
+            
+            if self.freeze_encoder and self.freeze_stimulus_head:
+                print(f"  WARNING: Both encoder and stimulus head are frozen. Only pain head is trainable.")
+                trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+                print(f"  Trainable parameters: {trainable_params}")
+                
+                # Verify we have at least one trainable parameter
+                if trainable_params == 0:
+                    print(f"  ERROR: No trainable parameters! Cannot train this model.")
+                else:
+                    print(f"  Trainable parameters are in pain_head: {sum(p.numel() for p in self.pain_head.parameters() if p.requires_grad)}")
 
         except Exception as e:
             print(f"Sanity check failed for {self.__class__.__name__}: {e}")
@@ -372,6 +431,11 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         # Only add unfrozen stimulus head to parameter groups
         if not self.freeze_stimulus_head:
             param_groups.append({'params': self.stimulus_head.parameters(), 'lr': lr})
+        
+        # Sanity check to ensure we have at least one parameter group with parameters that require gradients
+        has_trainable_params = any(any(p.requires_grad for p in group['params']) for group in param_groups)
+        if not has_trainable_params:
+            raise ValueError("No trainable parameters found in the model. At least one component must be trainable.")
         
         # Create optimizer with parameter groups
         optimizer_class = {
@@ -431,6 +495,12 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             print("Stimulus head will be FROZEN during training")
         if self.freeze_encoder:
             print("Shared encoder will be FROZEN during training")
+            
+        # Print warning if both components are frozen
+        if self.freeze_encoder and self.freeze_stimulus_head:
+            print("WARNING: Both encoder and stimulus head are frozen. Only the pain head will be trained.")
+            trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+            print(f"Trainable parameters: {trainable_params}")
 
 # Remove the old if __name__ == '__main__': block if it exists
 # (The edit tool should replace the entire file content based on the instruction) 
