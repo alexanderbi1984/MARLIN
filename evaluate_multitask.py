@@ -348,6 +348,38 @@ def run_multitask_evaluation(args, config):
         verbose=True
     )
 
+    # Prepare callbacks list
+    callbacks = [
+        ckpt_callback, 
+        early_stop_callback, 
+        LrLogger(), 
+        SystemStatsLogger()
+    ]
+    
+    # Check for potential conflicts with weight schedulers when using freeze options
+    if using_pretrained and args.freeze_encoder and args.freeze_stimulus_head:
+        # When both encoder and stimulus head are frozen, check for stimulus weight scheduler
+        if config.get("use_stim_weight_scheduler", False):
+            print("WARNING: Stimulus weight scheduler is enabled but both encoder and stimulus head are frozen!")
+            print("         The scheduler will have no effect as only the pain head is trainable.")
+            print("         Consider disabling 'use_stim_weight_scheduler' in your config.")
+            
+            # User can still proceed, but we won't add the scheduler callback
+        else:
+            # No scheduler enabled, this is the expected configuration
+            print("Using linear probing configuration: Frozen encoder + stimulus head, training only pain head.")
+    else:
+        # Normal case - add stimulus weight scheduler if enabled
+        if config.get("use_stim_weight_scheduler", False):
+            stim_weight_scheduler = StimWeightSchedulerCallback(
+                initial_weight=config.get("initial_stim_weight", 5.0),
+                final_weight=config.get("final_stim_weight", 1.0),
+                decay_epochs=config.get("stim_weight_decay_epochs", 50),
+                scheduler_type=config.get("stim_weight_sched_type", "cosine")
+            )
+            callbacks.append(stim_weight_scheduler)
+            print(f"Added stimulus weight scheduler (initial={config.get('initial_stim_weight', 5.0)}, final={config.get('final_stim_weight', 1.0)})")
+
     trainer = Trainer(
         log_every_n_steps=1, # Log less frequently than every step
         devices=n_gpus,
@@ -356,12 +388,7 @@ def run_multitask_evaluation(args, config):
         max_epochs=max_epochs,
         precision=precision,
         logger=True, # Use default TensorBoardLogger
-        callbacks=[
-            ckpt_callback, # Restore ModelCheckpoint
-            early_stop_callback, # Restore EarlyStopping
-            LrLogger(), 
-            SystemStatsLogger() 
-        ],
+        callbacks=callbacks,
         benchmark=True if n_gpus > 0 else False,
         num_sanity_val_steps=0 # Keep sanity check disabled for now, can re-enable later
     )

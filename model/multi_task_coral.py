@@ -213,6 +213,10 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         if self.freeze_encoder and self.freeze_stimulus_head:
             # Ensure detaching stimulus_logits to avoid any potential gradient issues
             stimulus_logits = stimulus_logits.detach()
+            
+            # Double-check that pain_logits requires grad (should flow through pain_head)
+            if not pain_logits.requires_grad and stage == 'train':
+                print(f"WARNING: pain_logits does not require grad in batch {batch_idx} even though only pain head is trainable!")
         
         # Initialize loss tensors with requires_grad=True
         total_loss = torch.tensor(0.0, device=self.device, requires_grad=True)
@@ -291,14 +295,19 @@ class MultiTaskCoralClassifier(pl.LightningModule):
 
         # --- Combine Losses ---
         # When both encoder and stimulus head are frozen, use only pain loss
+        # and IGNORE any stimulus weight scheduling that might be happening
         if self.freeze_encoder and self.freeze_stimulus_head:
             # If training ONLY the pain head, ignore stim_loss_weight
             if valid_pain_mask.any():
+                # Just use the pain loss directly, no weighting
                 total_loss = pain_loss
+                
+                # Also log the raw pain loss without any weighting
+                if stage == 'train':
+                    self.log(f"{stage}_pain_loss_raw", pain_loss, on_step=True, on_epoch=True, prog_bar=False, logger=True)
             else:
-                # Create dummy loss with pain_logits to ensure gradient flow
-                # This is important when we have no valid pain labels in a batch
-                # but we still need backward() to work
+                # No valid pain labels but we're in training mode - create a dummy loss
+                # that will be caught by the requires_grad check in training_step
                 dummy_factor = 0.0
                 total_loss = pain_logits.sum() * dummy_factor
         else:
@@ -322,12 +331,18 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         # Check if total_loss has a gradient
         if stage == 'train' and total_loss.requires_grad:
             self.log(f"{stage}_loss", total_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+            
+            # Log the loss weights when they might be changing (helpful for debugging)
+            if hasattr(self.hparams, 'stim_loss_weight') and not (self.freeze_encoder and self.freeze_stimulus_head):
+                self.log(f"pain_loss_weight", self.hparams.pain_loss_weight, on_step=False, on_epoch=True)
+                self.log(f"stim_loss_weight", self.hparams.stim_loss_weight, on_step=False, on_epoch=True)
+                
         elif stage == 'train':
             print(f"WARNING: Total loss does not require gradients. This may cause backpropagation issues.")
             # Log it anyway, but with a special name to flag the issue
             self.log(f"{stage}_loss_nograd", total_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-            # Create a dummy loss with a gradient path
-            total_loss = 0.0 * sum(p.sum() for p in self.parameters() if p.requires_grad)
+            # Create a dummy loss with a gradient path that will be caught by the requires_grad check in training_step
+            total_loss = torch.tensor(0.0, requires_grad=True, device=self.device)
             self.log(f"{stage}_loss", total_loss, on_step=(stage=='train'), on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         else:
             # For validation and testing, just log the loss
@@ -338,7 +353,38 @@ class MultiTaskCoralClassifier(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         features, pain_labels, stimulus_labels = batch
         pain_logits, stimulus_logits = self(features)
-        loss = self._calculate_loss_and_metrics(pain_logits, stimulus_logits, pain_labels, stimulus_labels, stage='train', batch_idx=batch_idx)
+        
+        # Check if this is a problematic case: frozen encoder + stimulus head, but no valid pain labels
+        if self.freeze_encoder and self.freeze_stimulus_head:
+            valid_pain_mask = pain_labels != -1
+            if not valid_pain_mask.any():
+                # No valid pain labels in batch, but we need a loss with grad
+                print(f"WARNING: Batch {batch_idx} has no valid pain labels but only pain head is trainable!")
+                # Create a dummy loss that connects to the pain head parameters
+                dummy_loss = 0.0
+                for p in self.pain_head.parameters():
+                    if p.requires_grad:
+                        dummy_loss = dummy_loss + 0.0 * p.sum()
+                
+                # Log the issue
+                self.log("train_loss", dummy_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+                return dummy_loss  # Return early with dummy loss
+        
+        # Regular case - calculate loss normally
+        loss = self._calculate_loss_and_metrics(pain_logits, stimulus_logits, pain_labels, stimulus_labels, 
+                                              stage='train', batch_idx=batch_idx)
+        
+        # Extra check to ensure loss requires grad
+        if not loss.requires_grad and self.training:
+            print(f"WARNING: Loss doesn't require grad in batch {batch_idx}! Creating dummy loss.")
+            # Create a dummy loss that's connected to trainable parameters
+            dummy_factor = 1e-10  # Very small factor to not affect training
+            dummy_loss = loss + dummy_factor * sum(p.sum() for p in self.parameters() if p.requires_grad)
+            # Log the original loss anyway
+            self.log("train_loss_original", loss, on_step=True, on_epoch=True, prog_bar=False, logger=True)
+            # Replace with the dummy loss that has gradients
+            loss = dummy_loss
+            
         # Log learning rate
         self.log("learning_rate", self.hparams.learning_rate, on_step=False, on_epoch=True, prog_bar=False, logger=True)
         return loss
