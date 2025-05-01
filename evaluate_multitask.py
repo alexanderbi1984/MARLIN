@@ -185,6 +185,7 @@ def run_multitask_evaluation(args, config):
     if using_pretrained:
         print(f"Using pretrained model from: {args.pretrained_checkpoint}")
         print(f"Freeze stimulus head: {args.freeze_stimulus_head}")
+        print(f"Freeze encoder: {args.freeze_encoder}")
         print(f"Encoder learning rate factor: {args.encoder_lr_factor}")
 
     print("--- Multi-Task Configuration ---")
@@ -301,6 +302,7 @@ def run_multitask_evaluation(args, config):
         use_distance_penalty=use_distance_penalty,
         focal_gamma=focal_gamma,
         freeze_stimulus_head=args.freeze_stimulus_head if using_pretrained else False,
+        freeze_encoder=args.freeze_encoder if using_pretrained else False,
         encoder_lr_factor=args.encoder_lr_factor if using_pretrained else 1.0
         # optimizer_name can be added to config/args if needed
     )
@@ -572,6 +574,7 @@ def run_multitask_cv(args, config):
     if using_pretrained:
         print(f"Using pretrained model from: {args.pretrained_checkpoint}")
         print(f"Freeze stimulus head: {args.freeze_stimulus_head}")
+        print(f"Freeze encoder: {args.freeze_encoder}")
         print(f"Encoder learning rate factor: {args.encoder_lr_factor}")
 
     # --- 1. Load Syracuse metadata first --- 
@@ -1165,6 +1168,7 @@ def run_multitask_cv(args, config):
             use_distance_penalty=use_distance_penalty,
             focal_gamma=focal_gamma,
             freeze_stimulus_head=args.freeze_stimulus_head if using_pretrained else False,
+            freeze_encoder=args.freeze_encoder if using_pretrained else False,
             encoder_lr_factor=args.encoder_lr_factor if using_pretrained else 1.0
         )
         
@@ -1359,7 +1363,9 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
             label_smoothing=label_smoothing,
             weight_decay=weight_decay,
             use_distance_penalty=use_distance_penalty,
-            focal_gamma=focal_gamma
+            focal_gamma=focal_gamma,
+            freeze_stimulus_head=args.freeze_stimulus_head if using_pretrained else False,
+            freeze_encoder=args.freeze_encoder if using_pretrained else False
         )
         model.eval()
         
@@ -1484,6 +1490,8 @@ if __name__ == '__main__':
                         help='Path to pretrained BioVid model checkpoint for fine-tuning')
     parser.add_argument('--freeze_stimulus_head', action='store_true',
                         help='Freeze the stimulus head when using a pretrained model')
+    parser.add_argument('--freeze_encoder', action='store_true',
+                        help='Freeze the shared encoder when using a pretrained model')
     parser.add_argument('--encoder_lr_factor', type=float, default=0.1,
                         help='Learning rate factor for the encoder when using a pretrained model (default: 0.1)')
 

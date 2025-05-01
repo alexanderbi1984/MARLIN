@@ -32,6 +32,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         focal_gamma (float, optional): Focal gamma for focal weighting. Defaults to None.
         class_weights (torch.Tensor, optional): Class weights for weighted loss calculation. Defaults to None.
         freeze_stimulus_head (bool, optional): Flag indicating whether to freeze the stimulus head during fine-tuning. Defaults to False.
+        freeze_encoder (bool, optional): Flag indicating whether to freeze the shared encoder during fine-tuning. Defaults to False.
         encoder_lr_factor (float, optional): Learning rate factor for the encoder (for discriminative learning rates). Defaults to 1.0.
         # Add other hyperparameters like weight_decay if needed
     """
@@ -52,6 +53,7 @@ class MultiTaskCoralClassifier(pl.LightningModule):
         focal_gamma: Union[float, None] = None,
         class_weights: Union[torch.Tensor, None] = None,
         freeze_stimulus_head: bool = False,
+        freeze_encoder: bool = False,
         encoder_lr_factor: float = 1.0
     ):
         super().__init__()
@@ -72,6 +74,9 @@ class MultiTaskCoralClassifier(pl.LightningModule):
 
         # Flag for freezing the stimulus head during fine-tuning
         self.freeze_stimulus_head = freeze_stimulus_head
+        
+        # Flag for freezing the shared encoder during fine-tuning
+        self.freeze_encoder = freeze_encoder
         
         # Learning rate factor for encoder (for discriminative learning rates)
         self.encoder_lr_factor = encoder_lr_factor
@@ -336,91 +341,96 @@ class MultiTaskCoralClassifier(pl.LightningModule):
             raise # Re-raise the exception after printing
 
     def configure_optimizers(self):
-        """Choose what optimizers and learning-rate schedulers to use."""
-        # Explicitly cast learning rate to float
-        try:
-            lr = float(self.hparams.learning_rate)
-            wd = float(self.hparams.weight_decay)
-        except ValueError:
-            print(f"Error: Could not convert learning rate '{self.hparams.learning_rate}' to float!")
-            raise # Re-raise the error
+        """Configure optimizer with different learning rates as needed."""
+        # Convert learning rate from string if needed (e.g., when loaded from config)
+        lr = float(self.hparams.learning_rate)
         
-        # If stimulus head is frozen, exclude its parameters from optimization
+        param_groups = []
+        
+        # Handle freezing specific components
         if self.freeze_stimulus_head:
-            print("Freezing stimulus head for fine-tuning")
+            # Freeze stimulus head parameters by setting requires_grad=False
             for param in self.stimulus_head.parameters():
                 param.requires_grad = False
+            print("Freezing stimulus head parameters")
         
-        # Use discriminative learning rates if specified
-        if hasattr(self, 'encoder_lr_factor') and self.encoder_lr_factor != 1.0:
-            print(f"Using discriminative learning rates - Encoder LR factor: {self.encoder_lr_factor}")
-            # Group parameters by component with different learning rates
-            encoder_params = {'params': self.shared_encoder.parameters(), 
-                              'lr': lr * self.encoder_lr_factor}
-            pain_head_params = {'params': self.pain_head.parameters(), 
-                               'lr': lr}
-            
-            param_groups = [encoder_params, pain_head_params]
-            
-            # Add stimulus head params only if not frozen
-            if not self.freeze_stimulus_head:
-                stim_head_params = {'params': self.stimulus_head.parameters(), 
-                                   'lr': lr}
-                param_groups.append(stim_head_params)
-            
-            # Create optimizer with parameter groups
-            if self.hparams.optimizer_name.lower() == 'adam':
-                optimizer = optim.Adam(param_groups, weight_decay=wd)
-            elif self.hparams.optimizer_name.lower() == 'adamw':
-                optimizer = optim.AdamW(param_groups, weight_decay=wd)
-            else:
-                raise ValueError(f"Unsupported optimizer: {self.hparams.optimizer_name}")
+        if self.freeze_encoder:
+            # Freeze encoder parameters by setting requires_grad=False
+            for param in self.shared_encoder.parameters():
+                param.requires_grad = False
+            print("Freezing shared encoder parameters")
+            # Only add pain head to parameter groups
+            param_groups.append({'params': self.pain_head.parameters(), 'lr': lr})
         else:
-            # Standard optimizer configuration (all parameters get the same learning rate)
-            if self.hparams.optimizer_name.lower() == 'adam':
-                optimizer = optim.Adam(self.parameters(), lr=lr, weight_decay=wd)
-            elif self.hparams.optimizer_name.lower() == 'adamw':
-                optimizer = optim.AdamW(self.parameters(), lr=lr, weight_decay=wd)
-            else:
-                raise ValueError(f"Unsupported optimizer: {self.hparams.optimizer_name}")
+            # Handle encoder with potentially different learning rate
+            encoder_lr = lr * self.encoder_lr_factor
+            param_groups.append({'params': self.shared_encoder.parameters(), 'lr': encoder_lr})
+            
+            # Add pain head to parameter groups
+            param_groups.append({'params': self.pain_head.parameters(), 'lr': lr})
+        
+        # Only add unfrozen stimulus head to parameter groups
+        if not self.freeze_stimulus_head:
+            param_groups.append({'params': self.stimulus_head.parameters(), 'lr': lr})
+        
+        # Create optimizer with parameter groups
+        optimizer_class = {
+            'Adam': optim.Adam,
+            'AdamW': optim.AdamW,
+        }.get(self.hparams.optimizer_name, optim.AdamW)
+        
+        optimizer = optimizer_class(
+            param_groups,
+            weight_decay=self.hparams.weight_decay,
+        )
         
         return optimizer
-        
+
     def load_from_pretrained(self, pretrained_path):
         """
-        Load weights from a pretrained model, but only for the encoder and stimulus head.
-        The pain head will be initialized with random weights.
+        Load weights from a pretrained checkpoint, maintaining compatibility when model was
+        trained with different configurations.
         
         Args:
-            pretrained_path: Path to the pretrained model checkpoint
+            pretrained_path: Path to the pretrained model checkpoint.
         """
         print(f"Loading pretrained weights from: {pretrained_path}")
-        checkpoint = torch.load(pretrained_path, map_location=self.device)
         
-        # Filter state_dict to include only encoder and stimulus head
-        pretrained_state_dict = checkpoint['state_dict']
+        # Load the pretrained state dict
+        pretrained_state_dict = torch.load(pretrained_path)['state_dict']
         
-        # Get current state dict
+        # Get the current model's state dict
         current_state_dict = self.state_dict()
         
-        # Create new state dict with only encoder and stimulus head parameters from pretrained
-        new_state_dict = {}
-        for key, value in pretrained_state_dict.items():
-            # Only copy encoder and stimulus head parameters
-            if 'shared_encoder' in key or 'stimulus_head' in key:
-                if key in current_state_dict and current_state_dict[key].shape == value.shape:
-                    new_state_dict[key] = value
-                else:
-                    print(f"Warning: Skipping parameter {key} due to shape mismatch")
+        # Track which components were loaded
+        loaded_encoder = False
+        loaded_stimulus_head = False
+        loaded_pain_head = False
         
-        # Load the filtered state dict
-        missing_keys, unexpected_keys = self.load_state_dict(new_state_dict, strict=False)
+        # Selectively load weights that match in shape
+        for name, param in current_state_dict.items():
+            if name in pretrained_state_dict and param.shape == pretrained_state_dict[name].shape:
+                if 'shared_encoder' in name:
+                    loaded_encoder = True
+                elif 'stimulus_head' in name:
+                    loaded_stimulus_head = True
+                elif 'pain_head' in name:
+                    loaded_pain_head = True
+                    
+                current_state_dict[name] = pretrained_state_dict[name]
         
-        print(f"Loaded pretrained weights for encoder and stimulus head")
-        print(f"Missing keys (expected for pain head): {len(missing_keys)}")
-        print(f"Unexpected keys: {len(unexpected_keys)}")
+        # Load the updated state dict back into the model
+        self.load_state_dict(current_state_dict)
         
-        return self
+        # Print components that were loaded
+        print(f"Loaded pretrained components: encoder={loaded_encoder}, "
+              f"stimulus_head={loaded_stimulus_head}, pain_head={loaded_pain_head}")
+        
+        # Print frozen status
+        if self.freeze_stimulus_head:
+            print("Stimulus head will be FROZEN during training")
+        if self.freeze_encoder:
+            print("Shared encoder will be FROZEN during training")
 
 # Remove the old if __name__ == '__main__': block if it exists
 # (The edit tool should replace the entire file content based on the instruction) 
