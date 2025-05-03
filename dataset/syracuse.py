@@ -364,6 +364,8 @@ class SyracuseDataModule(LightningDataModule):
         items_with_valid_pain = 0
         items_missing_pain = 0
         items_invalid_pain = 0
+        clips_missing_info = 0   # <<< Initialize HERE
+        clips_missing_label = 0  # <<< Initialize HERE
         # <<< End Initialization >>>
         # processed_files = set() # <<< REMOVED: Not needed as dict keys are unique >>>
 
