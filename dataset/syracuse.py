@@ -339,68 +339,79 @@ class SyracuseDataModule(LightningDataModule):
             return False
 
     def setup(self, stage: Optional[str] = None):
-        print("Setting up SyracuseDataModule...")
+        """Loads metadata and derives video_id labels using cutoffs."""
+        # Load metadata from clips_json.json
+        metadata_path = os.path.join(self.marlin_base_dir, "clips_json.json")
+        if not os.path.exists(metadata_path):
+             raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
+        try:
+             with open(metadata_path, 'r') as f:
+                 self.all_metadata = json.load(f)
+        except Exception as e:
+             raise IOError(f"Error reading metadata file {metadata_path}: {e}")
 
-        if not self._load_and_prepare_metadata() or not self.all_metadata:
-            raise RuntimeError("Failed to load metadata. Cannot proceed with setup.")
-
-        # Clear lists before processing
+        # Separate original and augmented clips, collect video IDs and pain levels
         self.original_clips = []
         self.augmented_clips = []
-        self.video_id_labels = {}
         self.video_ids.clear() # Clear if setup is called multiple times
         video_pain_levels = {} # Store {video_id: [list of pain levels for its original clips]}
+        filenames_in_meta = set(self.all_metadata.keys())
 
-        print("Processing metadata to separate original/augmented clips and get video labels...")
-        processed_files = set()
-        clips_missing_info = 0
-        clips_missing_label = 0
+        print(f"Processing {len(filenames_in_meta)} clips from metadata for SyracuseDataModule setup...")
+        # <<< Initialize counters HERE >>>
+        original_clips_processed = 0
+        augmented_clips_processed = 0
+        items_with_valid_pain = 0
+        items_missing_pain = 0
+        items_invalid_pain = 0
+        # <<< End Initialization >>>
 
         for filename, clip_data in self.all_metadata.items():
-             if filename in processed_files: continue
+            # Make clip_data mutable if needed (though assignment below should be fine)
+            if filename in processed_files: continue
 
-             video_id = clip_data.get('video_id')
-             video_type = clip_data.get('video_type')
+            video_id = clip_data.get('video_id')
+            video_type = clip_data.get('video_type')
 
-             if not all([video_id, video_type]):
-                 clips_missing_info += 1
-                 continue
+            if not all([video_id, video_type]):
+                clips_missing_info += 1
+                continue
 
-             if video_type == 'original':
-                 original_clips_processed += 1
-                 self.original_clips.append(clip_data)
-                 meta_info = clip_data.get('meta_info', {})
-                 # Get the value, could be str, float, int, or None
-                 pain_level_value = meta_info.get('pain_level') 
+            if video_type == 'original':
+                original_clips_processed += 1
+                self.original_clips.append(clip_data)
+                meta_info = clip_data.get('meta_info', {})
+                # Get the value, could be str, float, int, or None
+                pain_level_value = meta_info.get('pain_level') 
 
-                 if pain_level_value is not None:
-                     try:
-                         # Attempt conversion regardless of initial type
-                         pain_level = float(pain_level_value) 
-                         # Add check for NaN/Infinity just in case
-                         if not np.isfinite(pain_level):
-                              raise ValueError("Pain level is NaN or Infinity")
+                if pain_level_value is not None:
+                    try:
+                        # Attempt conversion regardless of initial type
+                        pain_level = float(pain_level_value) 
+                        # Add check for NaN/Infinity just in case
+                        if not np.isfinite(pain_level):
+                             raise ValueError("Pain level is NaN or Infinity")
                               
-                         # Store valid pain level for this original clip
-                         if video_id not in video_pain_levels:
-                             video_pain_levels[video_id] = []
-                         video_pain_levels[video_id].append(pain_level)
-                         items_with_valid_pain += 1
-                     except (ValueError, TypeError):
-                         # Catches conversion errors (e.g., float("non-numeric"))
-                         # or the NaN/Infinity error raised above
-                         items_invalid_pain += 1 
-                 else:
-                     # Handles case where 'pain_level' key is missing
-                     items_missing_pain += 1
+                        # Store valid pain level for this original clip
+                        if video_id not in video_pain_levels:
+                            video_pain_levels[video_id] = []
+                        video_pain_levels[video_id].append(pain_level)
+                        items_with_valid_pain += 1
+                    except (ValueError, TypeError):
+                        # Catches conversion errors (e.g., float("non-numeric"))
+                        # or the NaN/Infinity error raised above
+                        items_invalid_pain += 1 
+                else:
+                    # Handles case where 'pain_level' key is missing
+                    items_missing_pain += 1
 
-             elif video_type == 'aug':
-                 self.augmented_clips.append(clip_data)
-             else:
-                 print(f"Warning: Unknown video_type '{video_type}' for clip {filename}. Skipping.")
+            elif video_type == 'aug':
+                self.augmented_clips.append(clip_data)
+            else:
+                print(f"Warning: Unknown video_type '{video_type}' for clip {filename}. Skipping.")
 
-             processed_files.add(filename)
-             self.video_ids.add(video_id) # Use instance variable
+            processed_files.add(filename)
+            self.video_ids.add(video_id) # Use instance variable
 
         print(f"Finished processing metadata:")
         print(f"  - Original clips found: {len(self.original_clips)}")
