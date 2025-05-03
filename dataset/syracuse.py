@@ -400,6 +400,9 @@ class SyracuseDataModule(LightningDataModule):
                             video_pain_levels[video_id] = []
                         video_pain_levels[video_id].append(pain_level)
                         items_with_valid_pain += 1
+                        # <<< Add Debug Print 1 >>>
+                        if items_with_valid_pain % 100 == 1: # Print occasionally
+                            print(f"  [DEBUG setup loop1] Added pain: video_id={video_id} (type {type(video_id)}), pain={pain_level}")
                     except (ValueError, TypeError):
                         # Catches conversion errors (e.g., float("non-numeric"))
                         # or the NaN/Infinity error raised above
@@ -429,11 +432,22 @@ class SyracuseDataModule(LightningDataModule):
              raise ValueError("No unique video IDs found. Cannot create splits.")
 
         print("SyracuseDataModule setup complete.")
+        # <<< Add Debug Print 2 >>>
+        print(f"  [DEBUG setup before loop2] video_pain_levels keys ({len(video_pain_levels)}): {list(video_pain_levels.keys())[:20]}...") # Print first 20 keys
+        print(f"  [DEBUG setup before loop2] video_ids ({len(self.video_ids)}): {list(self.video_ids)[:20]}...") # Print first 20 ids
 
         # Derive representative class label for each video ID using average pain and cutoffs
         self.video_id_labels = {}
         videos_without_valid_pain_for_avg = 0
+        processed_vids_in_loop2 = 0 # Counter for debug printing
         for vid in sorted(list(self.video_ids)):
+            processed_vids_in_loop2 += 1
+            # <<< Add Debug Print 3 >>>
+            if processed_vids_in_loop2 % 10 == 1: # Print occasionally
+                 key_exists = vid in video_pain_levels
+                 list_not_empty = video_pain_levels.get(vid, None) is not None and len(video_pain_levels.get(vid, [])) > 0
+                 print(f"  [DEBUG setup loop2] Checking vid={vid} (type {type(vid)}). Key exists: {key_exists}, List not empty: {list_not_empty}")
+                 
             if vid in video_pain_levels and video_pain_levels[vid]:
                 # Use the average pain level of original clips for stratification
                 avg_pain = np.mean(video_pain_levels[vid])
