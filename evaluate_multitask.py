@@ -835,7 +835,8 @@ def run_multitask_cv(args, config):
             args.syracuse_data_path,      # root_dir
             syracuse_feature_dir,         # feature_dir
             'train',                      # split
-            'multiclass',                 # task
+            # 'multiclass',                 # task - removed
+            # num_pain_classes,             # num_classes - removed
             pain_class_cutoffs,           # Pass cutoffs instead
             temporal_reduction,           # temporal_reduction
             syracuse_train_filenames,     # name_list of specific filenames
@@ -845,7 +846,8 @@ def run_multitask_cv(args, config):
             args.syracuse_data_path,      # root_dir
             syracuse_feature_dir,         # feature_dir
             'val',                        # split
-            'multiclass',                 # task
+            # 'multiclass',                 # task - removed
+            # num_pain_classes,             # num_classes - removed
             pain_class_cutoffs,           # Pass cutoffs instead
             temporal_reduction,           # temporal_reduction
             syracuse_val_filenames,       # name_list of validation filenames
