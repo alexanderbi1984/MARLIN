@@ -428,8 +428,9 @@ class SyracuseDataModule(LightningDataModule):
 
         if not self.original_clips:
             raise ValueError("No original clips found after processing metadata. Cannot create splits.")
-        if not self.video_id_labels:
-             raise ValueError("No unique video IDs found. Cannot create splits.")
+        # << REMOVE CHECK FROM HERE >>
+        # if not self.video_id_labels:
+        #      raise ValueError("No unique video IDs found. Cannot create splits.")
 
         print("SyracuseDataModule setup complete.")
         # <<< Add Debug Print 2 >>>
@@ -462,6 +463,13 @@ class SyracuseDataModule(LightningDataModule):
 
         if videos_without_valid_pain_for_avg > 0:
             print(f"Warning: {videos_without_valid_pain_for_avg} video IDs had no original clips with valid 'pain_level' for averaging. They won't be used for stratified splitting.")
+            
+        # <<< MOVE CHECK TO HERE >>>
+        if not self.video_id_labels:
+            # This error now correctly triggers if the loop above failed to find *any* videos 
+            # suitable for stratification label generation.
+            raise ValueError("No valid video IDs with derivable labels found for stratification. Cannot create splits.")
+        print(f"Derived {len(self.video_id_labels)} video_id -> class label mappings for stratification.") # Moved print here too
 
     def train_dataloader(self):
         if not self.train_dataset:
