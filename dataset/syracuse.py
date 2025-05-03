@@ -299,12 +299,12 @@ class SyracuseDataModule(LightningDataModule):
         self.pain_class_cutoffs = sorted(pain_class_cutoffs)
         self.num_classes = len(self.pain_class_cutoffs) + 1 # Derive num_classes
 
-        # --- Data containers (will be populated in setup) ---
-        self.all_metadata = {}        # All metadata {filename: meta}
-        self.original_clips = []    # List of dicts for original clips {filename, video_id, label}
-        self.augmented_clips = []   # List of dicts for augmented clips {filename, video_id}
-        self.video_id_labels = {}   # Map {video_id: representative_label}
-        self.marlin_features = None # MarlinFeatures instance
+        # Placeholders for loaded metadata
+        self.all_metadata: Optional[Dict] = None
+        self.original_clips: Optional[List[Dict]] = None # List of metadata dicts for original clips
+        self.augmented_clips: Optional[List[Dict]] = None # List of metadata dicts for augmented clips
+        self.video_id_labels: Optional[Dict[str, int]] = None # video_id -> derived class label for stratification
+        self.video_ids: set = set() # Initialize as instance variable
 
         # --- Initialize MarlinFeatures --- 
         self.marlin_features = None # Default to None
@@ -348,6 +348,8 @@ class SyracuseDataModule(LightningDataModule):
         self.original_clips = []
         self.augmented_clips = []
         self.video_id_labels = {}
+        self.video_ids.clear() # Clear if setup is called multiple times
+        video_pain_levels = {} # Store {video_id: [list of pain levels for its original clips]}
 
         print("Processing metadata to separate original/augmented clips and get video labels...")
         processed_files = set()
@@ -387,11 +389,12 @@ class SyracuseDataModule(LightningDataModule):
                  print(f"Warning: Unknown video_type '{video_type}' for clip {filename}. Skipping.")
 
              processed_files.add(filename)
+             self.video_ids.add(video_id) # Use instance variable
 
         print(f"Finished processing metadata:")
         print(f"  - Original clips found: {len(self.original_clips)}")
         print(f"  - Augmented clips found: {len(self.augmented_clips)}")
-        print(f"  - Unique video IDs found: {len(self.video_id_labels)}")
+        print(f"  - Unique video IDs found: {len(self.video_ids)}")
         if clips_missing_info > 0: print(f"  - Clips skipped (missing info): {clips_missing_info}")
         if clips_missing_label > 0: print(f"  - Clips skipped (missing label): {clips_missing_label}")
 
@@ -405,7 +408,7 @@ class SyracuseDataModule(LightningDataModule):
         # Derive representative class label for each video ID using average pain and cutoffs
         self.video_id_labels = {}
         videos_without_valid_pain_for_avg = 0
-        for vid in sorted(list(video_ids)): # Process in sorted order for consistency
+        for vid in sorted(list(self.video_ids)):
             if vid in video_pain_levels and video_pain_levels[vid]:
                 # Use the average pain level of original clips for stratification
                 avg_pain = np.mean(video_pain_levels[vid])
