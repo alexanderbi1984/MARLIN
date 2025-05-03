@@ -402,6 +402,25 @@ class SyracuseDataModule(LightningDataModule):
 
         print("SyracuseDataModule setup complete.")
 
+        # Derive representative class label for each video ID using average pain and cutoffs
+        self.video_id_labels = {}
+        videos_without_valid_pain_for_avg = 0
+        for vid in sorted(list(video_ids)): # Process in sorted order for consistency
+            if vid in video_pain_levels and video_pain_levels[vid]:
+                # Use the average pain level of original clips for stratification
+                avg_pain = np.mean(video_pain_levels[vid])
+                # Map the average score to a class label using the cutoffs
+                derived_class = map_score_to_class(avg_pain, self.pain_class_cutoffs)
+                self.video_id_labels[vid] = derived_class # Store the derived INTEGER class label
+            else:
+                # Handle videos with no valid original clip pain levels for averaging
+                # These videos cannot be reliably assigned a stratification label based on pain.
+                # They will be excluded from the list used for stratified splitting.
+                videos_without_valid_pain_for_avg += 1
+
+        if videos_without_valid_pain_for_avg > 0:
+            print(f"Warning: {videos_without_valid_pain_for_avg} video IDs had no original clips with valid 'pain_level' for averaging. They won't be used for stratified splitting.")
+
     def train_dataloader(self):
         if not self.train_dataset:
             self.setup(stage='fit')
