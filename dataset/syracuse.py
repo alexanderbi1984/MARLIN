@@ -356,35 +356,46 @@ class SyracuseDataModule(LightningDataModule):
         clips_missing_info = 0
         clips_missing_label = 0
 
-        for filename, meta in self.all_metadata.items():
+        for filename, clip_data in self.all_metadata.items():
              if filename in processed_files: continue
 
-             video_id = meta.get('video_id')
-             video_type = meta.get('video_type')
-             meta_info = meta.get('meta_info')
+             video_id = clip_data.get('video_id')
+             video_type = clip_data.get('video_type')
 
-             if not all([video_id, video_type, meta_info]):
+             if not all([video_id, video_type]):
                  clips_missing_info += 1
                  continue
 
-             pain_level_str = meta_info.get('pain_level')
-             if pain_level_str is None:
-                 clips_missing_label += 1
-                 continue
-
-             try:
-                pain_level = float(pain_level_str)
-             except (ValueError, TypeError):
-                 print(f"Warning: Could not convert pain_level '{pain_level_str}' to float for clip {filename}. Skipping.")
-                 clips_missing_label += 1
-                 continue
-
              if video_type == 'original':
-                 self.original_clips.append({'filename': filename, 'video_id': video_id, 'label': pain_level})
-                 if video_id not in self.video_id_labels:
-                     self.video_id_labels[video_id] = pain_level
+                 original_clips_processed += 1
+                 self.original_clips.append(clip_data)
+                 meta_info = clip_data.get('meta_info', {})
+                 # Get the value, could be str, float, int, or None
+                 pain_level_value = meta_info.get('pain_level') 
+
+                 if pain_level_value is not None:
+                     try:
+                         # Attempt conversion regardless of initial type
+                         pain_level = float(pain_level_value) 
+                         # Add check for NaN/Infinity just in case
+                         if not np.isfinite(pain_level):
+                              raise ValueError("Pain level is NaN or Infinity")
+                              
+                         # Store valid pain level for this original clip
+                         if video_id not in video_pain_levels:
+                             video_pain_levels[video_id] = []
+                         video_pain_levels[video_id].append(pain_level)
+                         items_with_valid_pain += 1
+                     except (ValueError, TypeError):
+                         # Catches conversion errors (e.g., float("non-numeric"))
+                         # or the NaN/Infinity error raised above
+                         items_invalid_pain += 1 
+                 else:
+                     # Handles case where 'pain_level' key is missing
+                     items_missing_pain += 1
+
              elif video_type == 'aug':
-                 self.augmented_clips.append({'filename': filename, 'video_id': video_id})
+                 self.augmented_clips.append(clip_data)
              else:
                  print(f"Warning: Unknown video_type '{video_type}' for clip {filename}. Skipping.")
 
