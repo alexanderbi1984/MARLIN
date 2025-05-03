@@ -274,29 +274,30 @@ class SyracuseDataModule(LightningDataModule):
     Validation and Test sets contain only original clips.
     Training set contains original clips + corresponding augmented clips.
     Splits are based on video IDs to prevent data leakage.
+    This version uses pain_class_cutoffs to derive labels for stratification.
     """
 
     def __init__(self, root_dir: str,          # Root directory of data
-        task: str,
-        num_classes: int,
+        # task: str, # Removed
+        # num_classes: int, # Removed
         batch_size: int,             # Batch size (still needed for potential dataloaders)
         feature_dir: str,
         marlin_base_dir: str,          # REQUIRED for MarlinFeatures
         pain_class_cutoffs: List[float], # Add cutoffs here
-        temporal_reduction: str = "mean",
+        temporal_reduction: str = "mean", # Used by SyracuseLP if datasets created here
         num_workers: int = 0
     ):
         super().__init__()
         self.root_dir = root_dir
-        self.task = task
-        self.num_classes = num_classes
+        # self.task = task # Removed
+        # self.num_classes = num_classes # Removed
         self.batch_size = batch_size
         self.feature_dir = feature_dir
         self.temporal_reduction = temporal_reduction
         self.marlin_base_dir = marlin_base_dir # Store the base dir
         self.num_workers = num_workers
         self.pain_class_cutoffs = sorted(pain_class_cutoffs)
-        self.num_classes = len(self.pain_class_cutoffs) + 1
+        self.num_classes = len(self.pain_class_cutoffs) + 1 # Derive num_classes
 
         # --- Data containers (will be populated in setup) ---
         self.all_metadata = {}        # All metadata {filename: meta}
