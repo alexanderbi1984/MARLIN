@@ -355,7 +355,7 @@ class SyracuseDataModule(LightningDataModule):
         self.augmented_clips = []
         self.video_ids.clear() # Clear if setup is called multiple times
         video_pain_levels = {} # Store {video_id: [list of pain levels for its original clips]}
-        processed_files = set() # <<< Initialize processed_files HERE >>>
+        # processed_files = set() # <<< REMOVED >>>
 
         print(f"Processing {len(self.all_metadata)} clips from metadata for SyracuseDataModule setup...")
         # <<< Initialize counters HERE >>>
