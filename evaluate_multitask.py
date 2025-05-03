@@ -1366,12 +1366,13 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
         # --- Load Syracuse metadata for evaluation ---
         syracuse_dm_meta = SyracuseDataModule(
             args.syracuse_data_path,
-            'multiclass',
-            num_pain_classes,
-            1,
+            # 'multiclass', # Removed
+            # num_pain_classes, # Pass cutoffs
+            1, # Dummy batch size
             syracuse_feature_dir,
             args.syracuse_marlin_base_dir,
-            pain_class_cutoffs=pain_class_cutoffs,
+            # pain_class_cutoffs=pain_class_cutoffs, # Pass positionally
+            pain_class_cutoffs, # Positional argument 5
             temporal_reduction=temporal_reduction,
             num_workers=args.num_workers
         )
@@ -1383,8 +1384,10 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
             args.syracuse_data_path,    # root_dir
             syracuse_feature_dir,       # feature_dir
             'val',                      # split
-            'multiclass',               # task
-            num_pain_classes,           # num_classes
+            # 'multiclass',               # task
+            # num_pain_classes,           # num_classes
+            # pain_class_cutoffs=pain_class_cutoffs, # Pass positionally
+            pain_class_cutoffs,         # Positional argument 4
             temporal_reduction,         # temporal_reduction
             val_filenames,              # name_list for this fold
             metadata                    # metadata dict
