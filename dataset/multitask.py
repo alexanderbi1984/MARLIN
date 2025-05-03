@@ -12,7 +12,7 @@ from typing import Optional, Tuple, List, Dict, Any, Union
 # We might need to refactor SyracuseDataModule setup logic or its Dataset
 from dataset.biovid import BioVidLP  # Assuming BioVidLP is the relevant dataset class
 from dataset.syracuse import SyracuseLP, SyracuseDataModule # Need SyracuseLP and potentially setup logic
-from dataset.shoulder_pain import ShoulderPainLP  # Import the new ShoulderPainLP class
+from dataset.shoulder_pain import ShoulderPainLP, map_score_to_class # Import the modified ShoulderPainLP and helper
 
 
 class MultiTaskDataModule(LightningDataModule):
@@ -33,7 +33,7 @@ class MultiTaskDataModule(LightningDataModule):
         syracuse_root_dir: str,
         syracuse_feature_dir: str,
         syracuse_marlin_base_dir: str,
-        num_pain_classes: int, # Corresponds to Syracuse task
+        pain_class_cutoffs: List[float], # REQUIRED list of cutoff points for pain classes
         # BioVid Specific Params
         biovid_root_dir: str,
         biovid_feature_dir: str,
@@ -62,7 +62,8 @@ class MultiTaskDataModule(LightningDataModule):
         self.syracuse_root_dir = syracuse_root_dir
         self.syracuse_feature_dir = syracuse_feature_dir
         self.syracuse_marlin_base_dir = syracuse_marlin_base_dir
-        self.num_pain_classes = num_pain_classes
+        self.pain_class_cutoffs = sorted(pain_class_cutoffs)
+        self.num_pain_classes = len(self.pain_class_cutoffs) + 1 # Derive num_classes
         self.syracuse_val_ratio = syracuse_val_ratio
         self.syracuse_test_ratio = syracuse_test_ratio
 
@@ -173,13 +174,13 @@ class MultiTaskDataModule(LightningDataModule):
         """
         print(f"Setting up MultiTaskDataModule for stage: {stage}...")
 
-        # --- 1. Load Syracuse Metadata --- 
-        print("  Loading Syracuse metadata...")
-        # Instantiate SyracuseDataModule primarily to use its metadata loading logic
+        # --- 1. Load Syracuse Metadata using the helper module --- 
+        print("  Loading Syracuse metadata and deriving labels for stratification...")
+        # Instantiate SyracuseDataModule helper to use its metadata loading 
+        # and stratification label generation logic (which now uses cutoffs)
         syracuse_dm_for_meta = SyracuseDataModule(
              root_dir=self.syracuse_root_dir,
-             task='multiclass', # Task/num_classes needed for label extraction during meta processing
-             num_classes=self.num_pain_classes,
+             pain_class_cutoffs=self.pain_class_cutoffs, # Pass cutoffs
              batch_size=1, # Dummy value
              feature_dir=self.syracuse_feature_dir,
              marlin_base_dir=self.syracuse_marlin_base_dir,
@@ -197,10 +198,17 @@ class MultiTaskDataModule(LightningDataModule):
         all_syracuse_metadata = syracuse_dm_for_meta.all_metadata
         original_clips = syracuse_dm_for_meta.original_clips
         augmented_clips = syracuse_dm_for_meta.augmented_clips
-        video_id_labels = syracuse_dm_for_meta.video_id_labels # Map {video_id: representative_label}
+        video_id_labels = syracuse_dm_for_meta.video_id_labels # Map {video_id: derived_class_label}
+        derived_num_pain_classes = syracuse_dm_for_meta.num_classes # Get derived num_classes
+
+        # Validate derived num_classes matches self.num_pain_classes
+        if derived_num_pain_classes != self.num_pain_classes:
+            print(f"Warning: Derived num_pain_classes ({derived_num_pain_classes}) from helper differs from self.num_pain_classes ({self.num_pain_classes}). Using self.num_pain_classes.")
+            # Optionally raise error or log more details
 
         if not video_id_labels:
-            raise ValueError("Failed to extract video_id_labels from Syracuse metadata.")
+            # This might happen if no videos had valid pain levels
+            raise ValueError("Failed to extract video_id_labels for stratification from Syracuse metadata helper. Check pain_levels in metadata.")
 
         # --- 2. Perform Syracuse Train/Val/Test Split based on Video IDs --- 
         print("  Performing Syracuse train/val/test split based on video IDs...")
@@ -288,13 +296,12 @@ class MultiTaskDataModule(LightningDataModule):
         print(f"    Syracuse Val Files: {len(syracuse_val_filenames)}")
         print(f"    Syracuse Test Files: {len(syracuse_test_filenames)}")
 
-        # Create Syracuse datasets for each split
+        # Create Syracuse datasets for each split using cutoffs
         syracuse_train_set = SyracuseLP(
             self.syracuse_root_dir,
             self.syracuse_feature_dir,
             split='train',
-            task='multiclass',
-            num_classes=self.num_pain_classes,
+            pain_class_cutoffs=self.pain_class_cutoffs, # Pass cutoffs
             temporal_reduction=self.temporal_reduction,
             name_list=syracuse_train_filenames, # For cross-validation/debugging: explicit list
             metadata=all_syracuse_metadata
@@ -304,8 +311,7 @@ class MultiTaskDataModule(LightningDataModule):
             self.syracuse_root_dir,
             self.syracuse_feature_dir,
             split='val',
-            task='multiclass',
-            num_classes=self.num_pain_classes,
+            pain_class_cutoffs=self.pain_class_cutoffs,
             temporal_reduction=self.temporal_reduction,
             name_list=syracuse_val_filenames,
             metadata=all_syracuse_metadata
@@ -315,8 +321,7 @@ class MultiTaskDataModule(LightningDataModule):
             self.syracuse_root_dir,
             self.syracuse_feature_dir,
             split='test',
-            task='multiclass',
-            num_classes=self.num_pain_classes,
+            pain_class_cutoffs=self.pain_class_cutoffs,
             temporal_reduction=self.temporal_reduction,
             name_list=syracuse_test_filenames,
             metadata=all_syracuse_metadata
@@ -346,8 +351,7 @@ class MultiTaskDataModule(LightningDataModule):
                     self.shoulder_pain_root_dir,
                     self.shoulder_pain_feature_dir,
                     split='train',  # Only available as training data
-                    task='multiclass',
-                    num_classes=self.num_pain_classes,  # Same number of classes as Syracuse
+                    pain_class_cutoffs=self.pain_class_cutoffs, # Pass cutoffs
                     temporal_reduction=self.temporal_reduction,
                     data_ratio=self.data_ratio,
                     take_num=self.take_train
@@ -410,6 +414,10 @@ class MultiTaskDataModule(LightningDataModule):
             print(f"      - ShoulderPain: {len(wrapped_shoulder_pain_train)} samples")
         print(f"    Validation: {len(self.val_dataset)} samples")
         print(f"    Test: {len(self.test_dataset)} samples")
+
+        # Add a final check for derived vs expected num_pain_classes
+        if shoulder_pain_train_set and shoulder_pain_train_set.num_classes != self.num_pain_classes:
+            print(f"Warning: ShoulderPainLP derived num_classes ({shoulder_pain_train_set.num_classes}) differs from expected ({self.num_pain_classes}). Check cutoffs.")
 
     def train_dataloader(self):
         if not self.train_dataset:

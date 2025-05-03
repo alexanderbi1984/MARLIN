@@ -18,7 +18,7 @@ Workflow:
 Configuration YAML File Keys (`--config`):
 ------------------------------------------
 *   `model_name: <your_run_name>` (**Required**): Name for checkpoints/logs.
-*   `num_pain_classes: <int>` (**Required**): Number of ordinal classes for pain (Syracuse).
+*   `pain_class_cutoffs: List[float]` (**Required**): List of upper boundaries for pain classes (e.g., `[1.0, 3.0, 5.0, 7.0]` for 5 classes).
 *   `num_stimulus_classes: <int>` (**Required**): Number of ordinal classes for stimulus (BioVid).
 *   `syracuse_feature_dir: <name>` (**Required**): Feature dir name for Syracuse (relative to `--syracuse_data_path`).
 *   `biovid_feature_dir: <name>` (**Required**): Feature dir name for BioVid (relative to `--biovid_data_path`).
@@ -160,7 +160,13 @@ def run_multitask_evaluation(args, config):
 
     # --- Configuration --- 
     model_name = config.get("model_name", "multitask_coral_run")
-    num_pain_classes = config["num_pain_classes"]
+    pain_class_cutoffs = config.get("pain_class_cutoffs")
+    if pain_class_cutoffs is None or not isinstance(pain_class_cutoffs, list) or not all(isinstance(c, (float, int)) for c in pain_class_cutoffs):
+        raise ValueError("Config error: 'pain_class_cutoffs' must be provided as a list of numbers.")
+    pain_class_cutoffs = sorted([float(c) for c in pain_class_cutoffs]) # Ensure float and sorted
+    num_pain_classes = len(pain_class_cutoffs) + 1 # Derive number of pain classes
+    print(f"Pain class cutoffs: {pain_class_cutoffs} => {num_pain_classes} classes")
+    
     num_stimulus_classes = config["num_stimulus_classes"]
     syracuse_feature_dir = config["syracuse_feature_dir"]
     biovid_feature_dir = config["biovid_feature_dir"]
@@ -206,7 +212,7 @@ def run_multitask_evaluation(args, config):
         syracuse_root_dir=args.syracuse_data_path,
         syracuse_feature_dir=syracuse_feature_dir,
         syracuse_marlin_base_dir=args.syracuse_marlin_base_dir,
-        num_pain_classes=num_pain_classes,
+        pain_class_cutoffs=pain_class_cutoffs,
         # BioVid Params
         biovid_root_dir=args.biovid_data_path,
         biovid_feature_dir=biovid_feature_dir,
@@ -525,7 +531,13 @@ def run_multitask_cv(args, config):
     # --- Common Config --- 
     # Extract necessary params from config and args
     model_name = config.get("model_name", f"multitask_cv_{n_splits}fold")
-    num_pain_classes = config["num_pain_classes"]
+    pain_class_cutoffs = config.get("pain_class_cutoffs")
+    if pain_class_cutoffs is None or not isinstance(pain_class_cutoffs, list) or not all(isinstance(c, (float, int)) for c in pain_class_cutoffs):
+        raise ValueError("Config error: 'pain_class_cutoffs' must be provided as a list of numbers.")
+    pain_class_cutoffs = sorted([float(c) for c in pain_class_cutoffs]) # Ensure float and sorted
+    num_pain_classes = len(pain_class_cutoffs) + 1 # Derive number of pain classes
+    print(f"Pain class cutoffs: {pain_class_cutoffs} => {num_pain_classes} classes")
+    
     num_stimulus_classes = config["num_stimulus_classes"]
     syracuse_feature_dir = config["syracuse_feature_dir"]
     biovid_feature_dir = config["biovid_feature_dir"]
@@ -595,8 +607,7 @@ def run_multitask_cv(args, config):
         # Instantiate SyracuseDataModule to use its metadata loading logic
         syracuse_dm_for_meta = SyracuseDataModule(
             root_dir=args.syracuse_data_path,
-            task='multiclass',
-            num_classes=num_pain_classes,
+            pain_class_cutoffs=pain_class_cutoffs,
             batch_size=1,  # Dummy value
             feature_dir=syracuse_feature_dir,
             marlin_base_dir=args.syracuse_marlin_base_dir,
@@ -825,7 +836,7 @@ def run_multitask_cv(args, config):
             syracuse_feature_dir,         # feature_dir
             'train',                      # split
             'multiclass',                 # task
-            num_pain_classes,             # num_classes
+            pain_class_cutoffs,           # Pass cutoffs instead
             temporal_reduction,           # temporal_reduction
             syracuse_train_filenames,     # name_list of specific filenames
             all_syracuse_metadata         # metadata dict from SyracuseDataModule
@@ -835,7 +846,7 @@ def run_multitask_cv(args, config):
             syracuse_feature_dir,         # feature_dir
             'val',                        # split
             'multiclass',                 # task
-            num_pain_classes,             # num_classes
+            pain_class_cutoffs,           # Pass cutoffs instead
             temporal_reduction,           # temporal_reduction
             syracuse_val_filenames,       # name_list of validation filenames
             all_syracuse_metadata         # metadata dict
@@ -1315,7 +1326,12 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
         # --- Load Model ---
         # Need to know model parameters to load
         # Extract from config or assume defaults consistent with training
-        num_pain_classes = config["num_pain_classes"]
+        pain_class_cutoffs = config.get("pain_class_cutoffs") # Get cutoffs from config
+        if pain_class_cutoffs is None:
+            raise ValueError("Missing 'pain_class_cutoffs' in config for CV evaluation.")
+        pain_class_cutoffs = sorted([float(c) for c in pain_class_cutoffs])
+        num_pain_classes = len(pain_class_cutoffs) + 1 # Derive num_classes
+        
         num_stimulus_classes = config["num_stimulus_classes"]
         syracuse_feature_dir = config["syracuse_feature_dir"]
         temporal_reduction = config.get("temporal_reduction", "mean")
@@ -1353,6 +1369,7 @@ def _evaluate_multitask_fold_checkpoint(checkpoint_path, val_filenames, args, co
             1,
             syracuse_feature_dir,
             args.syracuse_marlin_base_dir,
+            pain_class_cutoffs=pain_class_cutoffs,
             temporal_reduction=temporal_reduction,
             num_workers=args.num_workers
         )

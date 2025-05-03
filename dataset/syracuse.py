@@ -1,4 +1,5 @@
 import os
+import json
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -27,33 +28,68 @@ from Syracuse.MarlinFeatures.marlin_features import MarlinFeatures
 #         self.metadata = {} # Placeholder: Structure might differ based on BioVidBase implementation
 #         print(f"Warning: Using placeholder BioVidBase in {__file__}. Ensure the actual base class loads metadata compatible with MarlinFeatures structure.")
 
+# Define the same helper function here for consistency (or import if moved to utils)
+def map_score_to_class(score: float, cutoffs: List[float]) -> int:
+    """Maps a continuous score to a 0-indexed class label based on cutoffs.
+    
+    Args:
+        score: The continuous score (e.g., pain_level).
+        cutoffs: A sorted list of upper boundaries for classes 0 to N-2. 
+                 Example: [1.0, 3.0, 5.0, 7.0] defines 5 classes:
+                 - Class 0: score <= 1.0
+                 - Class 1: 1.0 < score <= 3.0
+                 - Class 2: 3.0 < score <= 5.0
+                 - Class 3: 5.0 < score <= 7.0
+                 - Class 4: score > 7.0
+                 
+    Returns:
+        The 0-indexed class label.
+    """
+    class_label = 0
+    for cutoff in cutoffs:
+        if score > cutoff:
+            class_label += 1
+        else:
+            break
+    return class_label
 
 class SyracuseLP(BioVidBase):
     """
-    Linear probing dataset class for Syracuse dataset.
-    Adapted to use normalization and metadata structure similar to MarlinFeatures.
+    Syracuse Lip-Reading Pain Dataset.
+    Loads features and derives ordinal pain classes from 'pain_level' scores using configurable cutoffs.
+    Inherits from a placeholder BioVidBase for potential structure reuse, but primarily functions independently.
     """
 
-    def __init__(self, root_dir: str,
+    def __init__(
+        self,
+        root_dir: str,
         feature_dir: str,
-        split: str,
-        task: str,
-        num_classes: int,
-        temporal_reduction: str,
-        name_list: List[str],
-        metadata: Dict[str, Dict],
+        split: str, # 'train', 'val', or 'test' - used primarily for logging/context
+        pain_class_cutoffs: List[float], # List of cutoff points for pain classes
+        temporal_reduction: str = "mean",
+        name_list: Optional[List[str]] = None, # MUST be provided for specific splits
+        metadata: Optional[Dict] = None, # MUST be provided
+        # task: str, # No longer needed for label generation
+        # num_classes: int, # No longer needed, derived from cutoffs
     ):
         # Simplified super init assuming BioVidBase only needs minimal args
         # super().__init__(root_dir, split, task, num_classes) # Call super if needed, adapt args
         # Manually set necessary attributes if super is bypassed or insufficient
         self.data_root = root_dir # Example of manual setting
+        self.feature_dir_name = feature_dir # Store the relative name
+        self.feature_dir = os.path.join(root_dir, feature_dir) # Full path
         self.split = split
-        self.task = task
-        self.num_classes = num_classes
-        
-        self.feature_dir = feature_dir
+        self.pain_class_cutoffs = sorted(pain_class_cutoffs)
+        self.num_classes = len(self.pain_class_cutoffs) + 1
         self.temporal_reduction = temporal_reduction
+
+        if name_list is None:
+            raise ValueError("SyracuseLP requires 'name_list' to be provided for the specific split.")
+        if metadata is None:
+            raise ValueError("SyracuseLP requires 'metadata' to be provided.")
+
         self.name_list = name_list
+        # Metadata is expected to be the full dictionary loaded from clips_json.json
         self.metadata = metadata
 
         print(f"SyracuseLP Dataset '{split}' initialized with {len(self.name_list)} clips.")
@@ -61,6 +97,58 @@ class SyracuseLP(BioVidBase):
              print(f"Warning: Metadata dictionary for {split} dataset is empty!")
         elif not self.name_list:
              print(f"Warning: Name list for {split} dataset is empty!")
+
+        # Validate name_list against metadata and features
+        self._validate_namelist()
+
+    def _validate_namelist(self):
+        """Filters name_list to ensure metadata, features, and valid pain_level exist."""
+        valid_names = []
+        missing_meta = 0
+        missing_features = 0
+        missing_pain_level = 0
+        invalid_pain_level = 0
+        original_count = len(self.name_list)
+
+        for name in self.name_list:
+            # Construct full path to the feature file
+            feature_path = os.path.join(self.feature_dir, name)
+            clip_meta = self.metadata.get(name)
+
+            # Check 1: Metadata existence
+            if clip_meta is None:
+                missing_meta += 1
+                continue
+
+            # Check 3: Pain level existence in metadata
+            pain_level_str = clip_meta.get('meta_info', {}).get('pain_level')
+            if pain_level_str is None:
+                missing_pain_level += 1
+                continue
+                
+            # Check if convertible to float
+            try:
+                _ = float(pain_level_str)
+            except (ValueError, TypeError):
+                invalid_pain_level += 1
+                continue
+
+            if not os.path.exists(feature_path):
+                missing_features += 1
+                continue
+
+            valid_names.append(name)
+
+        if original_count != len(valid_names):
+            print(f"  SyracuseLP ({self.split}) Validation: Filtered name_list from {original_count} to {len(valid_names)}")
+            if missing_meta > 0: print(f"    - Skipped {missing_meta} due to missing metadata.")
+            if missing_features > 0: print(f"    - Skipped {missing_features} due to missing feature files.")
+            if missing_pain_level > 0: print(f"    - Skipped {missing_pain_level} due to missing 'pain_level' key.")
+            if invalid_pain_level > 0: print(f"    - Skipped {invalid_pain_level} due to invalid 'pain_level' format.")
+
+        self.name_list = valid_names
+        if not self.name_list:
+             print(f"  WARNING: SyracuseLP ({self.split}) name_list is empty after validation!")
 
     def _normalize_features(self, features: np.ndarray) -> np.ndarray:
         """
@@ -122,25 +210,18 @@ class SyracuseLP(BioVidBase):
              raise IndexError(f"Index {index} out of bounds for dataset of size {len(self.name_list)}")
 
         filename = self.name_list[index]
-        feat_path = os.path.join(self.data_root, self.feature_dir, filename)
+        feature_path = os.path.join(self.feature_dir, filename)
 
-        clip_metadata = self.metadata.get(filename)
-
-        if clip_metadata is None:
-             print(f"Error: Metadata not found for clip: {filename} in provided metadata dict.")
-             dummy_features = torch.zeros((4 if self.temporal_reduction == "none" else 1, 768), dtype=torch.float32)
-             dummy_label = torch.tensor(-1, dtype=torch.long)
-             return dummy_features, dummy_label
-
+        # --- Load Features ---
         try:
-            raw_features = np.load(feat_path)
+            raw_features = np.load(feature_path)
         except FileNotFoundError:
-            print(f"Error: Feature file not found: {feat_path}")
+            print(f"Error: Feature file not found: {feature_path}")
             dummy_features = torch.zeros((4 if self.temporal_reduction == "none" else 1, 768), dtype=torch.float32)
             dummy_label = torch.tensor(-1, dtype=torch.long)
             return dummy_features, dummy_label
         except Exception as e:
-            print(f"Error loading feature file {feat_path}: {e}")
+            print(f"Error loading feature file {feature_path}: {e}")
             dummy_features = torch.zeros((4 if self.temporal_reduction == "none" else 1, 768), dtype=torch.float32)
             dummy_label = torch.tensor(-1, dtype=torch.long)
             return dummy_features, dummy_label
@@ -159,27 +240,16 @@ class SyracuseLP(BioVidBase):
         else:
             raise ValueError(f"Unknown temporal reduction strategy: {self.temporal_reduction}")
 
+        # --- Get Label ---
         try:
-            meta_info = clip_metadata.get('meta_info')
-            if meta_info is None:
-                raise KeyError("'meta_info' not found in metadata for clip: " + filename)
+            clip_meta = self.metadata[filename] # Use getitem since validation should ensure key exists
+            meta_info = clip_meta['meta_info']
+            pain_level_str = meta_info['pain_level']
+            pain_level = float(pain_level_str)
 
-            if self.task == "regression":
-                y_value = meta_info.get('pain_level')
-                if y_value is None: raise KeyError("'pain_level' not found")
-                y = torch.tensor(float(y_value), dtype=torch.float32)
-            elif self.task == "multiclass":
-                class_key = f"class_{self.num_classes}"
-                y_value = meta_info.get(class_key)
-                if y_value is None: raise KeyError(f"'{class_key}' not found")
-                y = torch.tensor(int(float(y_value)), dtype=torch.long)
-            elif self.task == "binary":
-                outcome = meta_info.get('outcome')
-                if outcome is None: raise KeyError("'outcome' not found")
-                y_value = 1 if outcome == 'positive' else 0
-                y = torch.tensor(y_value, dtype=torch.long)
-            else:
-                 raise ValueError(f"Unsupported task type: {self.task}")
+            # Map score to class label using the helper function
+            class_label = map_score_to_class(pain_level, self.pain_class_cutoffs)
+            label_tensor = torch.tensor(class_label, dtype=torch.long)
 
         except KeyError as e:
             print(f"Error accessing metadata key for {filename}: {e}. Check metadata structure and task definition.")
@@ -195,7 +265,7 @@ class SyracuseLP(BioVidBase):
         # --- Remove DEBUGGING --- 
         # print(f"[DEBUG SyracuseLP] Filename: {filename}, Label Type: {type(y)}, Label Value: {y}")
         # --- END Remove DEBUGGING ---
-        return x, y
+        return x, label_tensor
 
 
 class SyracuseDataModule(LightningDataModule):
@@ -212,6 +282,7 @@ class SyracuseDataModule(LightningDataModule):
         batch_size: int,             # Batch size (still needed for potential dataloaders)
         feature_dir: str,
         marlin_base_dir: str,          # REQUIRED for MarlinFeatures
+        pain_class_cutoffs: List[float], # Add cutoffs here
         temporal_reduction: str = "mean",
         num_workers: int = 0
     ):
@@ -224,6 +295,8 @@ class SyracuseDataModule(LightningDataModule):
         self.temporal_reduction = temporal_reduction
         self.marlin_base_dir = marlin_base_dir # Store the base dir
         self.num_workers = num_workers
+        self.pain_class_cutoffs = sorted(pain_class_cutoffs)
+        self.num_classes = len(self.pain_class_cutoffs) + 1
 
         # --- Data containers (will be populated in setup) ---
         self.all_metadata = {}        # All metadata {filename: meta}
@@ -291,30 +364,22 @@ class SyracuseDataModule(LightningDataModule):
                  clips_missing_info += 1
                  continue
 
-             label_key = 'pain_level' if self.task == 'regression' else f'class_{self.num_classes}'
-             label_value = meta_info.get(label_key)
-
-             if label_value is None:
-                  fallback_keys = [f'class_{n}' for n in [3, 4, 5] if f'class_{n}' != label_key] + ['pain_level']
-                  for key in fallback_keys:
-                      label_value = meta_info.get(key)
-                      if label_value is not None:
-                          break
-                  if label_value is None:
-                      clips_missing_label += 1
-                      continue
+             pain_level_str = meta_info.get('pain_level')
+             if pain_level_str is None:
+                 clips_missing_label += 1
+                 continue
 
              try:
-                label = int(float(label_value))
+                pain_level = float(pain_level_str)
              except (ValueError, TypeError):
-                 print(f"Warning: Could not convert label '{label_value}' to int for clip {filename}. Skipping.")
+                 print(f"Warning: Could not convert pain_level '{pain_level_str}' to float for clip {filename}. Skipping.")
                  clips_missing_label += 1
                  continue
 
              if video_type == 'original':
-                 self.original_clips.append({'filename': filename, 'video_id': video_id, 'label': label})
+                 self.original_clips.append({'filename': filename, 'video_id': video_id, 'label': pain_level})
                  if video_id not in self.video_id_labels:
-                     self.video_id_labels[video_id] = label
+                     self.video_id_labels[video_id] = pain_level
              elif video_type == 'aug':
                  self.augmented_clips.append({'filename': filename, 'video_id': video_id})
              else:

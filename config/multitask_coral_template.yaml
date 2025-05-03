@@ -3,7 +3,12 @@
 # --- Required --- 
 model_name: multitask_pain_stimulus_run_02  # Name for checkpoints and logs
 
-num_pain_classes: 5  # Number of ordinal pain levels (Syracuse)
+# Defines the number of pain classes and their boundaries based on raw scores (Syracuse: pain_level, ShoulderPain: vas)
+# Example: 5 classes (0: <=1, 1: >1 & <=3, 2: >3 & <=5, 3: >5 & <=7, 4: >7)
+# num_pain_classes will be derived as len(pain_class_cutoffs) + 1
+pain_class_cutoffs: [1.0, 3.0, 5.0, 7.0] # REQUIRED: List of upper boundaries for pain classes (must be sorted)
+
+# num_pain_classes: 5  # Removed: Now derived from pain_class_cutoffs
 num_stimulus_classes: 5  # Number of ordinal stimulus levels (BioVid)
 
 # Feature directory names (relative to the respective data paths provided via CLI)
