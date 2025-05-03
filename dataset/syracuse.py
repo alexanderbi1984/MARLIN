@@ -355,9 +355,9 @@ class SyracuseDataModule(LightningDataModule):
         self.augmented_clips = []
         self.video_ids.clear() # Clear if setup is called multiple times
         video_pain_levels = {} # Store {video_id: [list of pain levels for its original clips]}
-        filenames_in_meta = set(self.all_metadata.keys())
+        processed_files = set() # <<< Initialize processed_files HERE >>>
 
-        print(f"Processing {len(filenames_in_meta)} clips from metadata for SyracuseDataModule setup...")
+        print(f"Processing {len(self.all_metadata)} clips from metadata for SyracuseDataModule setup...")
         # <<< Initialize counters HERE >>>
         original_clips_processed = 0
         augmented_clips_processed = 0
@@ -365,10 +365,11 @@ class SyracuseDataModule(LightningDataModule):
         items_missing_pain = 0
         items_invalid_pain = 0
         # <<< End Initialization >>>
+        # processed_files = set() # <<< REMOVED: Not needed as dict keys are unique >>>
 
         for filename, clip_data in self.all_metadata.items():
             # Make clip_data mutable if needed (though assignment below should be fine)
-            if filename in processed_files: continue
+            # if filename in processed_files: continue # <<< REMOVED >>>
 
             video_id = clip_data.get('video_id')
             video_type = clip_data.get('video_type')
@@ -410,7 +411,7 @@ class SyracuseDataModule(LightningDataModule):
             else:
                 print(f"Warning: Unknown video_type '{video_type}' for clip {filename}. Skipping.")
 
-            processed_files.add(filename)
+            # processed_files.add(filename) # <<< REMOVED >>>
             self.video_ids.add(video_id) # Use instance variable
 
         print(f"Finished processing metadata:")
