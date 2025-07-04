@@ -45,6 +45,8 @@ Each output video will have the same name as its source subfolder with a .mp4 ex
 import os
 import subprocess
 from pathlib import Path
+import cv2
+import argparse
 
 def assemble_frames_to_video(input_dir, fps=30):
     """
@@ -108,6 +110,57 @@ def assemble_frames_to_video(input_dir, fps=30):
         else:
             print(f"No .bmp files found in {subfolder}")
 
+def assemble_frames(input_dir, output_video, fps=16, start_frame=888, num_frames=81):
+    # Get the first frame to determine video properties
+    first_frame_path = os.path.join(input_dir, f'frame_{start_frame:04d}.jpg')
+    if not os.path.exists(first_frame_path):
+        print(f"Error: Could not find frame {first_frame_path}")
+        return
+    
+    # Create a temporary file list for FFmpeg
+    temp_list = "temp_file_list.txt"
+    with open(temp_list, "w") as f:
+        for i in range(start_frame, start_frame + num_frames):
+            frame_path = os.path.join(input_dir, f'frame_{i:04d}.jpg')
+            if os.path.exists(frame_path):
+                f.write(f"file '{frame_path}'\n")
+            else:
+                print(f"Warning: Frame {frame_path} not found")
+                break
+    
+    # Construct FFmpeg command
+    ffmpeg_cmd = [
+        "ffmpeg",
+        "-y",  # Overwrite output file if it exists
+        "-f", "concat",
+        "-safe", "0",
+        "-i", temp_list,
+        "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",  # Force pixel format for Mac compatibility
+        "-r", str(fps),
+        "-crf", "23",  # Constant Rate Factor (quality)
+        output_video
+    ]
+    
+    try:
+        print("Creating video...")
+        subprocess.run(ffmpeg_cmd, check=True)
+        print(f"\nVideo creation complete! Saved to {output_video}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error creating video: {e}")
+    finally:
+        # Clean up temporary file
+        if os.path.exists(temp_list):
+            os.remove(temp_list)
+
 if __name__ == "__main__":
-    input_directory = r"C:\pain\syracus\syracuse_pain_fake_cont"
-    assemble_frames_to_video(input_directory) 
+    parser = argparse.ArgumentParser(description='Assemble frames into a video')
+    parser.add_argument('input_dir', help='Directory containing the frames')
+    parser.add_argument('output_video', help='Path for the output video file')
+    parser.add_argument('--fps', type=int, default=16, help='Frames per second (default: 16)')
+    parser.add_argument('--start_frame', type=int, default=16, help='Starting frame number (default: 0)')
+    parser.add_argument('--num_frames', type=int, default=81, help='Number of frames to include (default: 81)')
+    
+    args = parser.parse_args()
+    
+    assemble_frames(args.input_dir, args.output_video, args.fps, args.start_frame, args.num_frames) 

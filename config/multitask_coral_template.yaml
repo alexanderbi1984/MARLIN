@@ -1,12 +1,13 @@
 # config/multitask_coral_template.yaml
 
 # --- Required --- 
-model_name: multitask_pain_stimulus_run_02  # Name for checkpoints and logs
+model_name: multitask_pain_stimulus_run_15  # Name for checkpoints and logs
 
 # Defines the number of pain classes and their boundaries based on raw scores (Syracuse: pain_level, ShoulderPain: vas)
 # Example: 5 classes (0: <=1, 1: >1 & <=3, 2: >3 & <=5, 3: >5 & <=7, 4: >7)
 # num_pain_classes will be derived as len(pain_class_cutoffs) + 1
-pain_class_cutoffs: [1.0, 3.0, 5.0, 7.0] # REQUIRED: List of upper boundaries for pain classes (must be sorted)
+pain_class_cutoffs: [4.0, 6.0] # REQUIRED: List of upper boundaries for pain classes (must be sorted)
+#pain_class_cutoffs: [1.0, 3.0, 5.0, 7.0] # REQUIRED: List of upper boundaries for pain classes (must be sorted)
 
 # num_pain_classes: 5  # Removed: Now derived from pain_class_cutoffs
 num_stimulus_classes: 5  # Number of ordinal stimulus levels (BioVid)
@@ -17,14 +18,14 @@ biovid_feature_dir: multimodal_marlin_base   # Example: Feature directory for Bi
 
 temporal_reduction: mean  # How to aggregate features temporally (mean, max, min, none)
 
-learning_rate: 1.0e-5      # Learning rate for the optimizer
+learning_rate: 3.0e-5      # Learning rate for the optimizer
 
 # --- Optional: Model & Loss Weights --- 
 pain_loss_weight: 1.0  # Weight for the pain task loss in the combined loss
 stim_loss_weight: 0.5  # Weight for the stimulus task loss in the combined loss
 
 use_stim_weight_scheduler: true
-initial_stim_weight: 50.0
+initial_stim_weight: 10.0
 stim_weight_decay_epochs: 100
 stim_weight_sched_type: "cosine"
 
@@ -34,7 +35,7 @@ balance_pain_classes: true  # Whether to use weighted sampling to balance pain c
 
 # Optional: Define hidden layers for the shared MLP encoder
 # If null or empty, a single Linear layer is used.
-encoder_hidden_dims: [512,256] # Example: [hidden1_size, hidden2_size]
+encoder_hidden_dims: [256] # Example: [hidden1_size, hidden2_size]
 # encoder_hidden_dims: null
 
 # --- Optional: Data Balancing --- 
@@ -48,4 +49,4 @@ balance_stimulus_classes: false # Set to true to apply class balancing within th
 label_smoothing: 0.05  # Typical values are 0.05 to 0.2 
 use_distance_penalty: true
 focal_gamma: 2.0  # Focal loss parameter (default is 2.0)
-patience: 200  # Number of epochs to wait before stopping training if no improvement
+patience: 100  # Number of epochs to wait before stopping training if no improvement

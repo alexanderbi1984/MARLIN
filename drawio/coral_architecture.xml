@@ -1,0 +1,233 @@
+<mxfile host="app.diagrams.net" modified="2023-06-10T12:00:00.000Z" agent="5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" etag="abc123" version="14.7.7" type="device">
+  <diagram id="coral_architecture_diagram" name="CORAL Architecture">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1000" pageHeight="600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Input -->
+        <mxCell id="input_batch" value="Input Batch&#xa;(features, true_labels)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="100" y="100" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Shared Step -->
+        <mxCell id="shared_step" value="_shared_step" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="300" y="100" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Level Conversion -->
+        <mxCell id="level_conversion" value="levels_from_labelbatch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="300" y="200" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Model Group -->
+        <mxCell id="model_group" value="Model Architecture" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;dashed=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;dashed=1;verticalAlign=top;" />
+          <mxGeometry x="500" y="80" width="280" height="200" as="geometry" />
+        </mxCell>
+        
+        <!-- Linear Layer -->
+        <mxCell id="linear_layer" value="Linear Layer&#xa;(input_dim → hidden_dim)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="520" y="120" width="240" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- ReLU -->
+        <mxCell id="relu" value="ReLU" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="520" y="170" width="240" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- Dropout -->
+        <mxCell id="dropout" value="Dropout (dropout_rate)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="520" y="210" width="240" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- CORAL Layer -->
+        <mxCell id="coral_layer" value="CoralLayer&#xa;(hidden_dim → num_classes)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="520" y="250" width="240" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Forward Pass -->
+        <mxCell id="forward_pass" value="Forward Pass" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="300" y="300" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- CORAL Loss -->
+        <mxCell id="coral_loss" value="CORAL Loss&#xa;coral_loss(logits, levels)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="180" y="400" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Prediction -->
+        <mxCell id="prediction" value="Prediction&#xa;sigmoid → proba_to_label" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="420" y="400" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Metrics -->
+        <mxCell id="metrics" value="Compute Metrics&#xa;(MAE, Accuracy)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="300" y="500" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Step Type Decision -->
+        <mxCell id="step_type" value="Step Type?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="600" y="490" width="140" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- Training -->
+        <mxCell id="training" value="Training Step&#xa;Log train_loss, train_mae, train_acc" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="480" y="600" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Validation -->
+        <mxCell id="validation" value="Validation Step&#xa;Log val_loss, val_mae, val_acc" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="640" y="600" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Testing -->
+        <mxCell id="testing" value="Test Step&#xa;Log test_loss, test_mae, test_acc" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="800" y="600" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Optimizer -->
+        <mxCell id="optimizer" value="Adam Optimizer&#xa;Update Parameters" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="480" y="700" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- LR Scheduler -->
+        <mxCell id="lr_scheduler" value="ReduceLROnPlateau&#xa;(monitor val_mae)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=14;" />
+          <mxGeometry x="480" y="800" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Connections -->
+        <mxCell id="conn1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="input_batch" target="shared_step">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="shared_step" target="level_conversion">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="level_conversion" target="forward_pass">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="forward_pass" target="model_group">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="linear_layer" target="relu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="relu" target="dropout">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="dropout" target="coral_layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="forward_pass" target="coral_loss">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="335" y="380" />
+              <mxPoint x="250" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="forward_pass" target="prediction">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="405" y="380" />
+              <mxPoint x="490" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="coral_loss" target="metrics">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="250" y="480" />
+              <mxPoint x="335" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="prediction" target="metrics">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="490" y="480" />
+              <mxPoint x="405" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="metrics" target="step_type">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="step_type" target="training">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="635" y="580" />
+              <mxPoint x="550" y="580" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="step_type" target="validation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="step_type" target="testing">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="705" y="580" />
+              <mxPoint x="870" y="580" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="conn16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="training" target="optimizer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="conn17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="optimizer" target="lr_scheduler">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Labels -->
+        <mxCell id="label1" value="Training" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxCell style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=12;" />
+          <mxGeometry x="570" y="570" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label2" value="Validation" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxCell style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=12;" />
+          <mxGeometry x="680" y="570" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="label3" value="Testing" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxCell style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=12;" />
+          <mxGeometry x="790" y="570" width="60" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile> 
