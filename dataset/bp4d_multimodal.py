@@ -97,6 +97,9 @@ class BP4DMultiModal(Dataset):
 
         self.mask_strategy = mask_strategy
         self.metadata = pd.read_csv(os.path.join(root_dir, f"{split}_set.csv"))
+        if 'path' in self.metadata.columns:
+            # Correctly handle paths with single backslashes from Windows-generated CSVs
+            self.metadata['path'] = self.metadata['path'].str.replace('\\', '/', regex=False)
         if take_num:
             self.metadata = self.metadata.iloc[:take_num]
 

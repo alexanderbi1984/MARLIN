@@ -1,5 +1,5 @@
 model_name: "biovid_marlin_multiclass_lp"
-backbone: "marlin_vit_base_ytf"
+backbone: "multimodal_marlin_base"
 dataset: "biovid"
 task: "multiclass"
 temporal_reduction: "mean"

@@ -1,11 +1,11 @@
-model_name: "marlin_vit_base"
+model_name: "marlin_vit_base_random_mask"
 img_size: 224
 patch_size: 16
 clip_frames: 16
 tubelet_size: 2
-mask_strategy: "fasking"
+mask_strategy: "random"
 temporal_sample_rate: 2
-mask_percentage_target: 0.9
+mask_percentage_target: 0.5
 mlp_ratio: 4.0
 qkv_bias: true
 qk_scale: null
@@ -18,14 +18,14 @@ feature_dir: "Marlin_Features_Vit_Base"
 adv_loss: true
 adv_weight: 0.01
 gp_weight: 0.0
-d_steps: 1
+d_steps: 2
 g_steps: 1
 rgb_weight: 1.0
 thermal_weight: 1.0
 depth_weight: 1.0
 
 learning_rate:
-  base: 1.5e-4
+  base: 1.0e-4
   warmup: 1.0e-6
   min: 1.0e-5
   warmup_epochs: 40

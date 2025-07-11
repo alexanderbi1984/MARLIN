@@ -8,6 +8,8 @@ from marlin_pytorch.util import read_yaml
 from util.misc import load_official_pretrain_model
 import os
 import platform
+from pytorch_lightning.loggers import TensorBoardLogger
+import datetime
 
 parser = argparse.ArgumentParser("MULTIMODALMARLIN pretraining")
 parser.add_argument("--config", type=str)
@@ -15,7 +17,7 @@ parser.add_argument("--data_dir", type=str)
 parser.add_argument("--n_gpus", type=int, default=1)
 parser.add_argument("--num_workers", type=int, default=8)
 parser.add_argument("--batch_size", type=int, default=16)
-parser.add_argument("--epochs", type=int, default=2000)
+parser.add_argument("--epochs", type=int, default=20000)
 parser.add_argument("--official_pretrained", type=str, default=None)
 parser.add_argument("--resume", type=str, default=None)
 
@@ -219,7 +221,7 @@ if __name__ == '__main__':
     #     print(f"Trainer configured with: accelerator={accelerator}, devices={devices}, strategy={strategy}")
     #     return trainer
 
-    def configure_trainer(n_gpus, max_epochs, model_name):
+    def configure_trainer(n_gpus, max_epochs, model_name, log_name):
         # Check the operating system
         is_windows = platform.system() == "Windows"
 
@@ -252,12 +254,15 @@ if __name__ == '__main__':
             mode="min"
         )
 
+        # Create TensorBoardLogger with custom name
+        logger = TensorBoardLogger("lightning_logs", name=log_name)
+
         # Create and return trainer
         trainer = Trainer(
             log_every_n_steps=1,
             devices=devices,
             accelerator=accelerator,
-            logger=True,
+            logger=logger,
             precision=32,
             max_epochs=max_epochs,
             strategy=strategy,
@@ -272,6 +277,7 @@ if __name__ == '__main__':
         n_gpus=n_gpus,
         max_epochs=max_epochs,
         model_name="multimodal_marlin",
+        log_name=f"{model_name}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
     )
     if resume_ckpt:  # Check if a checkpoint path is provided
         trainer.fit(model, dm, ckpt_path=resume_ckpt)  # Resume training from the checkpoint

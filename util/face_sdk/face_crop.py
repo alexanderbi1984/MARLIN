@@ -134,6 +134,12 @@ def process_images(image_path: str, output_path: str, max_workers: int = 8):
 def process_single_image_set(image_set: tuple) -> None:
     texture_path, depth_path, thermal_path, save_dir = image_set
 
+    # Normalize path separators for consistency, especially if paths originated from Windows
+    texture_path = texture_path.replace('\\', '/')
+    depth_path = depth_path.replace('\\', '/')
+    thermal_path = thermal_path.replace('\\', '/')
+    save_dir = save_dir.replace('\\', '/')
+
     # Check if all modalities are present
     if not all([os.path.exists(texture_path), os.path.exists(depth_path), os.path.exists(thermal_path)]):
         return
