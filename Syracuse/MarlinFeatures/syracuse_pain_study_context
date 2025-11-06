@@ -1,0 +1,161 @@
+1. The meta file path of the marlin features is '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2/clips_json.json'. And the structure of the item in is like "IMG_0071_1_aligned_clip_010.npy": {
+    "filename": "IMG_0071_1_aligned_clip_010.npy",
+    "video_id": "0071",
+    "clip_id": "010",
+    "video_type": "aug",
+    "meta_info": {
+      "file_name": "IMG_0071.MP4",
+      "creation_time": "2024-09-04T14:21:00",
+      "duration": "00:01:01.700000",
+      "subject_id": 28,
+      "pain_level": 3.0,
+      "visit_type": "post",
+      "comment": null,
+      "outcome": "negative",
+      "visit_number": 1.0,
+      "class_3": 1.0,
+      "class_4": 1.0,
+      "class_5": 1.0
+    }
+2. the file name is the name of the file which stores the marlin features.
+3. Please note that there are some non integer values in  pain_level, you should pay attention. The range of pain level is from 0 to 10.
+4. The optional values for col visit_type are 1st-pre, 1st-post, 2nd-pre and 2nd-post. Here pre and post means before treatment and after treatment.
+5a. The study's Interest One is  how much pain level is reduced after the treatment. To be more specific, whther the reduction of the pain level is detectable using the features obatined from the facial expression videos.
+5b. The study's Interest Two is how to predict the pain level.
+6. The videos last about 1 minute for each and then the 5-second clips are generated from the video by slicing with 1 second overlap.
+7. Each subject has at most 4 videos (1st-pre,1st-post, 2nd-pre,2nd-post), but not necessary has all 4 videos. There is a treatment before pre and post. 1st and 2nd means two separate sessions which are taken on different date.
+8. The outcome cols store the binary ground_truth about the pain reduction induced by the differences of the pain_level of pre and post. And the threshold is 4 which is chosen based on the distribution of the data we have so far.
+9. The pain level is self_reported.
+10. The file name col stores the name of the video files, like IMG_xxxx.MP4 where xx is a serial number without any meaning for our study. 
+11. We don't work directly with the video files. Instead we work with the features which are obtained from a pretrained video autoencoder. 
+12. The features are fixed 768 dimentions and each feature file is associated to a clip of a video with name like "IMG_0111_clip_014_aligned.npy" where IMG_0111 denotes the clip is from the video IMG_0111.MP4 and clip_014 denotes it is the 14th clip.
+13. The path to the features files is '/Users/hd927/Documents/syracuse_pain_research/multimodal_marlin_base 2'
+13a. regarding to how to load the features and calculate the diff, refer to the /Users/hd927/Documents/MARLIN/Syracuse/syracuse_dataset.py
+13b. The path to the feature selection result is on /Users/hd927/Documents/MARLIN/outcome_analysis_results/marlin_clip_outcome_analysis.csv and its col names are 
+feature_idx	effect_size	p_value	pos_mean_change	neg_mean_change	pos_std_change	neg_std_change	p_value_fdr
+Dataset Statistics (as of [current_date]):
+14. Dataset Overview:
+    - Total videos: 97
+    - Unique subjects: 37 (~2.6 videos per subject)
+    - Visit type distribution:
+      * 1st-pre: 28 videos
+      * 1st-post: 26 videos
+      * 2nd-pre: 2 videos
+      * 2nd-post: 13 videos
+      * Not sure: 1 video
+      * Missing: 27 videos
+
+15. Pain Level Statistics:
+    - Range: 0 to 10
+    - Mean: 4.87
+    - Median: 5.0
+    - Data quality issues:
+      * Missing values: 22
+      * Non-standard entries found (e.g., 'improved', 'less', '7or1', '5--6')
+
+16. Data Completeness:
+    - Complete columns: file_name, creation_time, duration
+    - Incomplete columns:
+      * subject_id: 3 missing
+      * pain_level: 22 missing
+      * visit_type: 27 missing
+      * outcome: 45 missing
+      * comment: 77 missing (most incomplete)
+
+17. Treatment Outcomes:
+    - Positive (significant reduction): 18 cases
+    - Negative (no significant reduction): 34 cases
+    - Missing outcomes: 45 cases
+
+
+18. Pain Change Distribution Analysis:
+    - Total complete pre-post pairs: 24
+    - Overall statistics:
+      * Mean change: 3.19 points
+      * Median change: 3.00 points
+      * Standard deviation: 2.65 points
+      * Range: 0 to 10 points
+    - Distribution of changes:
+      * 0.0 points: 5 cases (no improvement)
+      * 0.5 points: 1 case
+      * 1.0 point: 1 case
+      * 2.0 points: 2 cases
+      * 3.0 points: 6 cases (most common)
+      * 4.0 points: 4 cases
+      * 6.0 points: 2 cases
+      * 7.0 points: 1 case
+      * 8.0 points: 1 case
+      * 10.0 points: 1 case (complete improvement)
+    - Categorized improvements:
+      * No improvement (0): 5 cases (21%)
+      * Small improvement (1-3): 10 cases (42%)
+      * Significant improvement (≥4): 8 cases (33%)
+      * Complete improvement (10): 1 case (4%)
+    - Visit-specific analysis:
+      * 1st visits (21 pairs):
+        - Mean change: 3.31 points
+        - Range: 0 to 10 points
+      * 2nd visits (3 pairs):
+        - Mean change: 2.33 points
+        - Range: 1 to 3 points 
+
+
+19. The AU feature files are stored in "C:\pain\syracus\AU_features" or /Users/hd927/Documents/syracuse_pain_research/AUFeatures/processed, and the naming convention for the file is like processed_IMG_xxxx.csv where xxx is a serial number without any meaning for our study.
+20. The col names are frame	 face_id	 timestamp	 confidence	 success	 AU01_r	 AU02_r	 AU04_r	 AU05_r	 AU06_r	 AU07_r	 AU09_r	 AU10_r	 AU12_r	 AU14_r	 AU15_r	 AU17_r	 AU20_r	 AU23_r	 AU25_r	 AU26_r	 AU45_r	 AU01_c	 AU02_c	 AU04_c	 AU05_c	 AU06_c	 AU07_c	 AU09_c	 AU10_c	 AU12_c	 AU14_c	 AU15_c	 AU17_c	 AU20_c	 AU23_c	 AU25_c	 AU26_c	 AU28_c	 AU45_c
+21. We discard any rows with confidence<0.9 or success is not 1. The naming convention of the col names AUxx_y is like where xx is the number of AU, y is either r or c, r stands for real number ranging from 0 to 5 and c stands for category with value 0 or 1.
+
+22. The Micro-expression feature files are stored in /Users/hd927/Documents/syracuse_pain_research/MicroExprFeatures, and the naming convention for the file is like IMG_xxxx.csv where xxxx is a serial number without any meaning for our study.
+23. The col names are frame	timestamp	predicted_emotion	logit_Anger	prob_Anger	logit_Contempt	prob_Contempt	logit_Disgust	prob_Disgust	logit_Fear	prob_Fear	logit_Happiness	prob_Happiness	logit_Neutral	prob_Neutral	logit_Sadness	prob_Sadness	logit_Surprise	prob_Surprise
+
+24. Common Tasks and Methods for Syracuse Data Analysis:
+
+Tasks:
+1. Binary Classification Task:
+   - Predict whether pain reduction is significant (≥4 points)
+   - Target: Binary outcome (0: no significant reduction, 1: significant reduction)
+   - Metrics: Accuracy and AUC
+
+2. Pain Level Prediction Task:
+   - Predict the pain level directly
+   - Target: pain_level (range: 0 to 10)
+   - Metric: R² score
+
+3. Absolute Pain Reduction Task:
+   - Predict the exact amount of pain reduction
+   - Target: pre_pain - post_pain (range: 0 to 10)
+   - Metric: R² score
+
+4. Percentage Pain Reduction Task:
+   - Predict the relative pain reduction
+   - Target: (pre_pain - post_pain) / pre_pain * 100 (range: 0 to 100)
+   - Metric: R² score
+
+Common Methods:
+1. Feature Engineering:
+   - Average features along time axis
+   - Calculate differences between post and pre conditions
+   - Scale features after taking differences
+
+2. Models:
+   - Binary Classification:
+     * Logistic Regression (max_iter=1000)
+   - Regression:
+     * Linear Regression
+     * Ridge Regression (alpha=1.0)
+     * Lasso Regression (alpha=1.0)
+     * GAM variants:
+       - 4 splines
+       - 8 splines
+       - 4 splines with lambda=0.1
+       - 4 splines with lambda=10
+
+3. Validation:
+   - 3-fold cross-validation
+   - Random splitting with seed 42
+   - Results reported as mean ± standard deviation
+
+4. Feature Sources Used:
+   - MARLIN features (768 dimensions)
+   - Action Unit (AU) features
+   - Modified PSPI score
+   - Micro-expression features

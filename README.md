@@ -296,3 +296,213 @@ If you find this work useful for your research, please consider citing it.
 
 Some code about model is based on [MCG-NJU/VideoMAE](https://github.com/MCG-NJU/VideoMAE). The code related to preprocessing
 is borrowed from [JDAI-CV/FaceX-Zoo](https://github.com/JDAI-CV/FaceX-Zoo).
+
+# MARLIN Feature Analysis
+
+This repository contains tools for analyzing and visualizing features from the MARLIN model, particularly focusing on comparing pre and post treatment conditions.
+
+## Feature Visualization and Analysis
+
+### Scripts Overview
+
+1. `marlin_feature_visualization.py`: Visualizes how specific MARLIN features respond to video inputs
+2. `compare_pre_post_features.py`: Creates side-by-side comparisons of how features differ between pre and post treatment videos
+3. `distribution_test.py`: Analyzes statistical differences in features between pre and post conditions
+
+### Feature Visualization
+
+The `marlin_feature_visualization.py` script provides tools to visualize how specific MARLIN features respond to video inputs. It generates heatmaps showing which parts of the video most strongly activate particular features.
+
+```bash
+python marlin_feature_visualization.py \
+    --checkpoint_path /path/to/model.ckpt \
+    --video_path /path/to/video.mp4 \
+    --features 397 231 490 482 456 \
+    --output_dir feature_visualizations
+```
+
+Key parameters:
+- `--checkpoint_path`: Path to the MARLIN model checkpoint
+- `--video_path`: Path to the video file to analyze
+- `--features`: List of feature indices to visualize (default: [397, 231, 490, 482, 456])
+- `--output_dir`: Directory to save visualizations
+- `--fps`: Frame rate for output comparison video (default: 30)
+- `--skip_comparison_video`: Skip creating the feature comparison video
+- `--use_standard_marlin`: Use standard MARLIN instead of MultiModalMarlin
+
+### Pre vs Post Treatment Comparison
+
+The `compare_pre_post_features.py` script creates side-by-side comparisons of how features differ between pre and post treatment videos. For each feature, it generates a visualization showing:
+- Pre-treatment original frames
+- Pre-treatment feature activation heatmaps
+- Post-treatment original frames
+- Post-treatment feature activation heatmaps
+
+```bash
+python compare_pre_post_features.py \
+    --checkpoint_path /path/to/model.ckpt \
+    --pre_video /path/to/pre_treatment.mp4 \
+    --post_video /path/to/post_treatment.mp4 \
+    --features 397 231 490 482 456 \
+    --output_dir pre_post_comparisons
+```
+
+Key parameters:
+- `--checkpoint_path`: Path to the MARLIN model checkpoint
+- `--pre_video`: Path to the pre-treatment video clip
+- `--post_video`: Path to the post-treatment video clip
+- `--features`: List of feature indices to visualize (default: [397, 231, 490, 482, 456])
+- `--output_dir`: Directory to save comparisons
+- `--model_name`: MARLIN model name (default: multimodal_marlin_base)
+
+### Statistical Analysis
+
+The `distribution_test.py` script performs statistical analysis of features between pre and post treatment conditions. It includes:
+- Video-level analysis accounting for dependencies
+- Multiple testing correction using FDR
+- Effect size calculations
+- Feature importance analysis
+
+```bash
+python distribution_test.py
+```
+
+### Outcome-Based Feature Analysis
+
+This section presents the results of analyzing MARLIN features based on treatment outcomes. The analysis focuses on identifying features that significantly differ between successful and unsuccessful treatments.
+
+### Analysis Overview
+
+The analysis was performed at two levels:
+1. **Clip-level**: Analyzing individual video clips
+2. **Video-level**: Analyzing averaged features across all clips in a video
+
+### Statistical Results
+
+#### 1. Mann-Whitney U Test Results
+
+**Clip-level Analysis**:
+- 434 features (56.5%) showed significant differences (p < 0.05) before correction
+- 387 features (50.4%) remained significant after FDR correction
+- Top 5 most significant features:
+  - Feature 662: p-value = 0.0000, effect size = 1.113
+  - Feature 316: p-value = 0.0000, effect size = 1.089
+  - Feature 629: p-value = 0.0000, effect size = 1.087
+  - Feature 143: p-value = 0.0000, effect size = 1.085
+  - Feature 587: p-value = 0.0000, effect size = 1.082
+
+**Video-level Analysis**:
+- 22 features (2.9%) showed significance before correction
+- No features remained significant after FDR correction
+- Higher p-values (> 0.70) indicate less reliable differences
+
+#### 2. Effect Size Analysis (Cohen's d)
+
+**Clip-level Analysis**:
+- Large effect sizes (|d| > 0.8): 23 features (3.0%)
+- Medium effect sizes (0.5 < |d| ≤ 0.8): 87 features (11.3%)
+- Small effect sizes (|d| ≤ 0.5): 658 features (85.7%)
+
+**Video-level Analysis**:
+- Large effect sizes (|d| > 0.8): 33 features (4.3%)
+- Medium effect sizes (0.5 < |d| ≤ 0.8): 116 features (15.1%)
+- Small effect sizes (|d| ≤ 0.5): 619 features (80.6%)
+
+#### 3. MMD Test Results
+- Clip-level: MMD = -0.0012, p = 0.5240
+- Video-level: MMD = -0.0696, p = 0.9900
+
+### Key Findings
+
+1. **Feature Discrimination**:
+   - Individual features show stronger and more reliable differences at the clip level
+   - Feature 662 consistently shows the strongest effect size across both levels
+   - The top discriminative features are consistent between clip and video levels
+
+2. **Statistical Reliability**:
+   - Clip-level analysis provides more reliable statistical inference
+   - Video-level analysis shows larger effect sizes but lower statistical reliability
+   - The negative MMD values suggest similar overall distributions between outcomes
+
+3. **Feature Importance**:
+   - A small subset of features (top 5) shows very strong discrimination
+   - Most features show small effect sizes, suggesting complex interactions
+   - The consistent top features across levels indicate robust biomarkers
+
+### Recommendations
+
+1. **Analysis Level**:
+   - Focus on clip-level analysis for more reliable statistical inference
+   - Use video-level analysis for exploratory purposes or when sample size is limited
+
+2. **Feature Selection**:
+   - Prioritize the top 5 features (662, 316, 629, 143, 587) for further investigation
+   - Consider feature interactions and combinations for better discrimination
+
+3. **Methodological Improvements**:
+   - Consider using multiple clips per video to increase statistical power
+   - Implement multivariate analysis approaches to capture feature interactions
+   - Explore feature combinations for improved outcome prediction
+
+### Usage
+
+To run the outcome-based analysis:
+
+```bash
+python outcome_based_analysis.py \
+    --features_dir /path/to/features \
+    --meta_path /path/to/metadata.xlsx \
+    --output_dir outcome_analysis_results
+```
+
+The analysis will generate:
+- Statistical test results
+- Feature importance visualizations
+- Distribution plots for top features
+- Heatmaps of feature changes
+- PCA and UMAP visualizations
+
+### Output Files
+
+The visualization scripts generate several types of output files:
+
+1. Feature Visualizations:
+   - Individual feature heatmaps showing activation patterns
+   - Comparison videos showing feature responses over time
+   - High-resolution PNG files for each visualization
+
+2. Pre vs Post Comparisons:
+   - Combined visualizations showing pre and post differences
+   - One high-resolution PNG file per feature (4-row layout)
+   - Clear labeling of frames and heatmaps
+
+3. Statistical Analysis:
+   - Summary of significant features
+   - Effect size measurements
+   - P-values and FDR-corrected results
+
+### Implementation Details
+
+The visualization tools use gradient-based class activation mapping (Grad-CAM) to highlight which parts of the video are most important for each feature. Key technical aspects:
+
+1. Feature Extraction:
+   - Uses the last layer of the MARLIN encoder
+   - Computes gradients with respect to specific features
+   - Generates class activation maps
+
+2. Video Processing:
+   - Handles variable-length videos
+   - Automatically pads or trims to match model requirements
+   - Maintains proper temporal and spatial dimensions
+
+3. Visualization:
+   - Uses matplotlib for high-quality figures
+   - Employs cv2 for heatmap generation
+   - Supports both individual frame and temporal analysis
+
+### Notes
+
+- The scripts automatically handle video preprocessing to match MARLIN model requirements
+- Visualizations are saved in high resolution (300 DPI) for publication quality
+- The comparison script is particularly useful for understanding treatment effects
+- All scripts include progress bars and informative console output

@@ -1,0 +1,13 @@
+{
+    "workbench.colorTheme": "Dracula",
+    "editor.fontSize": 14,
+    "editor.lineHeight": 1.5,
+    "editor.fontFamily": "Consolas, 'Courier New', monospace",
+    "editor.cursorStyle": "line",
+    "editor.cursorBlinking": "smooth",
+    "editor.renderWhitespace": "selection",
+    "editor.minimap.enabled": true,
+    "editor.wordWrap": "on",
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python",
+    "python.terminal.activateEnvironment": true
+} 

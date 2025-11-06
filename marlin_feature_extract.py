@@ -1,3 +1,75 @@
+"""
+marlin_feature_extract.py
+
+A utility script for extracting features from videos using the MARLIN (Masked Autoencoder 
+for facial video Representation LearnINg) model. This script processes video files in bulk,
+extracting visual features that can be used for downstream tasks like emotion recognition
+or facial expression analysis.
+
+Key Features:
+- Extract features from videos using pre-trained MARLIN models
+- Support for both standard MARLIN and multimodal MARLIN models
+- Batch processing of multiple videos
+- Configurable feature extraction parameters
+- Error handling to continue processing despite individual video failures
+- Save features as NumPy arrays for easy loading in other applications
+
+Functions:
+    The script is primarily designed to be run as a standalone program, with the main
+    functionality implemented in the __main__ block. It processes all video files in a
+    specified directory, extracts features using the MARLIN model, and saves them as
+    .npy files.
+
+Command Line Usage:
+    python marlin_feature_extract.py --backbone MODEL_NAME --data_dir VIDEO_DIR 
+                                    --ckpt CHECKPOINT_PATH --keep_seq --output_dir FEATURE_DIR
+
+Arguments:
+    --backbone: Model architecture to use (default: "marlin_vit_base_ytf")
+    --data_dir: Directory containing video files (default: "C:\pain\BioVid_224_video")
+    --ckpt: Path to model checkpoint (default: "ckpt\multimodal_marlin\last-v1_final.ckpt")
+    --keep_seq: Flag to maintain sequential features (default: False)
+    --output_dir: Directory to save extracted features (default: same as data_dir)
+
+Model Options:
+    1. Standard MARLIN model:
+       - Backbone: "marlin_vit_base_ytf"
+       - Loaded from online sources
+       - Suitable for general facial video feature extraction
+
+    2. Multimodal MARLIN model:
+       - Backbone: "multimodal_marlin_base"
+       - Loaded from local checkpoint
+       - Enhanced for multimodal feature extraction
+
+Feature Extraction Parameters:
+    - sample_rate: Controls frame sampling frequency (based on model's tubelet_size)
+    - stride: Determines overlap between consecutive feature extractions
+    - keep_seq: Option to maintain sequential nature of features
+    - crop_face: Option to crop faces from frames (default: False)
+
+Output:
+    - Creates a subdirectory named after the model backbone in the data directory
+    - Saves each video's features as a .npy file with the same base name as the video
+    - Features are stored as NumPy arrays with shape (n_segments, feature_dim)
+
+Dependencies:
+    - PyTorch
+    - NumPy
+    - MARLIN PyTorch implementation
+    - tqdm (for progress bars)
+
+Example:
+    To extract features from all videos in a directory using the standard MARLIN model:
+    python marlin_feature_extract.py --data_dir ./videos --output_dir ./features
+
+Notes:
+    - If a video fails to process, an empty feature array is created and processing continues
+    - The script automatically creates the output directory if it doesn't exist
+    - Features are extracted on GPU if available, otherwise on CPU
+    - The script processes videos in sorted order for reproducibility
+"""
+
 import argparse
 import os
 import sys

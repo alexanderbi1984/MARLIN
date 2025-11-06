@@ -1,0 +1,6 @@
+numpy>=1.21.0
+scikit-learn>=0.24.2
+umap-learn>=0.5.2
+plotly>=5.3.1
+tqdm>=4.62.3
+openpyxl>=3.0.0  # For Excel file support 

@@ -1,6 +1,52 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,pycharm
 
+### Python Virtual Environment ###
+venv/
+env/
+.env/
+.venv/
+
+### Analysis Results ###
+outcome_analysis_results/
+analysis_results/
+results/
+*.csv
+*.xlsx
+*.xls
+*.json
+*.pkl
+*.npy
+*.npz
+*.h5
+*.hdf5
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.model
+*.weights
+*.log
+*.txt
+*.joblib
+*.png
+!requirements.txt
+!version.txt
+!LICENSE
+!README.md
+!CITATION.cff
+!MODEL_ZOO.md
+
+# Syracuse specific ignores
+Syracuse/**/classification_results/*.png
+Syracuse/**/classification_results/*.csv
+Syracuse/**/classification_results/*.joblib
+Syracuse/**/classification_results/model.joblib
+Syracuse/**/results/*.png
+Syracuse/**/results/*.csv
+Syracuse/**/results/*.joblib
+Syracuse/**/results/model.joblib
+
 ### PyCharm ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
@@ -270,3 +316,68 @@ logs
 *.ckpt
 *.pt
 lightning_logs
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Local development settings
+.env
+.env.local
+
+# Logs
+*.log
+
+# Data files
+*.npy
+*.npz
+*.pkl
+*.h5
+*.hdf5
+*.csv
+*.json
+!dataset_meta/*.json
+!Syracuse/binary_outcome_classification/data/pairs_metadata.json
+!Syracuse/binary_outcome_classification/data/feature_diffs.npy
+!Syracuse/binary_outcome_classification/data/feature_diff_stats.csv
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

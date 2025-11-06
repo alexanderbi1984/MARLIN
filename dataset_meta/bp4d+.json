@@ -1,0 +1,1950 @@
+{
+    "clips": {
+        "F001_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F001bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F002_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F002bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F003_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F003bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F004_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F004bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F005_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F005bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F006_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F006bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F007_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F007bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F008_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F008bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F009_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F009bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F010_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F010bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F011_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F011bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F012_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F012bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F013_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F013bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F014_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "F014bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "F015_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F015bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F016_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F016bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F017_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F017bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F018_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F018bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F019_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F019bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F020_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "F020bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "F021_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F021bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F022_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F022bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F023_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F023bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F024_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F024bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F025_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F025bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F026_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "F026bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "F027_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F027bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F028_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F028bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F029_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F029bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F030_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F030bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F031_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F031bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F032_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F032bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F033_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F033bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F034_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F034bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F035_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "F035bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "F036_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F036bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F037_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F037bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F038_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "F038bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "F039_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F039bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F040_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F040bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F041_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F041bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F042_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F042bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F043_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F043bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F044_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F044bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F045_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F045bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F046_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F046bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F047_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F047bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F048_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F048bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F049_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "F049bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "F050_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F050bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F051_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F051bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F052_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "F052bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "F053_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F053bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F054_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F054bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F055_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F055bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F056_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1.0,
+                    "5": 0
+                },
+                "subject_id": "F056bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 1
+            }
+        },
+        "F057_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "F057bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "F058_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F058bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F059_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F059bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F060_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "F060bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "F061_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "F061bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "F062_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F062bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F063_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "F063bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "F064_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F064bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F065_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "F065bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "F066_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F066bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F067_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F067bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F068_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "F068bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "F069_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F069bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F070_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F070bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F071_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "F071bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "F072_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "F072bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "F073_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F073bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F074_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "F074bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "F075_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F075bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F076_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F076bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F077_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F077bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "F078_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F078bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F079_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F079bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F080_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "F080bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "F082_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "F082bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M001_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M001bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M002_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M002bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M003_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "M003bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "M004_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M004bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M005_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M005bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M006_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M006bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M007_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M007bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M008_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M008bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M009_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "M009bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "M010_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1.0,
+                    "5": 0
+                },
+                "subject_id": "M010bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 1
+            }
+        },
+        "M011_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "M011bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "M012_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M012bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M013_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M013bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M014_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M014bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M015_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M015bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M016_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M016bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M017_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M017bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M018_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M018bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M019_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M019bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M020_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M020bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M021_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M021bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M022_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M022bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M023_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M023bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M024_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M024bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M025_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M025bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M026_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1.0,
+                    "5": 0
+                },
+                "subject_id": "M026bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 1
+            }
+        },
+        "M027_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M027bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M028_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M028bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M029_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M029bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M030_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M030bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M031_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M031bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M032_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M032bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M033_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M033bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M034_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M034bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M035_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M035bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M036_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M036bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M037_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M037bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M038_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M038bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M039_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M039bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M040_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M040bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M041_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M041bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M042_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 0.0,
+                    "5": 0
+                },
+                "subject_id": "M042bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 0
+            }
+        },
+        "M043_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "M043bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "M044_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M044bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M045_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M045bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M046_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M046bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M047_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M047bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M048_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M048bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M049_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M049bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M050_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M050bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M051_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "M051bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        },
+        "M052_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M052bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M053_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 4.0,
+                    "5": 3.0
+                },
+                "subject_id": "M053bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 4
+            }
+        },
+        "M054_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M054bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M055_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 3.0,
+                    "5": 2.0
+                },
+                "subject_id": "M055bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 3
+            }
+        },
+        "M056_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 1.0,
+                    "5": 0
+                },
+                "subject_id": "M056bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 1
+            }
+        },
+        "M057_11.avi": {
+            "attributes": {
+                "binary": 1,
+                "multiclass": {
+                    "6": 5.0,
+                    "5": 4.0
+                },
+                "subject_id": "M057bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 5
+            }
+        },
+        "M058_11.avi": {
+            "attributes": {
+                "binary": 0,
+                "multiclass": {
+                    "6": 2.0,
+                    "5": 1.0
+                },
+                "subject_id": "M058bp4d",
+                "sex": "",
+                "age": "",
+                "source": "bp4d+",
+                "vas": 2
+            }
+        }
+    }
+}

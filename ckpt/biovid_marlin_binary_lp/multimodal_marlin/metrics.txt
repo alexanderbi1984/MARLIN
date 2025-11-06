@@ -1,0 +1,22 @@
+Binary Classification Metrics:
+Accuracy: 0.6500
+AUC: 0.7258
+Precision: 0.6516
+Recall: 0.6211
+F1 Score: 0.6360
+
+Confusion Matrix:
+TN: 179, FP: 85
+FN: 97, TP: 159
+
+
+binary classification with only bl1 and pa4 samples.
+using multimodal marlin features
+
+model_name: "biovid_marlin_binary_lp"
+backbone: "multimodal_marlin_base"
+dataset: "biovid"
+task: "binary"
+temporal_reduction: "mean"
+learning_rate: 1.0e-4
+seq_mean_pool: true

@@ -1,0 +1,2 @@
+Clip-level MMD: -0.001171, p-value: 0.524000
+Video-level MMD: -0.069589, p-value: 0.990000
