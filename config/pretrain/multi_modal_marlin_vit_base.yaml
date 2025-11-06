@@ -1,11 +1,11 @@
-model_name: "marlin_vit_base_random_mask"
+model_name: "marlin_vit_base_fask_mask"
 img_size: 224
 patch_size: 16
 clip_frames: 16
 tubelet_size: 2
-mask_strategy: "random"
+mask_strategy: "fasking"
 temporal_sample_rate: 2
-mask_percentage_target: 0.5
+mask_percentage_target: 0.8
 mlp_ratio: 4.0
 qkv_bias: true
 qk_scale: null

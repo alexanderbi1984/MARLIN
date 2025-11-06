@@ -827,20 +827,23 @@ class MultiModalMarlin(LightningModule):
 
 
     @classmethod
-    def from_file(cls, model_name: str, path: str) -> "MultiModalMarlin":
+    def from_file(cls, model_name: str, path: str, yaml_path: str = None, is_multimodal: bool = True) -> "MultiModalMarlin":
         """
-        Load a MultiModalMarlin model from a checkpoint file.
+        Load a MultiModalMarlin model from a checkpoint file, ensuring YAML config is used if provided.
 
         Args:
             model_name (str): The name of the model configuration to use.
             path (str): Path to the checkpoint file (.pt or .ckpt).
+            yaml_path (str, optional): Path to the YAML config file. If provided, will be used for config.
+            is_multimodal (bool): Whether this is a multimodal config (default: True).
 
         Returns:
             MultiModalMarlin: The loaded model.
-
-        Raises:
-            ValueError: If the file type is not supported.
         """
+        if yaml_path is not None:
+            from model.config import register_model_from_yaml
+            register_model_from_yaml(model_name, yaml_path, is_multimodal=is_multimodal)
+
         if path.endswith(".pt"):
             state_dict = torch.load(path, map_location="cpu")
         elif path.endswith(".ckpt"):
@@ -864,6 +867,7 @@ class MultiModalMarlin(LightningModule):
                 as_feature_extractor = False
                 break
 
+        from model.config import resolve_config
         config = resolve_config(model_name)
         model = cls(
             img_size=config.img_size,
@@ -885,10 +889,10 @@ class MultiModalMarlin(LightningModule):
             tubelet_size=config.tubelet_size,
             # Additional parameters specific to MultiModalMarlin
             distributed=False,  # Default values
-            d_steps=config.get("d_steps", 1),  # Default to 1 as per your config
+            d_steps=config.get("d_steps", 1),
             g_steps=config.get("g_steps", 1),
-            adv_weight=config.get("adv_weight", 0.01),  # Default to 0.01 as per your config
-            gp_weight=config.get("gp_weight", 0.0),  # Default to 0.0 as per your config
+            adv_weight=config.get("adv_weight", 0.01),
+            gp_weight=config.get("gp_weight", 0.0),
             rgb_weight=config.get("rgb_weight", 1.0),
             thermal_weight=config.get("thermal_weight", 1.0),
             depth_weight=config.get("depth_weight", 1.0),
@@ -896,7 +900,6 @@ class MultiModalMarlin(LightningModule):
         )
 
         # Load the state dictionary
-        # model.load_state_dict(state_dict)
         encoder_state_dict = {k: v for k, v in state_dict.items() if k.startswith("encoder.")}
         encoder_state_dict = {k.replace("encoder.", ""): v for k, v in encoder_state_dict.items()}
         model.encoder.load_state_dict(encoder_state_dict)
