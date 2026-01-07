@@ -205,6 +205,8 @@ parser.add_argument("--epochs", type=int, default=2000)
 parser.add_argument("--resume", type=str, default=None)
 parser.add_argument("--image_path", type=str, required=True,
                       help="Path to the input image file to generate thermal and depth maps")
+parser.add_argument("--output_path", type=str, default="generated_outputs.png",
+                      help="Path to save the generated visualization")
 # Example usage:
 def main():
     # Load your trained model
@@ -364,7 +366,24 @@ def main():
     thermal_output, depth_output = generate_thermal_depth_from_rgb(model, sample_rgb, device)
 
     # Visualize and/or save the results
-    visualize_outputs(sample_rgb, thermal_output, depth_output, save_path="generated_outputs.png")
+    if args.output_path.endswith('.npz'):
+        # Save raw data as npz
+        import numpy as np
+        # Convert tensors to numpy arrays
+        # Shape: [B, C, T, H, W] -> squeeze batch dim if B=1 -> [C, T, H, W]
+        rgb_np = sample_rgb.detach().cpu().numpy()
+        thermal_np = thermal_output.detach().cpu().numpy()
+        depth_np = depth_output.detach().cpu().numpy()
+        
+        np.savez(args.output_path, 
+                 rgb=rgb_np, 
+                 thermal=thermal_np, 
+                 depth=depth_np)
+        print(f"Saved raw outputs to {args.output_path}")
+    else:
+        # Save visualization
+        visualize_outputs(sample_rgb, thermal_output, depth_output, save_path=args.output_path)
+
 
     print(f"Thermal output shape: {thermal_output.shape}")
     print(f"Depth output shape: {depth_output.shape}")

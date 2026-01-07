@@ -1,0 +1,65 @@
+model_name: biovid_mil_coral_xformer
+
+# Data Paths
+# Path to CSV/Excel containing columns: video_id, pain_level, split, subject_id
+meta_excel_path: /data/Nbi/biovid/biovid_pain_labels.csv
+# Directory containing per-video feature files (e.g. .npy)
+# feature_root:  /data/Nbi/biovid/MMA_RGB_features_new
+# feature_suffix: _aligned_windows.npy
+feature_root: /data/Nbi/biovid/marlin_rgb_features/
+feature_suffix: _aligned_windows.npy
+# feature_root: /data/Nbi/biovid/openface_au/features
+# feature_suffix: _windows.npy
+# Column mapping
+split_col: split
+video_col: video_id
+label_col: pain_level
+subject_col: subject_id  # New: Required for LOOCV
+
+# Split names in the CSV (Ignored if using LOOCV mode)
+train_split: train
+val_split: val
+test_split: test
+
+train_subject_frac: 0.25
+subsample_seed: 42
+# Task Definition
+# num_classes: 5 (0,1,2,3,4)
+num_classes: 5
+# If pain_level is already 0-4 integer, leave this None. 
+# If pain_level is continuous (e.g. VAS), provide cutoffs.
+pain_class_cutoffs: null
+
+# Model Architecture (MIL Coral Transformer)
+# input_dim: 288       # OpenFace AU + Gaze + Pose etc? Or just AU? Check data dims. 
+input_dim: 768      # OpenFace AU + Gaze + Pose etc? Or just AU? Check data dims. 
+                     # Note: Syracuse AU config used 288. Ensure this matches your BioVid features.
+embed_dim: 256
+attn_type: xformer   # xformer | simple | gated
+xformer_heads: 4
+xformer_latents: 16
+xformer_cross_layers: 1
+xformer_self_layers: 2
+xformer_dropout: 0.3
+
+# Optimization
+learning_rate: 5e-5
+weight_decay: 0.01
+coral_alpha: 0.5
+ce_weight: 1.0  
+# Trainer
+max_epochs: 200
+monitor_metric: val_acc
+patience: 15
+precision: 32
+
+accelerator: gpu
+devices: 1
+
+# Loss & Heads
+eval_head: ce     # Head used for metrics (qwk, acc, etc.) and predictions
+
+# Logging
+save_dir: BioVid/mil_runs_qwk/biovid_coral_xformer_marlin_rgb_features
+# monitor_metric: val_acc (defined above)
+save_preds: true

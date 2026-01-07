@@ -1,0 +1,34 @@
+# BioVid Pre-training Configuration
+# Run with: python train_pain_transformer.py --config config/pain_transformer/biovid_pretrain.yaml
+
+# Data Paths
+meta_excel: /data/Nbi/biovid/biovid_pain_labels.csv
+video_root: /data/Nbi/biovid/rgb_cropped_frames/biovid_cropped_frames/
+
+# Column Mapping
+video_col: video_id
+label_col: pain_level
+subject_col: subject_id
+split_col: split
+
+# Model
+num_classes: 5
+
+# Training Hyperparameters
+batch_size: 24
+accumulate_grad_batches: 1  # Effective batch size = 16
+num_workers: 8
+max_epochs: 500
+learning_rate: 1.0e-4
+weight_decay: 0.1
+smoothing: 0.1
+
+# Early Stopping
+patience: 100
+
+# Hardware
+gpus: 8
+precision: 16
+
+# Validation
+loso: false  # Fixed split for pre-training

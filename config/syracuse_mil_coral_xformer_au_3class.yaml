@@ -1,0 +1,94 @@
+model_name: syracuse_mil_ce_xformer_au
+
+# Data
+syracuse_feature_root: /data/Nbi/Syracuse/AU_from_openface
+syracuse_feature_suffix: _windows.npy
+meta_excel_path: /data/Nbi/Syracuse/meta_with_outcomes.xlsx
+baseline_combo: RGB
+input_dim: 288
+# combos: [RGB, RGD, RGT, RBD, RBT, RDT, GBD, GBT, GDT, BDT]
+combos: [RGB]
+clip_level: true
+clip_bag_size: 5
+clip_bag_stride: 1
+exclude_video_ids:
+  - IMG_0006
+  - IMG_0008
+  - IMG_0009
+  - IMG_0015
+  - IMG_0036
+  - IMG_0040
+  - IMG_0057
+  - IMG_0098
+  - IMG_0108
+biovid_aux_loss_weight: 0.001
+
+# Auxiliary Task (Biovid)
+aux_meta_excel: /data/Nbi/biovid/biovid_pain_labels.csv
+aux_feature_root: /data/Nbi/biovid/openface_au/features
+aux_feature_suffix: _windows.npy
+aux_train_split: train
+aux_val_split: val
+aux_test_split: test
+
+# Training Strategy
+loocv: true
+
+# Train-time augmentation (swap-face views)
+aug_feature_root: /data/Nbi/Syracuse/syracuse_aug_au_features_from_openface
+use_aug_in_train: true
+train_aug_ratio: 0.0   # probability to sample an aug view if available
+
+# Class balancing
+use_weighted_sampler: true
+train_epoch_multiplier: 1   # >=1; multiply train samples per epoch to increase steps
+
+# Enumerate all combos and K aug views per epoch (train only)
+train_enumerate_all_views: false
+train_max_aug_per_combo: 4
+train_include_original: true
+
+task: ordinal          # ordinal | regression | binary | multiclass
+num_classes: 3
+pain_class_cutoffs: [2.1, 5.1]
+
+# num_classes: 4
+# pain_class_cutoffs: [1.1,3.1,6.1]
+
+batch_size: 64
+num_workers: 8
+val_split_ratio: 0.15
+test_split_ratio: 0.15
+random_state: 42
+max_bag_size: 800
+normalize_features: true
+
+# Aggregator
+attn_type: simple     # xformer | simple | gated
+embed_dim: 256
+xformer_heads: 4
+xformer_latents: 16
+xformer_cross_layers: 1
+xformer_self_layers: 2
+xformer_dropout: 0.3
+
+# Loss/Optimization
+learning_rate: 5e-5
+weight_decay: 0.01
+coral_alpha: 0.5
+ce_weight: 1.0        # set 0 to disable CE head
+class_weights: true    # if true, compute from train labels and pass to CE head
+
+# Trainer
+max_epochs: 200
+monitor_metric: val_acc
+patience: 15
+precision: 32
+
+# Device
+accelerator: gpu   # 'gpu' | 'cpu' | 'auto'
+devices: 1         # number of GPUs to use
+
+# Output
+save_dir: Syracuse/xformer_mil_au_clip_level_auxiliary/3class_0.0_aug_ratio_rgb_features
+save_preds: true

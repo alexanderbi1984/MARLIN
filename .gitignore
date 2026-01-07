@@ -38,6 +38,7 @@ results/
 !MODEL_ZOO.md
 
 # Syracuse specific ignores
+Syracuse/**
 Syracuse/**/classification_results/*.png
 Syracuse/**/classification_results/*.csv
 Syracuse/**/classification_results/*.joblib
@@ -46,6 +47,11 @@ Syracuse/**/results/*.png
 Syracuse/**/results/*.csv
 Syracuse/**/results/*.joblib
 Syracuse/**/results/model.joblib
+
+# CrossDB dataset / generated artifacts
+CrossDB/**
+CrossDB_strict_split/**
+BioVid/**
 
 ### PyCharm ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
@@ -317,6 +323,36 @@ logs
 *.pt
 lightning_logs
 
+# Training outputs / experiment artifacts (logs, checkpoints, trackers)
+checkpoints/
+**/checkpoints/**
+**/checkpoint*/**
+logs*/
+**/logs*/**
+lightning_logs/
+**/lightning_logs/**
+wandb/
+**/wandb/**
+mlruns/
+**/mlruns/**
+runs/
+**/runs/**
+tb_logs/
+**/tb_logs/**
+tensorboard/
+**/tensorboard/**
+events.out.tfevents.*
+**/events.out.tfevents.*
+
+# Project-specific training result folders
+logs_syracuse_finetune/
+logs_tnt_fixed/
+logs_tnt_loso/
+loocv_results/
+loocv_results_simple/
+loocv_results*/
+**/loocv_results*/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -369,6 +405,8 @@ ENV/
 *.csv
 *.json
 !dataset_meta/*.json
+!Syracuse/binary_outcome_classification/
+!Syracuse/binary_outcome_classification/data/
 !Syracuse/binary_outcome_classification/data/pairs_metadata.json
 !Syracuse/binary_outcome_classification/data/feature_diffs.npy
 !Syracuse/binary_outcome_classification/data/feature_diff_stats.csv

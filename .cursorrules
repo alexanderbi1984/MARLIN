@@ -1,0 +1,38 @@
+## 安装位置规则（Installation Location Rule）
+
+- 强制约束：所有安装、环境、缓存、下载都必须位于 `/data/Nbi` 子目录下，禁止写入系统默认位置或 `$HOME`。
+- Miniconda：固定使用 `/data/Nbi/miniconda3`，创建环境一律使用前缀：`conda create -p /data/Nbi/<env_name> python=...`，激活：`conda activate /data/Nbi/<env_name>`。
+- 禁止使用 `pip --user` 或系统级安装；仅允许在上述前缀环境中安装。
+- 统一缓存/模型目录（避免写到家目录）：
+  - `PIP_CACHE_DIR=/data/Nbi/.cache/pip`
+  - `XDG_CACHE_HOME=/data/Nbi/.cache`
+  - `TORCH_HOME=/data/Nbi/.cache/torch`
+  - `HF_HOME=/data/Nbi/.cache/huggingface`
+  - `TRANSFORMERS_CACHE=/data/Nbi/.cache/huggingface/transformers`
+- 优先使用绝对路径，避免相对路径导致越界写入。
+- 如需 GPU 版 PyTorch，亦需将安装、缓存限制在 `/data/Nbi`，并优先选择与目标 CUDA 版本匹配的轮子源/索引。
+
+默认建议：
+- 环境名：`marlin`
+- 前缀路径：`/data/Nbi/marlin`
+
+若执行步骤未遵守本规则，应立即回退并改为写入 `/data/Nbi` 下的相应子目录。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

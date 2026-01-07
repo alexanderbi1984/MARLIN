@@ -1,0 +1,105 @@
+## Feature Catalog (dataset × feature) registry
+##
+## Purpose:
+## - Centralize feature roots / suffix / prefix / file-name quirks per dataset
+## - Allow `config/cross_db.yaml` (and other scripts) to select features by name
+##
+## How to use (with train_cross_db.py):
+## - In `config/cross_db.yaml`, set:
+##     feature_catalog_path: /data/Nbi/Marlin/MARLIN/config/feature_catalog.yaml
+## - For each dataset (and aux_dataset), set:
+##     feature_name: openface_au_288   (or other key below)
+## - You may still override `feature_root/feature_suffix/feature_prefix/remove_extension` directly in cross_db.yaml.
+##
+features:
+  # -------------------------
+  # OpenFace AU features
+  # -------------------------
+  openface_au_288:
+    input_dim: 288
+    default_suffix: _windows.npy
+    per_dataset:
+      syracuse:
+        # AU features (organized by combo folder, e.g. RGB/)
+        feature_root: /data/Nbi/Syracuse/AU_from_openface/RGB/
+        feature_suffix: _windows.npy
+        feature_prefix: ""
+        remove_extension: true   # meta may include IMG_XXXX.MP4
+      shoulder_pain:
+        feature_root: /data/Nbi/ShoulderPain/openface_features/
+        feature_suffix: _windows.npy
+        feature_prefix: ""
+        remove_extension: false
+      biovid:
+        feature_root: /data/Nbi/biovid/openface_au/features/
+        feature_suffix: _windows.npy
+        feature_prefix: ""
+        remove_extension: false
+
+  # -------------------------
+  # MMA RGB features (example)
+  # -------------------------
+  mma_rgb_768:
+    input_dim: 768
+    default_suffix: _windows.npy
+    per_dataset:
+      syracuse:
+        feature_root: /data/Nbi/Syracuse/syracuse_fixed_combo_features/RGB/
+        feature_suffix: _windows.npy
+        feature_prefix: ""
+        remove_extension: true
+      shoulder_pain:
+        feature_root: /data/Nbi/ShoulderPain/mma_rgb_features/
+        feature_suffix: _windows.npy
+        feature_prefix: "IMG_"
+        remove_extension: false
+      biovid:
+        feature_root: /data/Nbi/biovid/MMA_RGB_features_new/
+        feature_suffix: _aligned_windows.npy
+        feature_prefix: ""
+        remove_extension: false
+
+
+  mma_random_768:
+    input_dim: 768
+    default_suffix: _windows.npy
+    per_dataset:
+      biovid:
+        feature_root: /data/Nbi/biovid/MMA_random_features_new/
+        feature_suffix: _aligned_windows.npy
+        feature_prefix: ""
+        remove_extension: false
+      syracuse:
+        feature_root: /data/Nbi/Syracuse/syracuse_random_features/RGB/
+        feature_suffix: _windows.npy
+        feature_prefix: ""
+        remove_extension: false
+      shoulder_pain:
+        feature_root: /data/Nbi/ShoulderPain/mma_random_features/
+        feature_suffix: _windows.npy
+        feature_prefix: "IMG_"
+        remove_extension: false
+
+  # -------------------------
+  # Marlin RGB features (example)
+  # -------------------------
+  marlin_rgb_768:
+    input_dim: 768
+    default_suffix: _aligned_windows.npy
+    per_dataset:
+      syracuse:
+        feature_root: /data/Nbi/Syracuse/syracuse_marlin_rgb_features/RGB/
+        feature_suffix: _aligned_windows.npy
+        feature_prefix: ""
+        remove_extension: true
+      shoulder_pain:
+        feature_root: /data/Nbi/ShoulderPain/marlin_rgb_features/
+        feature_suffix: _aligned_windows.npy
+        feature_prefix: "IMG_"
+        remove_extension: false
+      biovid:
+        feature_root: /data/Nbi/biovid/marlin_rgb_features/
+        feature_suffix: _aligned_windows.npy
+        feature_prefix: ""
+        remove_extension: false
+
