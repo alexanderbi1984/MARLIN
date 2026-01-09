@@ -6,6 +6,8 @@ import yaml
 import warnings
 from typing import List, Optional, Dict, Any, Tuple
 import math
+import numpy as np
+import numpy as np
 
 # Ignore specific warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -25,6 +27,50 @@ from model.pain_transformer import PainEstimationModel
 from dataset.video_dataset import VideoDataset
 
 # --- Helper to parse Excel Metadata (Aligning with your existing workflow) ---
+
+def subsample_train_df_by_subject_stratified(
+    df_train: pd.DataFrame,
+    frac: float,
+    subject_col: str = "subject",
+    label_col: str = "target",
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Subsample train set within each subject, stratified by class.
+
+    For each subject and each class present, keep approximately `frac` of samples
+    (at least 1 sample per class if present). This preserves class balance within each subject
+    and enables data-efficiency experiments.
+    """
+    frac = float(frac)
+    if frac >= 1.0:
+        return df_train
+    if frac <= 0.0:
+        raise ValueError("train_subject_frac must be > 0")
+    if subject_col not in df_train.columns or label_col not in df_train.columns:
+        raise ValueError(f"Expected columns '{subject_col}' and '{label_col}' in df_train")
+
+    rng = np.random.RandomState(int(seed))
+    kept_parts: List[pd.DataFrame] = []
+
+    df = df_train.copy()
+    df[subject_col] = df[subject_col].astype(str)
+    df[label_col] = pd.to_numeric(df[label_col], errors="coerce")
+    df = df.dropna(subset=[label_col])
+    df[label_col] = df[label_col].astype(int)
+
+    for sid, df_s in df.groupby(subject_col):
+        for cls, df_sc in df_s.groupby(label_col):
+            n = len(df_sc)
+            if n <= 1:
+                kept_parts.append(df_sc)
+                continue
+            k = int(round(frac * n))
+            k = max(1, min(k, n))
+            idx = rng.choice(df_sc.index.values, size=k, replace=False)
+            kept_parts.append(df_sc.loc[idx])
+
+    out = pd.concat(kept_parts, axis=0).reset_index(drop=True)
+    return out
 
 def parse_metadata(
     meta_path: str, 
@@ -168,7 +214,11 @@ class PainTransformerLightningModule(pl.LightningModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        # VideoDataset may return (x, y) or (x, y, sample_id/path)
+        if isinstance(batch, (list, tuple)) and len(batch) == 3:
+            x, y, _ = batch
+        else:
+            x, y = batch
         logits = self(x)
         loss = self.criterion(logits, y)
         preds = torch.argmax(logits, dim=1)
@@ -178,7 +228,10 @@ class PainTransformerLightningModule(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
+        if isinstance(batch, (list, tuple)) and len(batch) == 3:
+            x, y, _ = batch
+        else:
+            x, y = batch
         logits = self(x)
         loss = self.criterion(logits, y)
         preds = torch.argmax(logits, dim=1)
@@ -222,7 +275,10 @@ class PainTransformerLightningModule(pl.LightningModule):
             self.val_preds_cache.clear()
     
     def test_step(self, batch, batch_idx):
-        x, y = batch
+        if isinstance(batch, (list, tuple)) and len(batch) == 3:
+            x, y, _ = batch
+        else:
+            x, y = batch
         logits = self(x)
         loss = self.criterion(logits, y)
         preds = torch.argmax(logits, dim=1)
@@ -302,6 +358,17 @@ def main():
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument("--precision", type=str, default="16", help="Precision (16, 32, etc.)")
     parser.add_argument("--gradient_clip_val", type=float, default=0.0, help="Gradient clipping value (0.0 to disable)")
+    # Output / logging
+    parser.add_argument(
+        "--log_dir",
+        type=str,
+        default=None,
+        help="Base directory for TensorBoard logs and checkpoints (can also be set in YAML as log_dir).",
+    )
+    # Data-efficiency subsampling (train only)
+    parser.add_argument("--train_subject_frac", type=float, default=1.0, help="Keep this fraction of samples per subject (stratified by class) for TRAIN only.")
+    parser.add_argument("--subsample_seed", type=int, default=42, help="Random seed for train subsampling.")
+    parser.add_argument("--val_ratio", type=float, default=0.15, help="Validation subject ratio in LOSO (from remaining subjects).")
     
     # Mode
     parser.add_argument("--loso", action="store_true", help="Run Leave-One-Subject-Out Cross-Validation")
@@ -328,6 +395,9 @@ def main():
         parser.error("meta_excel and video_root are required (via CLI or config file)")
 
     pl.seed_everything(42)
+
+    # Output directory (logs + checkpoints)
+    base_log_dir = args.log_dir  # may be None; fall back to previous defaults per mode
     
     print(f"Loading metadata from {args.meta_excel}...")
     df = parse_metadata(
@@ -346,10 +416,12 @@ def main():
     except ValueError:
         precision_val = args.precision
 
-    # DDP Strategy config to fix unused params warning
-    from pytorch_lightning.strategies import DDPStrategy
-    # Only use strategy if multiple GPUs are requested
-    strategy_obj = DDPStrategy(find_unused_parameters=False) if args.gpus > 1 else None
+    # DDP strategy:
+    # Use the built-in strategy string to avoid PL misconfiguration where passing a Strategy
+    # object together with accelerator can raise:
+    # "accelerator set through both strategy class and accelerator flag".
+    # This also keeps find_unused_parameters=False to avoid warnings.
+    strategy_obj = "ddp_find_unused_parameters_false" if args.gpus > 1 else None
 
     if args.loso:
         subjects = df['subject'].unique()
@@ -359,14 +431,35 @@ def main():
             print(f"\n=== Fold: Subject {test_subject} ===")
             
             # LOSO Split
-            train_df = df[df['subject'] != test_subject]
-            test_df = df[df['subject'] == test_subject]
+            test_df = df[df['subject'] == test_subject].copy()
+            remaining_df = df[df['subject'] != test_subject].copy()
             
             if len(test_df) == 0:
                 continue
 
-            # In production, you might want to split train_df further for validation
-            # Here we use the test fold as validation for simplicity/monitoring
+            # Split remaining subjects into train/val (no leakage)
+            remaining_subjects = remaining_df["subject"].astype(str).unique().tolist()
+            rng = random.Random(42 + hash(str(test_subject)) % 1000)
+            rng.shuffle(remaining_subjects)
+            n_val = max(1, int(round(float(args.val_ratio) * len(remaining_subjects))))
+            val_subjects = set(remaining_subjects[:n_val])
+            train_subjects = set(remaining_subjects[n_val:])
+
+            train_df = remaining_df[remaining_df["subject"].isin(train_subjects)].copy()
+            val_df = remaining_df[remaining_df["subject"].isin(val_subjects)].copy()
+
+            # Optional train-only subsampling (data-efficiency)
+            before = len(train_df)
+            train_df = subsample_train_df_by_subject_stratified(
+                train_df,
+                frac=float(args.train_subject_frac),
+                subject_col="subject",
+                label_col="target",
+                seed=int(args.subsample_seed),
+            )
+            after = len(train_df)
+            if after != before:
+                print(f"[Subsample] train_subject_frac={args.train_subject_frac} | Train: {before} -> {after}")
             
             train_ds = VideoDataset(
                 video_paths=train_df['full_path'].tolist(), 
@@ -374,13 +467,19 @@ def main():
                 is_train=True
             )
             val_ds = VideoDataset(
-                video_paths=test_df['full_path'].tolist(), 
-                labels=test_df['target'].tolist(), 
+                video_paths=val_df['full_path'].tolist(), 
+                labels=val_df['target'].tolist(), 
+                is_train=False
+            )
+            test_ds = VideoDataset(
+                video_paths=test_df['full_path'].tolist(),
+                labels=test_df['target'].tolist(),
                 is_train=False
             )
             
             train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
             val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+            test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
             
             model = PainTransformerLightningModule(
                 num_classes=args.num_classes, 
@@ -391,7 +490,16 @@ def main():
             
             checkpoint_cb = ModelCheckpoint(monitor="val_acc", mode="max", save_last=True, filename=f"subject_{test_subject}"+"-{epoch}-{val_acc:.2f}")
             early_stop_cb = EarlyStopping(monitor="val_acc", mode="max", patience=args.patience, verbose=True)
-            logger = TensorBoardLogger("logs_tnt_loso", name=f"subj_{test_subject}")
+            # IMPORTANT (DDP-safe):
+            # - Fix logger version to avoid race conditions where different ranks pick different version_X folders.
+            # - Write checkpoints to a deterministic per-subject folder (no version_X in the path).
+            loso_root = base_log_dir or "logs_tnt_loso"
+            os.makedirs(loso_root, exist_ok=True)
+            subj_name = f"subj_{test_subject}"
+            logger = TensorBoardLogger(loso_root, name=subj_name, version=0, default_hp_metric=False)
+            checkpoint_dir = os.path.join(loso_root, subj_name, "checkpoints")
+            os.makedirs(checkpoint_dir, exist_ok=True)
+            checkpoint_cb.dirpath = checkpoint_dir
             
             trainer = pl.Trainer(
                 accelerator="gpu",
@@ -407,7 +515,10 @@ def main():
             )
             
             trainer.fit(model, train_loader, val_loader)
-            trainer.test(model, val_loader, ckpt_path="best")
+            # Avoid ckpt path mismatches across ranks by resolving to a concrete path.
+            best_path = checkpoint_cb.best_model_path
+            ckpt_choice = best_path if best_path else "last"
+            trainer.test(model, test_loader, ckpt_path=ckpt_choice)
 
     else:
         print("Running Fixed Split Training (using 'split' column if available)...")
@@ -441,7 +552,12 @@ def main():
         
         checkpoint_cb = ModelCheckpoint(monitor="val_acc", mode="max", save_last=True)
         early_stop_cb = EarlyStopping(monitor="val_acc", mode="max", patience=args.patience, verbose=True)
-        logger = TensorBoardLogger("logs_tnt_fixed", name="fixed_split")
+        fixed_root = base_log_dir or "logs_tnt_fixed"
+        os.makedirs(fixed_root, exist_ok=True)
+        logger = TensorBoardLogger(fixed_root, name="fixed_split", version=0, default_hp_metric=False)
+        checkpoint_dir = os.path.join(fixed_root, "fixed_split", "checkpoints")
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        checkpoint_cb.dirpath = checkpoint_dir
         
         trainer = pl.Trainer(
             accelerator="gpu", devices=args.gpus, 

@@ -1,0 +1,52 @@
+# BioVid End-to-End TNT (LOSO evaluation) Configuration
+#
+# Usage:
+#   /data/Nbi/marlin/bin/python /data/Nbi/Marlin/MARLIN/train_pain_transformer.py \
+#     --config /data/Nbi/Marlin/MARLIN/config/pain_transformer/biovid_loso_eval.yaml
+#
+# Data-efficiency ablation (train-only subsampling, stratified within subject):
+#   --train_subject_frac 0.10  (or 0.25 / 0.50 / 1.00)
+#   --subsample_seed 42
+
+# Data Paths
+meta_excel: /data/Nbi/biovid/biovid_pain_labels.csv
+video_root: /data/Nbi/biovid/rgb_cropped_frames/biovid_cropped_frames/
+
+# Column Mapping
+video_col: video_id
+label_col: pain_level
+subject_col: subject_id
+split_col: split
+
+# Model / Task
+num_classes: 5
+
+# Training Hyperparameters
+batch_size: 24
+accumulate_grad_batches: 1
+num_workers: 8
+max_epochs: 200
+learning_rate: 1.0e-4
+weight_decay: 0.1
+smoothing: 0.1
+
+# Early Stopping
+patience: 20
+
+# Hardware
+gpus: 4
+precision: 16
+
+# Output
+# Base directory for TensorBoard logs and checkpoints (per-subject subfolders created automatically).
+log_dir: /data/Nbi/Marlin/MARLIN/BioVid/0.25fraction/fine_tuned_pain_transformer
+
+# Validation / Evaluation
+loso: true
+# In each fold, val subjects are sampled from remaining subjects (no leakage).
+val_ratio: 0.15
+
+# Data-efficiency (train only)
+train_subject_frac: 0.25
+subsample_seed: 42
+

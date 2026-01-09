@@ -4,10 +4,10 @@ model_name: biovid_mil_coral_xformer
 # Path to CSV/Excel containing columns: video_id, pain_level, split, subject_id
 meta_excel_path: /data/Nbi/biovid/biovid_pain_labels.csv
 # Directory containing per-video feature files (e.g. .npy)
-# feature_root:  /data/Nbi/biovid/MMA_RGB_features_new
-# feature_suffix: _aligned_windows.npy
-feature_root: /data/Nbi/biovid/marlin_rgb_features/
+feature_root:  /data/Nbi/biovid/MMA_RGB_features_new
 feature_suffix: _aligned_windows.npy
+# feature_root: /data/Nbi/biovid/marlin_rgb_features/
+# feature_suffix: _aligned_windows.npy
 # feature_root: /data/Nbi/biovid/openface_au/features
 # feature_suffix: _windows.npy
 # Column mapping
@@ -60,6 +60,6 @@ devices: 1
 eval_head: ce     # Head used for metrics (qwk, acc, etc.) and predictions
 
 # Logging
-save_dir: BioVid/mil_runs_qwk/biovid_coral_xformer_marlin_rgb_features
+save_dir: BioVid/0.25fraction/mma_rgb_features
 # monitor_metric: val_acc (defined above)
 save_preds: true
